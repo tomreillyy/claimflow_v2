@@ -37,11 +37,10 @@ export default async function Pack({ params }) {
       color: '#1a1a1a'
     }}>
       {/* Header (hidden in print) */}
-      <header style={{
+      <header className="print-hide" style={{
         backgroundColor: '#fafafa',
         borderBottom: '1px solid #e5e5e5',
-        padding: '16px 0',
-        '@media print': { display: 'none' }
+        padding: '16px 0'
       }}>
         <div style={{
           maxWidth: 800,
@@ -88,15 +87,10 @@ export default async function Pack({ params }) {
         </div>
       </header>
 
-      <main style={{
+      <main className="print-main" style={{
         maxWidth: 800,
         margin: '0 auto',
-        padding: '40px 24px',
-        '@media print': {
-          padding: '20px',
-          maxWidth: 'none',
-          margin: 0
-        }
+        padding: '40px 24px'
       }}>
         {/* Title Page */}
         <div style={{
@@ -335,18 +329,6 @@ export default async function Pack({ params }) {
         </div>
       </main>
 
-      {/* Print Styles */}
-      <style jsx>{`
-        @media print {
-          header { display: none !important; }
-          body { margin: 0; }
-          main {
-            max-width: none !important;
-            margin: 0 !important;
-            padding: 20px !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

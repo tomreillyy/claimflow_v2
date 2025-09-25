@@ -24,3 +24,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Print styles for claim pack */
+@media print {
+  .print-hide {
+    display: none !important;
+  }
+
+  .print-main {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 20px !important;
+  }
+}
