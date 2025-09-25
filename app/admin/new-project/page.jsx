@@ -78,7 +78,8 @@ export default function NewProject() {
               borderRadius: 6,
               outline: 'none',
               transition: 'border-color 0.2s',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              color: '#1a1a1a'
             }}
             onFocus={e => e.target.style.borderColor = '#007acc'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
@@ -136,7 +137,8 @@ export default function NewProject() {
               borderRadius: 6,
               outline: 'none',
               transition: 'border-color 0.2s',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              color: '#1a1a1a'
             }}
             onFocus={e => e.target.style.borderColor = '#007acc'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
