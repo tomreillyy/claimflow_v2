@@ -1,103 +1,213 @@
-import Image from "next/image";
-
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main style={{
+      minHeight: '100vh',
+      backgroundColor: 'white',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+    }}>
+      {/* Header */}
+      <header style={{
+        backgroundColor: 'white',
+        borderBottom: '1px solid #e5e5e5',
+        padding: '16px 0'
+      }}>
+        <div style={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          padding: '0 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <h1 style={{
+            fontSize: 20,
+            fontWeight: 600,
+            color: '#1a1a1a',
+            margin: 0
+          }}>ClaimFlow</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/admin/new-project"
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#007acc',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: 6,
+              fontSize: 14,
+              fontWeight: 500
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+            Start a project
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </header>
+
+      {/* Hero Section */}
+      <section style={{
+        padding: '80px 24px',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          maxWidth: 800,
+          margin: '0 auto'
+        }}>
+          <h2 style={{
+            fontSize: 48,
+            fontWeight: 600,
+            color: '#1a1a1a',
+            margin: '0 0 20px 0',
+            lineHeight: 1.1
+          }}>
+            Track your R&D work and build evidence as you go
+          </h2>
+
+          <p style={{
+            fontSize: 20,
+            color: '#333',
+            margin: '0 0 40px 0',
+            lineHeight: 1.5
+          }}>
+            ClaimFlow helps teams collect evidence for R&D tax claims in real-time.
+            Add notes, upload files, and generate claim packs without the paperwork headache.
+          </p>
+
+          <div style={{display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap'}}>
+            <a
+              href="/admin/new-project"
+              style={{
+                padding: '14px 28px',
+                backgroundColor: '#007acc',
+                color: 'white',
+                textDecoration: 'none',
+                borderRadius: 8,
+                fontSize: 16,
+                fontWeight: 500,
+                display: 'inline-block'
+              }}
+            >
+              Start your first project
+            </a>
+
+            <a
+              href="#how-it-works"
+              style={{
+                padding: '14px 28px',
+                backgroundColor: 'white',
+                color: '#007acc',
+                textDecoration: 'none',
+                borderRadius: 8,
+                fontSize: 16,
+                fontWeight: 500,
+                border: '1px solid #007acc',
+                display: 'inline-block'
+              }}
+            >
+              See how it works
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" style={{
+        padding: '80px 24px',
+        backgroundColor: '#f8f9fa'
+      }}>
+        <div style={{
+          maxWidth: 1000,
+          margin: '0 auto'
+        }}>
+          <h3 style={{
+            fontSize: 32,
+            fontWeight: 600,
+            color: '#1a1a1a',
+            textAlign: 'center',
+            margin: '0 0 60px 0'
+          }}>How it works</h3>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 40
+          }}>
+            <div style={{textAlign: 'center'}}>
+              <div style={{
+                width: 64,
+                height: 64,
+                backgroundColor: '#007acc',
+                borderRadius: '50%',
+                margin: '0 auto 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                color: 'white'
+              }}>1</div>
+              <h4 style={{fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: '0 0 12px 0'}}>
+                Create a project
+              </h4>
+              <p style={{color: '#333', lineHeight: 1.5, margin: 0}}>
+                Set up a project with your team's emails. Everyone gets a unique email address to send updates to.
+              </p>
+            </div>
+
+            <div style={{textAlign: 'center'}}>
+              <div style={{
+                width: 64,
+                height: 64,
+                backgroundColor: '#007acc',
+                borderRadius: '50%',
+                margin: '0 auto 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                color: 'white'
+              }}>2</div>
+              <h4 style={{fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: '0 0 12px 0'}}>
+                Collect evidence daily
+              </h4>
+              <p style={{color: '#333', lineHeight: 1.5, margin: 0}}>
+                Add quick notes, upload screenshots, email updates. Everything gets automatically organized by date.
+              </p>
+            </div>
+
+            <div style={{textAlign: 'center'}}>
+              <div style={{
+                width: 64,
+                height: 64,
+                backgroundColor: '#007acc',
+                borderRadius: '50%',
+                margin: '0 auto 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                color: 'white'
+              }}>3</div>
+              <h4 style={{fontSize: 20, fontWeight: 600, color: '#1a1a1a', margin: '0 0 12px 0'}}>
+                Generate claim pack
+              </h4>
+              <p style={{color: '#333', lineHeight: 1.5, margin: 0}}>
+                At year-end, get a formatted document with all evidence organized by R&D categories. Print to PDF and submit.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{
+        padding: '40px 24px',
+        backgroundColor: '#f5f5f5',
+        textAlign: 'center',
+        color: '#333'
+      }}>
+        <p style={{margin: 0}}>
+          ClaimFlow - Simple R&D evidence collection
+        </p>
       </footer>
-    </div>
+    </main>
   );
 }
