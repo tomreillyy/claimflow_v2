@@ -95,8 +95,7 @@ export default function NewProject() {
               color: '#333',
               marginBottom: 6
             }}>Year</label>
-            <input
-              type="number"
+            <select
               value={year}
               onChange={e=>setYear(e.target.value)}
               required
@@ -108,11 +107,18 @@ export default function NewProject() {
                 borderRadius: 6,
                 outline: 'none',
                 transition: 'border-color 0.2s',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                color: '#1a1a1a',
+                backgroundColor: 'white'
               }}
               onFocus={e => e.target.style.borderColor = '#007acc'}
               onBlur={e => e.target.style.borderColor = '#ddd'}
-            />
+            >
+              {Array.from({length: 10}, (_, i) => {
+                const yearOption = new Date().getFullYear() - i;
+                return <option key={yearOption} value={yearOption}>{yearOption}</option>
+              })}
+            </select>
           </div>
           <div></div>
         </div>
@@ -201,14 +207,14 @@ export default function NewProject() {
           <div style={{fontSize: 14, lineHeight: 1.6}}>
             <p style={{margin: '0 0 8px 0'}}>
               <strong>Timeline:</strong>{' '}
-              <a href={result.timelineUrl} style={{color: '#007acc', textDecoration: 'none'}}>
+              <a href={result.timelineUrl} style={{color: '#007acc', textDecoration: 'none', fontWeight: 500}}>
                 {result.timelineUrl}
               </a>
             </p>
 
             <p style={{margin: '0 0 8px 0'}}>
               <strong>Quick upload:</strong>{' '}
-              <a href={result.uploadUrl} style={{color: '#007acc', textDecoration: 'none'}}>
+              <a href={result.uploadUrl} style={{color: '#007acc', textDecoration: 'none', fontWeight: 500}}>
                 {result.uploadUrl}
               </a>
             </p>
@@ -220,7 +226,8 @@ export default function NewProject() {
                 backgroundColor: '#e2e8f0',
                 borderRadius: 4,
                 fontSize: 13,
-                fontFamily: 'Monaco, monospace'
+                fontFamily: 'Monaco, monospace',
+                color: '#1a1a1a'
               }}>{result.inboundEmail}</code>
             </p>
           </div>

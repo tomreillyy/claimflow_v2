@@ -124,7 +124,8 @@ export default function Upload({ params }) {
                   border: '1px solid #ddd',
                   borderRadius: 8,
                   backgroundColor: 'white',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  color: '#1a1a1a'
                 }}
               />
             </div>
@@ -149,7 +150,8 @@ export default function Upload({ params }) {
                   border: '1px solid #ddd',
                   borderRadius: 8,
                   outline: 'none',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  color: '#1a1a1a'
                 }}
                 onFocus={e => e.target.style.borderColor = '#007acc'}
                 onBlur={e => e.target.style.borderColor = '#ddd'}

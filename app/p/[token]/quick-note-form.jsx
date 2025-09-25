@@ -39,7 +39,8 @@ export default function QuickNoteForm({ token }) {
           resize: 'vertical',
           lineHeight: 1.4,
           fontFamily: 'inherit',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          color: '#1a1a1a'
         }}
         onFocus={e => e.target.style.borderColor = '#007acc'}
         onBlur={e => e.target.style.borderColor = '#ddd'}
@@ -57,7 +58,8 @@ export default function QuickNoteForm({ token }) {
             borderRadius: 6,
             outline: 'none',
             minWidth: 200,
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            color: '#1a1a1a'
           }}
           onFocus={e => e.target.style.borderColor = '#007acc'}
           onBlur={e => e.target.style.borderColor = '#ddd'}

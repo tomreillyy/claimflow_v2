@@ -128,7 +128,8 @@ export default async function Timeline({ params }) {
               backgroundColor: '#e2e8f0',
               padding: '4px 8px',
               borderRadius: 4,
-              fontFamily: 'Monaco, monospace'
+              fontFamily: 'Monaco, monospace',
+              color: '#1a1a1a'
             }}>
               {project.inbound_email_local}@{process.env.PUBLIC_INBOUND_DOMAIN}
             </code>
