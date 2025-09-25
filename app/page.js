@@ -148,7 +148,7 @@ export default function Home() {
                 Create a project
               </h4>
               <p style={{color: '#333', lineHeight: 1.5, margin: 0}}>
-                Set up a project with your team's emails. Everyone gets a unique email address to send updates to.
+                Set up a project with your team&apos;s emails. Everyone gets a unique email address to send updates to.
               </p>
             </div>
 
