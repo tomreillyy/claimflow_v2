@@ -1,20 +1,44 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/AuthProvider';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import { Header } from '@/components/Header';
 
 export default function NewProject() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [name, setName] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [participants, setParticipants] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, loading, router]);
+
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
     setResult(null);
+
+    if (!user) {
+      setError('You must be signed in to create a project');
+      return;
+    }
+
+    // Get the current session to access the access token
+    const { data: { session } } = await supabase.auth.getSession();
+
     const resp = await fetch('/api/admin/projects', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`
+      },
       body: JSON.stringify({
         name,
         year: Number(year),
@@ -22,11 +46,32 @@ export default function NewProject() {
           .split(',')
           .map(s => s.trim())
           .filter(Boolean),
+        owner_email: user.email,
       }),
     });
     const json = await resp.json();
     if (!resp.ok) { setError(json.error || 'Failed'); return; }
     setResult(json);
+
+    // Redirect to dashboard after a brief delay to show success
+    setTimeout(() => {
+      router.push('/');
+    }, 2000);
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: 'white',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <p>Loading...</p>
+      </div>
+    );
   }
 
   return (
@@ -35,6 +80,7 @@ export default function NewProject() {
       backgroundColor: 'white',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
     }}>
+      <Header />
       <main style={{
         maxWidth: 480,
         margin: '0 auto',
@@ -144,7 +190,8 @@ export default function NewProject() {
               outline: 'none',
               transition: 'border-color 0.2s',
               boxSizing: 'border-box',
-              color: '#1a1a1a'
+              color: '#1a1a1a',
+              backgroundColor: 'white'
             }}
             onFocus={e => e.target.style.borderColor = '#007acc'}
             onBlur={e => e.target.style.borderColor = '#ddd'}

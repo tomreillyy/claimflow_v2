@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, use } from 'react';
 
 export default function Upload({ params }) {
-  const token = params.token;
+  const { token } = use(params);
   const [file, setFile] = useState(null);
   const [author, setAuthor] = useState('');
   const [saving, setSaving] = useState(false);

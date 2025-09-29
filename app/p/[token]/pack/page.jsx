@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import PrintButton from './PrintButton';
 
 const SECTIONS = [
   ['project_scope','Project identification & eligibility'],
@@ -13,7 +14,7 @@ const SECTIONS = [
 ];
 
 export default async function Pack({ params }) {
-  const token = params.token;
+  const { token } = await params;
 
   const { data: project } = await supabaseAdmin
     .from('projects').select('id,name,year').eq('project_token', token).single();
@@ -68,22 +69,7 @@ export default async function Pack({ params }) {
             }}>Back to timeline</a>
           </div>
 
-          <button
-            onClick={() => window.print()}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#007acc',
-              color: 'white',
-              border: 'none',
-              borderRadius: 6,
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'system-ui'
-            }}
-          >
-            Print to PDF
-          </button>
+          <PrintButton />
         </div>
       </header>
 
