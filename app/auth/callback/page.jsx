@@ -48,7 +48,7 @@ export default function AuthCallback() {
           if (redirectTo) {
             router.push(redirectTo);
           } else {
-            router.push('/admin/new-project');
+            router.push('/');
           }
         } else {
           router.push('/auth/login');
