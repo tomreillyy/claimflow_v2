@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -8,6 +8,8 @@ export function ProjectsDashboard() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const menuRefs = useRef({});
 
   useEffect(() => {
     if (!user) return;
@@ -43,6 +45,54 @@ export function ProjectsDashboard() {
 
     fetchProjects();
   }, [user]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openMenuId && menuRefs.current[openMenuId] && !menuRefs.current[openMenuId].contains(event.target)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openMenuId]);
+
+  const handleDeleteProject = async (projectId) => {
+    if (!confirm('Are you sure you want to delete this project? It will be hidden but can be recovered.')) {
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please sign in to delete projects');
+        return;
+      }
+
+      const response = await fetch('/api/projects/delete', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete project');
+      }
+
+      // Remove the project from the UI
+      setProjects(projects.filter(p => p.id !== projectId));
+      setOpenMenuId(null);
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      alert('Failed to delete project: ' + err.message);
+    }
+  };
 
   if (!user) return null;
 
@@ -198,20 +248,83 @@ export function ProjectsDashboard() {
                 fontWeight: 600,
                 color: '#1a1a1a',
                 margin: 0,
-                lineHeight: 1.3
+                lineHeight: 1.3,
+                flex: 1
               }}>
                 {project.name}
               </h3>
-              <span style={{
-                backgroundColor: '#f8f9fa',
-                color: '#495057',
-                padding: '4px 8px',
-                borderRadius: 4,
-                fontSize: 12,
-                fontWeight: 500
-              }}>
-                {project.year}
-              </span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{
+                  backgroundColor: '#f8f9fa',
+                  color: '#495057',
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  fontWeight: 500
+                }}>
+                  {project.year}
+                </span>
+                <div style={{ position: 'relative' }} ref={el => menuRefs.current[project.id] = el}>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOpenMenuId(openMenuId === project.id ? null : project.id);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      fontSize: 18,
+                      lineHeight: 1,
+                      color: '#666',
+                      borderRadius: 4
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f0f0f0'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    ⋮
+                  </button>
+                  {openMenuId === project.id && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      right: 0,
+                      marginTop: 4,
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e5e5',
+                      borderRadius: 6,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      zIndex: 1000,
+                      minWidth: 150
+                    }}>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteProject(project.id);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '10px 16px',
+                          border: 'none',
+                          background: 'none',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          color: '#dc3545',
+                          fontWeight: 500
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                      >
+                        Delete Project
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <p style={{

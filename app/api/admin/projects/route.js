@@ -4,10 +4,15 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req) {
   try {
-    const { name, year, participants = [], owner_email } = await req.json();
+    const { name, year, participants = [], owner_email, current_hypothesis } = await req.json();
 
     if (!name || !year) {
       return NextResponse.json({ error: 'name and year required' }, { status: 400 });
+    }
+
+    // Validate hypothesis length if provided
+    if (current_hypothesis && current_hypothesis.length > 280) {
+      return NextResponse.json({ error: 'Hypothesis must be 280 characters or less' }, { status: 400 });
     }
 
     const project_token = crypto.randomBytes(24).toString('base64url'); // ~32 chars
@@ -33,7 +38,8 @@ export async function POST(req) {
         project_token,
         inbound_email_local,
         participants,
-        owner_id
+        owner_id,
+        current_hypothesis: current_hypothesis || null
       })
       .select()
       .single();

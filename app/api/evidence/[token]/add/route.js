@@ -9,18 +9,20 @@ export async function POST(req, { params }) {
     .from('projects')
     .select('id')
     .eq('project_token', token)
+    .is('deleted_at', null)
     .single();
 
   if (!project) return NextResponse.json({ error: 'project not found' }, { status: 404 });
 
-  const { error } = await supabaseAdmin.from('evidence').insert({
+  const { data: newEvidence, error } = await supabaseAdmin.from('evidence').insert({
     project_id: project.id,
     author_email: author_email || null,
     content: content || null,
-    category: category || null
-  });
+    category: category || null,
+    source: 'note'
+  }).select('id').single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, id: newEvidence.id });
 }

@@ -7,7 +7,8 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 export async function GET() {
   const { data: projects, error } = await supabaseAdmin
     .from('projects')
-    .select('id,name,project_token,participants,inbound_email_local');
+    .select('id,name,project_token,participants,inbound_email_local')
+    .is('deleted_at', null);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

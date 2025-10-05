@@ -28,6 +28,7 @@ export async function POST(req) {
     .from('projects')
     .select('id')
     .eq('inbound_email_local', inboundLocal)
+    .is('deleted_at', null)
     .single();
 
   if (!project) return NextResponse.json({ error: 'project not found' }, { status: 404 });
@@ -37,7 +38,8 @@ export async function POST(req) {
     await supabaseAdmin.from('evidence').insert({
       project_id: project.id,
       author_email: from || null,
-      content: text
+      content: text,
+      source: 'email'
     });
   }
 
@@ -55,7 +57,8 @@ export async function POST(req) {
     await supabaseAdmin.from('evidence').insert({
       project_id: project.id,
       author_email: from || null,
-      file_url: publicUrl.publicUrl
+      file_url: publicUrl.publicUrl,
+      source: 'email'
     });
   }
 

@@ -18,10 +18,12 @@ export async function GET(req) {
     }
 
     // Fetch projects for the user (either as owner or participant)
+    // Exclude soft-deleted projects (where deleted_at is not null)
     const { data: projects, error } = await supabaseAdmin
       .from('projects')
-      .select('id, name, year, project_token, created_at, participants, participant_ids')
-      .or(`owner_id.eq.${user.id},participant_ids.cs.{${user.id}}`)
+      .select('id, name, year, project_token, created_at, participants')
+      .or(`owner_id.eq.${user.id},participants.cs.{${user.email}}`)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {

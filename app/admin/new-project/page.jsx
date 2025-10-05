@@ -9,6 +9,7 @@ export default function NewProject() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
+  const [hypothesis, setHypothesis] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [participants, setParticipants] = useState('');
   const [result, setResult] = useState(null);
@@ -30,6 +31,13 @@ export default function NewProject() {
       return;
     }
 
+    // Validate hypothesis length
+    const trimmedHypothesis = hypothesis.trim();
+    if (trimmedHypothesis.length > 280) {
+      setError('Hypothesis must be 280 characters or less');
+      return;
+    }
+
     // Get the current session to access the access token
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -41,6 +49,7 @@ export default function NewProject() {
       },
       body: JSON.stringify({
         name,
+        current_hypothesis: trimmedHypothesis || null,
         year: Number(year),
         participants: participants
           .split(',')
@@ -130,6 +139,40 @@ export default function NewProject() {
             onFocus={e => e.target.style.borderColor = '#007acc'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
           />
+        </div>
+
+        <div>
+          <label style={{
+            display: 'block',
+            fontSize: 14,
+            fontWeight: 500,
+            color: '#333',
+            marginBottom: 6
+          }}>Project hypothesis (one sentence)</label>
+          <input
+            value={hypothesis}
+            onChange={e=>setHypothesis(e.target.value)}
+            placeholder="If we <approach> under <conditions>, we expect <measurable outcome> because <technical reason>."
+            maxLength={280}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              fontSize: 16,
+              border: '1px solid #ddd',
+              borderRadius: 6,
+              outline: 'none',
+              transition: 'border-color 0.2s',
+              boxSizing: 'border-box',
+              color: '#1a1a1a'
+            }}
+            onFocus={e => e.target.style.borderColor = '#007acc'}
+            onBlur={e => e.target.style.borderColor = '#ddd'}
+          />
+          <p style={{
+            fontSize: 13,
+            color: '#555',
+            margin: '4px 0 0 0'
+          }}>Technical and testable (not a business goal). 35 words max.</p>
         </div>
 
         <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>

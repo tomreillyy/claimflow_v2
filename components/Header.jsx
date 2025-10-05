@@ -11,7 +11,7 @@ export function Header({ projectName = null, projectToken = null }) {
       padding: '16px 0'
     }}>
       <div style={{
-        maxWidth: projectName ? 1000 : 1200,
+        maxWidth: 1400,
         margin: '0 auto',
         padding: '0 24px',
         display: 'flex',
@@ -35,61 +35,6 @@ export function Header({ projectName = null, projectToken = null }) {
         </div>
 
         <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
-          {/* Dashboard link for authenticated users */}
-          {user && (projectToken || projectName) && (
-            <a
-              href="/"
-              style={{
-                padding: '6px 12px',
-                backgroundColor: 'white',
-                color: '#666',
-                textDecoration: 'none',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 500,
-                border: '1px solid #ddd'
-              }}
-            >
-              Dashboard
-            </a>
-          )}
-
-          {/* Project-specific actions */}
-          {projectToken && (
-            <>
-              <a
-                href={`/p/${projectToken}/upload`}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: 'white',
-                  color: '#007acc',
-                  textDecoration: 'none',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontWeight: 500,
-                  border: '1px solid #007acc'
-                }}
-              >
-                Upload file
-              </a>
-              <a
-                href={`/p/${projectToken}/pack`}
-                target="_blank"
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: '#007acc',
-                  color: 'white',
-                  textDecoration: 'none',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontWeight: 500
-                }}
-              >
-                View claim pack
-              </a>
-            </>
-          )}
-
           {/* Auth section */}
           {loading ? (
             <div style={{
@@ -101,20 +46,20 @@ export function Header({ projectName = null, projectToken = null }) {
           ) : user ? (
             <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
               <span style={{
-                fontSize: 14,
-                color: '#333'
+                fontSize: 13,
+                color: '#666'
               }}>
                 {user.email}
               </span>
               <button
                 onClick={signOut}
                 style={{
-                  padding: '6px 12px',
+                  padding: '5px 10px',
                   backgroundColor: 'white',
                   color: '#666',
                   textDecoration: 'none',
-                  borderRadius: 6,
-                  fontSize: 14,
+                  borderRadius: 3,
+                  fontSize: 12,
                   fontWeight: 500,
                   border: '1px solid #ddd',
                   cursor: 'pointer'

@@ -16,6 +16,7 @@ export async function POST(req, { params }) {
     .from('projects')
     .select('id')
     .eq('project_token', token)
+    .is('deleted_at', null)
     .single();
   if (!project) return NextResponse.json({ error: 'project not found' }, { status: 404 });
 
@@ -34,7 +35,8 @@ export async function POST(req, { params }) {
   const { error } = await supabaseAdmin.from('evidence').insert({
     project_id: project.id,
     author_email,
-    file_url: publicUrl.publicUrl
+    file_url: publicUrl.publicUrl,
+    source: 'upload'
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
