@@ -33,5 +33,24 @@ export async function GET() {
     try { await sgMail.send(msg); } catch (e) { console.error(e?.response?.body || e.message); }
   }
 
-  return NextResponse.json({ sent: messages.length });
+  // Trigger auto-linking for all projects (periodic maintenance)
+  let linkedCount = 0;
+  for (const project of (projects || [])) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/evidence/auto-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: project.id })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        linkedCount += data.linked || 0;
+      }
+    } catch (err) {
+      console.error(`[Cron] Auto-link failed for project ${project.id}:`, err.message);
+    }
+  }
+
+  return NextResponse.json({ sent: messages.length, linked: linkedCount });
 }

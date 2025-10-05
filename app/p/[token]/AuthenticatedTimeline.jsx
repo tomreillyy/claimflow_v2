@@ -215,6 +215,10 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const [toast, setToast] = useState('');
   const [activitiesFetched, setActivitiesFetched] = useState(false);
   const [filterSteps, setFilterSteps] = useState(new Set());
+  const [activeTab, setActiveTab] = useState('timeline'); // 'timeline' or 'costs'
+
+  const [evidenceLinks, setEvidenceLinks] = useState({});
+  const [showLinkPicker, setShowLinkPicker] = useState(null);
 
   // Fetch core activities and step counts
   useEffect(() => {
@@ -234,9 +238,57 @@ export function AuthenticatedTimeline({ project, items, token }) {
     }).catch(err => console.error('Failed to fetch data:', err));
   }, [token, activitiesFetched]);
 
+  // Initialize evidence links from items
+  useEffect(() => {
+    if (!items) return;
+    const linkMap = {};
+    items.forEach(ev => {
+      if (ev.linked_activity_id) {
+        linkMap[ev.id] = {
+          activity_id: ev.linked_activity_id,
+          link_source: ev.link_source || 'auto',
+          link_reason: ev.link_reason
+        };
+      }
+    });
+    setEvidenceLinks(linkMap);
+  }, [items]);
+
   const showToast = (message) => {
     setToast(message);
     setTimeout(() => setToast(''), 2000);
+  };
+
+  const handleLinkChange = async (evidenceId, activityId) => {
+    try {
+      // Optimistic update
+      setEvidenceLinks(prev => ({
+        ...prev,
+        [evidenceId]: activityId ? {
+          activity_id: activityId,
+          link_source: 'manual',
+          link_reason: null
+        } : null
+      }));
+      setShowLinkPicker(null);
+
+      // API call
+      const response = await fetch(`/api/evidence/${token}/link`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          evidence_id: evidenceId,
+          activity_id: activityId
+        })
+      });
+
+      if (!response.ok) {
+        showToast('Failed to update link');
+      }
+    } catch (error) {
+      console.error('Failed to update link:', error);
+      showToast('Failed to update link');
+    }
   };
 
   const handleSaveCoreActivity = async (name, uncertainty) => {
@@ -500,7 +552,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
       <main style={{
         maxWidth: 1400,
         margin: '0 auto',
-        padding: '40px 24px'
+        padding: '16px 24px 40px 24px'
       }}>
         {/* Two column layout */}
         <div style={{
@@ -818,6 +870,50 @@ export function AuthenticatedTimeline({ project, items, token }) {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div style={{
+          marginBottom: 20,
+          borderBottom: '1px solid #e5e5e5',
+          display: 'flex',
+          gap: 0
+        }}>
+          <button
+            onClick={() => setActiveTab('timeline')}
+            style={{
+              padding: '10px 20px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: activeTab === 'timeline' ? '#007acc' : '#666',
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'timeline' ? '2px solid #007acc' : '2px solid transparent',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Evidence Timeline
+          </button>
+          <button
+            onClick={() => setActiveTab('costs')}
+            style={{
+              padding: '10px 20px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: activeTab === 'costs' ? '#007acc' : '#666',
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'costs' ? '2px solid #007acc' : '2px solid transparent',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            Costs
+          </button>
+        </div>
+
+        {/* Timeline Tab Content */}
+        {activeTab === 'timeline' && (
+          <>
         {/* Step Distribution Summary */}
         {stepCounts && Object.keys(stepCounts).length > 0 && (
           <div style={{
@@ -1028,6 +1124,197 @@ export function AuthenticatedTimeline({ project, items, token }) {
                       </p>
                     )}
 
+                    {/* Linked Core Activity */}
+                    {(() => {
+                      const link = evidenceLinks[ev.id];
+                      const linkedActivity = link ? coreActivities.find(a => a.id === link.activity_id) : null;
+
+                      return (
+                        <div style={{ marginTop: 8 }}>
+                          {linkedActivity ? (
+                            <div style={{
+                              fontSize: 12,
+                              color: '#666',
+                              fontFamily: 'ui-monospace, Monaco, monospace',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6
+                            }}>
+                              <span>
+                                Activity: <strong style={{ color: '#1a1a1a' }}>{linkedActivity.name}</strong>
+                                {' '}
+                                <span style={{ fontSize: 11 }}>
+                                  {link.link_source === 'manual' ? '👤' : '🖥️'}
+                                </span>
+                              </span>
+                              {link.link_source === 'auto' && link.link_reason && (
+                                <span
+                                  style={{
+                                    cursor: 'help',
+                                    fontSize: 11,
+                                    color: '#999'
+                                  }}
+                                  title={`Auto-linked: ${link.link_reason}`}
+                                >
+                                  ⓘ
+                                </span>
+                              )}
+                              <span style={{ color: '#ccc' }}>·</span>
+                              <button
+                                onClick={() => setShowLinkPicker(ev.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#007acc',
+                                  fontSize: 11,
+                                  cursor: 'pointer',
+                                  padding: 0,
+                                  textDecoration: 'underline'
+                                }}
+                              >
+                                change
+                              </button>
+
+                              {/* Link picker dropdown */}
+                              {showLinkPicker === ev.id && (
+                                <>
+                                  <div
+                                    style={{
+                                      position: 'fixed',
+                                      inset: 0,
+                                      zIndex: 10
+                                    }}
+                                    onClick={() => setShowLinkPicker(null)}
+                                  />
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      marginTop: 4,
+                                      backgroundColor: 'white',
+                                      border: '1px solid #e5e5e5',
+                                      borderRadius: 6,
+                                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                      minWidth: 200,
+                                      maxWidth: 300,
+                                      zIndex: 20,
+                                      maxHeight: 300,
+                                      overflowY: 'auto'
+                                    }}
+                                  >
+                                    <button
+                                      onClick={() => handleLinkChange(ev.id, null)}
+                                      style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        border: 'none',
+                                        background: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: 13,
+                                        color: '#999',
+                                        fontStyle: 'italic',
+                                        borderBottom: '1px solid #e5e5e5'
+                                      }}
+                                      onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'}
+                                      onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
+                                    >
+                                      Unlinked
+                                    </button>
+                                    {coreActivities.map(activity => (
+                                      <button
+                                        key={activity.id}
+                                        onClick={() => handleLinkChange(ev.id, activity.id)}
+                                        style={{
+                                          width: '100%',
+                                          padding: '8px 12px',
+                                          border: 'none',
+                                          background: linkedActivity?.id === activity.id ? '#f0f9ff' : 'none',
+                                          textAlign: 'left',
+                                          cursor: 'pointer',
+                                          fontSize: 13,
+                                          color: '#333'
+                                        }}
+                                        onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'}
+                                        onMouseLeave={e => e.target.style.backgroundColor = linkedActivity?.id === activity.id ? '#f0f9ff' : 'transparent'}
+                                      >
+                                        {activity.name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ) : coreActivities.length > 0 ? (
+                            <button
+                              onClick={() => setShowLinkPicker(ev.id)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#999',
+                                fontSize: 12,
+                                cursor: 'pointer',
+                                padding: 0,
+                                textDecoration: 'underline',
+                                fontFamily: 'ui-monospace, Monaco, monospace'
+                              }}
+                            >
+                              + link to activity
+                            </button>
+                          ) : null}
+
+                          {/* Link picker dropdown for unlinked */}
+                          {!linkedActivity && showLinkPicker === ev.id && (
+                            <>
+                              <div
+                                style={{
+                                  position: 'fixed',
+                                  inset: 0,
+                                  zIndex: 10
+                                }}
+                                onClick={() => setShowLinkPicker(null)}
+                              />
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  marginTop: 4,
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e5e5e5',
+                                  borderRadius: 6,
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                  minWidth: 200,
+                                  maxWidth: 300,
+                                  zIndex: 20,
+                                  maxHeight: 300,
+                                  overflowY: 'auto'
+                                }}
+                              >
+                                {coreActivities.map(activity => (
+                                  <button
+                                    key={activity.id}
+                                    onClick={() => handleLinkChange(ev.id, activity.id)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '8px 12px',
+                                      border: 'none',
+                                      background: 'none',
+                                      textAlign: 'left',
+                                      cursor: 'pointer',
+                                      fontSize: 13,
+                                      color: '#333'
+                                    }}
+                                    onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'}
+                                    onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
+                                  >
+                                    {activity.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {/* Attachment */}
                     {ev.file_url && (
                       <div style={{ marginTop: 8 }}>
@@ -1074,8 +1361,6 @@ export function AuthenticatedTimeline({ project, items, token }) {
             </div>
           )}
         </div>
-
-          </div>
           {/* End main content column */}
         </div>
         {/* End two column layout */}
@@ -1096,6 +1381,25 @@ export function AuthenticatedTimeline({ project, items, token }) {
             zIndex: 1000
           }}>
             {toast}
+          </div>
+        )}
+
+          </>
+        )}
+
+        {/* Costs Tab Content */}
+        {activeTab === 'costs' && (
+          <div style={{
+            padding: '40px 20px',
+            textAlign: 'center',
+            color: '#666',
+            backgroundColor: '#fafafa',
+            borderRadius: 4,
+            border: '1px solid #e5e5e5'
+          }}>
+            <p style={{ margin: 0, fontSize: 14 }}>
+              Costs tracking will be available here soon.
+            </p>
           </div>
         )}
       </main>

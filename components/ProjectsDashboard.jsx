@@ -358,7 +358,7 @@ export function ProjectsDashboard() {
                   textAlign: 'center'
                 }}
               >
-                View Timeline
+                View details
               </a>
               <a
                 href={`/p/${project.project_token}/upload`}

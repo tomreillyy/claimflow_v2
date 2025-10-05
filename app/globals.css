@@ -36,4 +36,22 @@ body {
     margin: 0 !important;
     padding: 20px !important;
   }
+
+  .evidence-step-section {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
 }
