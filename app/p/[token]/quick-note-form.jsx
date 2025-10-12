@@ -1,12 +1,38 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function QuickNoteForm({ token }) {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [author, setAuthor] = useState('');
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
+  const [people, setPeople] = useState([]);
+  const [showCustomEmail, setShowCustomEmail] = useState(false);
+
+  // Fetch people when form opens
+  useEffect(() => {
+    if (isOpen && people.length === 0) {
+      fetch(`/api/projects/${token}/people`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.people) {
+            setPeople(data.people);
+
+            // Auto-populate with logged-in user's email if they're in the team
+            if (user?.email) {
+              const userInTeam = data.people.find(p => p.email.toLowerCase() === user.email.toLowerCase());
+              if (userInTeam) {
+                setAuthor(userInTeam.email);
+              }
+            }
+          }
+        })
+        .catch(err => console.error('Failed to fetch people:', err));
+    }
+  }, [isOpen, token, people.length, user]);
 
   async function submit(e) {
     e.preventDefault();
@@ -128,23 +154,105 @@ export default function QuickNoteForm({ token }) {
             onBlur={e => e.target.style.borderColor = '#ddd'}
           />
 
-          <input
-            placeholder="Your email (optional)"
-            value={author}
-            onChange={e=>setAuthor(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              fontSize: 14,
-              border: '1px solid #ddd',
-              borderRadius: 3,
-              outline: 'none',
-              boxSizing: 'border-box',
-              color: '#1a1a1a',
-              backgroundColor: 'white'
-            }}
-            onFocus={e => e.target.style.borderColor = '#007acc'}
-            onBlur={e => e.target.style.borderColor = '#ddd'}
-          />
+          {/* Person Picker */}
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: 13,
+              fontWeight: 500,
+              color: '#333',
+              marginBottom: 6
+            }}>
+              Who worked on this? (optional)
+            </label>
+
+            {!showCustomEmail ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select
+                  value={author}
+                  onChange={e => {
+                    if (e.target.value === '__custom__') {
+                      setShowCustomEmail(true);
+                      setAuthor('');
+                    } else {
+                      setAuthor(e.target.value);
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: 14,
+                    border: '1px solid #ddd',
+                    borderRadius: 3,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    color: '#1a1a1a',
+                    backgroundColor: 'white'
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#007acc'}
+                  onBlur={e => e.target.style.borderColor = '#ddd'}
+                >
+                  <option value="">Select person...</option>
+                  {people.map(person => (
+                    <option key={person.email} value={person.email}>
+                      {person.name} ({person.email})
+                    </option>
+                  ))}
+                  <option value="__custom__">+ Add someone else...</option>
+                </select>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="email"
+                  value={author}
+                  onChange={e => setAuthor(e.target.value)}
+                  placeholder="person@company.com"
+                  autoFocus
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    fontSize: 14,
+                    border: '1px solid #ddd',
+                    borderRadius: 3,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    color: '#1a1a1a',
+                    backgroundColor: 'white'
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#007acc'}
+                  onBlur={e => e.target.style.borderColor = '#ddd'}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCustomEmail(false);
+                    setAuthor('');
+                  }}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    color: '#666',
+                    backgroundColor: 'white',
+                    border: '1px solid #ddd',
+                    borderRadius: 3,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            {author && (
+              <div style={{
+                fontSize: 12,
+                color: '#666',
+                marginTop: 6
+              }}>
+                Evidence will be attributed to {author}
+              </div>
+            )}
+          </div>
 
           <div style={{display: 'flex', gap: 8, justifyContent: 'flex-end'}}>
             <button

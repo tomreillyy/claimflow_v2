@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/Header';
 import QuickNoteForm from './quick-note-form';
 import CoreActivitiesList from '@/components/CoreActivitiesList';
+import PayrollDropzone from '@/components/PayrollDropzone';
+import PayrollMapper from '@/components/PayrollMapper';
+import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
 
 // Hook to fetch step counts and compute gap hint
 function useStepGapHint(token) {
@@ -33,11 +36,29 @@ function useStepGapHint(token) {
   return hint;
 }
 
-function EvidenceKebabMenu({ evidenceId, token, currentStep, onStepChange, onDelete }) {
+function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onStepChange, onDelete, onReassign }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showStepPicker, setShowStepPicker] = useState(false);
+  const [showReassign, setShowReassign] = useState(false);
+  const [people, setPeople] = useState([]);
+  const [newAuthor, setNewAuthor] = useState('');
+  const [reassigning, setReassigning] = useState(false);
 
   const steps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion', 'Unknown'];
+
+  // Fetch people when reassign is shown
+  useEffect(() => {
+    if (showReassign && people.length === 0) {
+      fetch(`/api/projects/${token}/people`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.people) {
+            setPeople(data.people);
+          }
+        })
+        .catch(err => console.error('Failed to fetch people:', err));
+    }
+  }, [showReassign, token, people.length]);
 
   const handleStepSelect = async (step) => {
     // Optimistic update - UI changes immediately
@@ -71,6 +92,45 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, onStepChange, onDel
       });
     } catch (err) {
       console.error('Failed to delete:', err);
+    }
+  };
+
+  const handleReassign = async (e) => {
+    e.preventDefault();
+    if (!newAuthor) return;
+
+    setReassigning(true);
+
+    try {
+      const response = await fetch(`/api/evidence/${token}/reassign`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          evidence_id: evidenceId,
+          new_author_email: newAuthor
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reassign');
+      }
+
+      // Call parent callback to update UI
+      if (onReassign) {
+        onReassign(newAuthor);
+      }
+
+      setShowReassign(false);
+      setIsOpen(false);
+      setNewAuthor('');
+
+      // Reload to show updated data
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to reassign:', err);
+      alert('Failed to reassign evidence');
+    } finally {
+      setReassigning(false);
     }
   };
 
@@ -119,7 +179,7 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, onStepChange, onDel
               zIndex: 20
             }}
           >
-            {!showStepPicker ? (
+            {!showStepPicker && !showReassign ? (
               <>
                 <button
                   onClick={() => setShowStepPicker(true)}
@@ -136,7 +196,24 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, onStepChange, onDel
                   onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'}
                   onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
                 >
-                  Re-classify
+                  Re-classify step
+                </button>
+                <button
+                  onClick={() => setShowReassign(true)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    color: '#333'
+                  }}
+                  onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
+                >
+                  Reassign person
                 </button>
                 <div style={{ height: 1, backgroundColor: '#e5e5e5', margin: '4px 0' }} />
                 <button
@@ -157,7 +234,7 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, onStepChange, onDel
                   Delete
                 </button>
               </>
-            ) : (
+            ) : showStepPicker ? (
               <div style={{ padding: '4px 0' }}>
                 {steps.map(step => (
                   <button
@@ -181,7 +258,75 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, onStepChange, onDel
                   </button>
                 ))}
               </div>
-            )}
+            ) : showReassign ? (
+              <form onSubmit={handleReassign} style={{ padding: 12, minWidth: 250 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8, color: '#333' }}>
+                  Reassign to:
+                </div>
+                {currentAuthor && (
+                  <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+                    Currently: {currentAuthor}
+                  </div>
+                )}
+                <select
+                  value={newAuthor}
+                  onChange={e => setNewAuthor(e.target.value)}
+                  required
+                  autoFocus
+                  style={{
+                    width: '100%',
+                    padding: '6px 8px',
+                    fontSize: 13,
+                    border: '1px solid #ddd',
+                    borderRadius: 3,
+                    marginBottom: 8,
+                    outline: 'none'
+                  }}
+                >
+                  <option value="">Select person...</option>
+                  {people.map(person => (
+                    <option key={person.email} value={person.email}>
+                      {person.name}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReassign(false);
+                      setNewAuthor('');
+                    }}
+                    style={{
+                      padding: '5px 12px',
+                      fontSize: 12,
+                      color: '#666',
+                      backgroundColor: 'white',
+                      border: '1px solid #ddd',
+                      borderRadius: 3,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={reassigning || !newAuthor}
+                    style={{
+                      padding: '5px 12px',
+                      fontSize: 12,
+                      color: 'white',
+                      backgroundColor: (reassigning || !newAuthor) ? '#ccc' : '#007acc',
+                      border: 'none',
+                      borderRadius: 3,
+                      cursor: (reassigning || !newAuthor) ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {reassigning ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            ) : null}
           </div>
         </>
       )}
@@ -217,6 +362,15 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const [filterSteps, setFilterSteps] = useState(new Set());
   const [activeTab, setActiveTab] = useState('timeline');
 
+  // Costs tab state
+  const [uploadData, setUploadData] = useState(null);
+  const [showMapper, setShowMapper] = useState(false);
+  const [confirmSuccess, setConfirmSuccess] = useState(null);
+  const [attestations, setAttestations] = useState([]);
+  const [ledger, setLedger] = useState([]);
+  const [hasAttestations, setHasAttestations] = useState(false);
+  const [costsLoading, setCostsLoading] = useState(false);
+
   // Fetch core activities and step counts
   useEffect(() => {
     if (!token || activitiesFetched) return;
@@ -235,9 +389,53 @@ export function AuthenticatedTimeline({ project, items, token }) {
     }).catch(err => console.error('Failed to fetch data:', err));
   }, [token, activitiesFetched]);
 
+  // Fetch costs data when Costs tab is active
+  useEffect(() => {
+    if (!token || activeTab !== 'costs') return;
+    fetchCostsData();
+  }, [token, activeTab]);
+
+  const fetchCostsData = async () => {
+    setCostsLoading(true);
+    try {
+      const costsRes = await fetch(`/api/projects/${token}/costs`);
+
+      if (costsRes.ok) {
+        const costsData = await costsRes.json();
+        setLedger(costsData.ledger || []);
+        setAttestations(costsData.attestations || []);
+        setHasAttestations(costsData.hasAttestations || false);
+      }
+    } catch (err) {
+      console.error('Failed to fetch costs data:', err);
+    } finally {
+      setCostsLoading(false);
+    }
+  };
+
   const showToast = (message) => {
     setToast(message);
     setTimeout(() => setToast(''), 2000);
+  };
+
+  // Costs tab handlers
+  const handleUploadComplete = (data) => {
+    setUploadData(data);
+    setShowMapper(true);
+    setConfirmSuccess(null);
+  };
+
+  const handleMapperComplete = (result) => {
+    setShowMapper(false);
+    setUploadData(null);
+    setConfirmSuccess(result.message);
+    fetchCostsData();
+    setTimeout(() => setConfirmSuccess(null), 5000);
+  };
+
+  const handleMapperCancel = () => {
+    setShowMapper(false);
+    setUploadData(null);
   };
 
   const handleSaveCoreActivity = async (name, uncertainty) => {
@@ -1047,6 +1245,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                         evidenceId={ev.id}
                         token={token}
                         currentStep={currentEvidence.step}
+                        currentAuthor={ev.author_email}
                         onStepChange={(step) => {
                           setEvidenceSteps(prev => ({
                             ...prev,
@@ -1055,6 +1254,9 @@ export function AuthenticatedTimeline({ project, items, token }) {
                         }}
                         onDelete={() => {
                           setDeletedIds(prev => new Set([...prev, ev.id]));
+                        }}
+                        onReassign={(newEmail) => {
+                          // Will reload page, so just a placeholder
                         }}
                       />
                     </div>
@@ -1124,17 +1326,28 @@ export function AuthenticatedTimeline({ project, items, token }) {
 
         {/* Costs Tab Content */}
         {activeTab === 'costs' && (
-          <div style={{
-            padding: '40px 20px',
-            textAlign: 'center',
-            color: '#666',
-            backgroundColor: '#fafafa',
-            borderRadius: 4,
-            border: '1px solid #e5e5e5'
-          }}>
-            <p style={{ margin: 0, fontSize: 14 }}>
-              Costs tracking will be available here soon.
-            </p>
+          <div style={{ padding: '20px 0' }}>
+            {/* Success Banner */}
+            {confirmSuccess && (
+              <div style={{
+                padding: 16,
+                backgroundColor: '#e8f5e9',
+                border: '1px solid #4caf50',
+                borderRadius: 6,
+                marginBottom: 24,
+                fontSize: 14,
+                color: '#2e7d32',
+                fontWeight: 500
+              }}>
+                ✓ {confirmSuccess}
+              </div>
+            )}
+
+            <SimplifiedCostsPage
+              projectToken={token}
+              activities={coreActivities}
+              onUpdate={fetchCostsData}
+            />
           </div>
         )}
 

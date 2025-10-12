@@ -63,6 +63,17 @@ export default async function Pack({ params }) {
         .in('activity_id', activityIds)
     : { data: [] };
 
+  // Fetch cost ledger data
+  const { data: costLedger } = await supabaseAdmin
+    .from('cost_ledger')
+    .select(`
+      *,
+      activity:core_activities(name)
+    `)
+    .eq('project_id', project.id)
+    .order('month', { ascending: true })
+    .order('person_identifier', { ascending: true });
+
   // Create narrative lookup map
   const narrativeMap = new Map((narratives || []).map(n => [n.activity_id, n]));
 
@@ -869,6 +880,140 @@ export default async function Pack({ params }) {
                 );
               })}
             </div>
+          )}
+        </section>
+
+        {/* Costs Section */}
+        <section style={{marginBottom: 40}}>
+          <h2 style={{
+            fontSize: 16,
+            fontWeight: 600,
+            color: '#1a1a1a',
+            margin: '0 0 12px 0',
+            borderBottom: '1px solid #333',
+            paddingBottom: 4
+          }}>
+            Costs & Apportionment
+          </h2>
+
+          {(!costLedger || costLedger.length === 0) ? (
+            <p style={{fontSize: 13, color: '#999', fontStyle: 'italic', margin: 0}}>
+              No payroll data uploaded yet. Visit the Costs tab to upload payroll reports and allocate time/effort across activities.
+            </p>
+          ) : (
+            <>
+              <p style={{fontSize: 13, color: '#666', marginBottom: 16, lineHeight: 1.6}}>
+                Payroll amounts reflect uploaded payroll reports; apportionment uses monthly attestations where provided.
+              </p>
+
+              {/* Group costs by month */}
+              {(() => {
+                const byMonth = {};
+                for (const entry of costLedger) {
+                  if (!byMonth[entry.month]) {
+                    byMonth[entry.month] = [];
+                  }
+                  byMonth[entry.month].push(entry);
+                }
+
+                const months = Object.keys(byMonth).sort();
+                const grandTotal = costLedger.reduce((sum, e) => sum + parseFloat(e.total_amount || 0), 0);
+
+                return months.map(month => {
+                  const entries = byMonth[month];
+                  const monthTotal = entries.reduce((sum, e) => sum + parseFloat(e.total_amount || 0), 0);
+
+                  return (
+                    <div key={month} style={{marginBottom: 24, pageBreakInside: 'avoid'}}>
+                      <h3 style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: '#333',
+                        margin: '0 0 12px 0',
+                        paddingBottom: 4,
+                        borderBottom: '1px solid #e5e5e5'
+                      }}>
+                        {new Date(month).toLocaleDateString('en-AU', { year: 'numeric', month: 'long' })}
+                      </h3>
+
+                      <table style={{
+                        width: '100%',
+                        borderCollapse: 'collapse',
+                        fontSize: 11,
+                        marginBottom: 8
+                      }}>
+                        <thead>
+                          <tr style={{backgroundColor: '#f5f5f5'}}>
+                            <th style={{padding: 6, textAlign: 'left', borderBottom: '1px solid #ddd'}}>Person</th>
+                            <th style={{padding: 6, textAlign: 'left', borderBottom: '1px solid #ddd'}}>Activity</th>
+                            <th style={{padding: 6, textAlign: 'right', borderBottom: '1px solid #ddd'}}>%/Hrs</th>
+                            <th style={{padding: 6, textAlign: 'right', borderBottom: '1px solid #ddd'}}>Gross</th>
+                            <th style={{padding: 6, textAlign: 'right', borderBottom: '1px solid #ddd'}}>Super</th>
+                            <th style={{padding: 6, textAlign: 'right', borderBottom: '1px solid #ddd'}}>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {entries.map((entry, idx) => (
+                            <tr key={idx} style={{borderBottom: '1px solid #eee'}}>
+                              <td style={{padding: 6}}>
+                                {entry.person_name || entry.person_email || entry.person_identifier}
+                              </td>
+                              <td style={{padding: 6, color: entry.activity?.name ? '#333' : '#999'}}>
+                                {entry.activity?.name || 'Unapportioned'}
+                              </td>
+                              <td style={{padding: 6, textAlign: 'right', fontSize: 10, color: '#666'}}>
+                                {entry.apportionment_percent
+                                  ? `${parseFloat(entry.apportionment_percent).toFixed(1)}%`
+                                  : entry.apportionment_hours
+                                    ? `${parseFloat(entry.apportionment_hours).toFixed(1)}h`
+                                    : '-'}
+                              </td>
+                              <td style={{padding: 6, textAlign: 'right'}}>
+                                ${parseFloat(entry.gross_wages || 0).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </td>
+                              <td style={{padding: 6, textAlign: 'right'}}>
+                                ${parseFloat(entry.superannuation || 0).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </td>
+                              <td style={{padding: 6, textAlign: 'right', fontWeight: 500}}>
+                                ${parseFloat(entry.total_amount || 0).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr style={{backgroundColor: '#f9f9f9', fontWeight: 600}}>
+                            <td colSpan="5" style={{padding: 6, textAlign: 'right'}}>Month Subtotal</td>
+                            <td style={{padding: 6, textAlign: 'right'}}>
+                              ${monthTotal.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p style={{fontSize: 10, color: '#999', margin: '4px 0 0 0', fontStyle: 'italic'}}>
+                        {entries[0]?.basis_text}
+                      </p>
+                    </div>
+                  );
+                });
+              })()}
+
+              {/* Grand Total */}
+              {(() => {
+                const grandTotal = costLedger.reduce((sum, e) => sum + parseFloat(e.total_amount || 0), 0);
+                return (
+                  <div style={{
+                    marginTop: 16,
+                    padding: 12,
+                    backgroundColor: '#e3f2fd',
+                    borderRadius: 4,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    textAlign: 'right'
+                  }}>
+                    Grand Total: ${grandTotal.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </div>
+                );
+              })()}
+            </>
           )}
         </section>
 

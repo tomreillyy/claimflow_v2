@@ -1,0 +1,7 @@
+Employee Name,Email,Employee ID,Pay Date,Pay Period Start,Pay Period End,Gross,Superannuation,Oncosts
+Alice Chen,alice.chen@techcorp.com,EMP001,14/02/2025,01/02/2025,14/02/2025,8500.00,892.50,0.00
+Bob Martinez,bob.martinez@techcorp.com,EMP002,14/02/2025,01/02/2025,14/02/2025,7200.00,756.00,0.00
+Carol Smith,carol.smith@techcorp.com,EMP003,14/02/2025,01/02/2025,14/02/2025,6800.00,714.00,0.00
+Alice Chen,alice.chen@techcorp.com,EMP001,28/02/2025,15/02/2025,28/02/2025,8500.00,892.50,0.00
+Bob Martinez,bob.martinez@techcorp.com,EMP002,28/02/2025,15/02/2025,28/02/2025,7200.00,756.00,0.00
+Carol Smith,carol.smith@techcorp.com,EMP003,28/02/2025,15/02/2025,28/02/2025,6800.00,714.00,0.00

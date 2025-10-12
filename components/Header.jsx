@@ -6,9 +6,10 @@ export function Header({ projectName = null, projectToken = null }) {
 
   return (
     <header style={{
-      backgroundColor: 'white',
-      borderBottom: '1px solid #e5e5e5',
-      padding: '16px 0'
+      backgroundColor: 'rgba(255,255,255,0.7)',
+      backdropFilter: 'saturate(180%) blur(10px)',
+      borderBottom: '1px solid rgba(0,0,0,0.06)',
+      padding: '14px 0', position: 'sticky', top: 0, zIndex: 50
     }}>
       <div style={{
         maxWidth: 1400,
@@ -18,18 +19,36 @@ export function Header({ projectName = null, projectToken = null }) {
         alignItems: 'center',
         justifyContent: 'space-between'
       }}>
-        <div>
+        <div style={{display: 'flex', alignItems: 'center', gap: 20}}>
           <a href="/" style={{
             fontSize: 20,
             fontWeight: 600,
             color: '#1a1a1a',
-            textDecoration: 'none',
-            marginRight: 12
+            textDecoration: 'none'
           }}>ClaimFlow</a>
+
+          {/* Navigation links (show when logged in and not on a project page) */}
+          {user && !projectName && (
+            <nav style={{display: 'flex', gap: 16, marginLeft: 8}}>
+              <a href="/" style={{
+                fontSize: 14,
+                color: '#334155',
+                textDecoration: 'none',
+                fontWeight: 500
+              }}>Projects</a>
+              <a href="/settings/team" style={{
+                fontSize: 14,
+                color: '#334155',
+                textDecoration: 'none',
+                fontWeight: 500
+              }}>Team</a>
+            </nav>
+          )}
+
           {projectName && (
             <>
-              <span style={{color: '#333'}}>→</span>
-              <span style={{marginLeft: 12, color: '#333'}}>{projectName}</span>
+              <span style={{color: '#ccc'}}>→</span>
+              <span style={{color: '#333'}}>{projectName}</span>
             </>
           )}
         </div>
@@ -47,7 +66,7 @@ export function Header({ projectName = null, projectToken = null }) {
             <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
               <span style={{
                 fontSize: 13,
-                color: '#666'
+                color: '#334155'
               }}>
                 {user.email}
               </span>
@@ -56,7 +75,7 @@ export function Header({ projectName = null, projectToken = null }) {
                 style={{
                   padding: '5px 10px',
                   backgroundColor: 'white',
-                  color: '#666',
+                  color: '#334155',
                   textDecoration: 'none',
                   borderRadius: 3,
                   fontSize: 12,
@@ -75,12 +94,12 @@ export function Header({ projectName = null, projectToken = null }) {
                 style={{
                   padding: '6px 12px',
                   backgroundColor: 'white',
-                  color: '#007acc',
+                  color: '#0ea5e9',
                   textDecoration: 'none',
                   borderRadius: 6,
                   fontSize: 14,
                   fontWeight: 500,
-                  border: '1px solid #007acc'
+                  border: '1px solid #0ea5e9'
                 }}
               >
                 Sign in
@@ -90,7 +109,7 @@ export function Header({ projectName = null, projectToken = null }) {
                   href="/auth/login"
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#007acc',
+                    backgroundColor: '#0ea5e9',
                     color: 'white',
                     textDecoration: 'none',
                     borderRadius: 6,
@@ -108,3 +127,4 @@ export function Header({ projectName = null, projectToken = null }) {
     </header>
   );
 }
+
