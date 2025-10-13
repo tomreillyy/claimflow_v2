@@ -93,7 +93,7 @@ export default function Login() {
                 color: '#1a1a1a',
                 backgroundColor: 'white'
               }}
-              onFocus={e => e.target.style.borderColor = '#007acc'}
+              onFocus={e => e.target.style.borderColor = '#021048'}
               onBlur={e => e.target.style.borderColor = '#ddd'}
             />
           </div>
@@ -107,17 +107,17 @@ export default function Login() {
               fontSize: 16,
               fontWeight: 500,
               color: 'white',
-              backgroundColor: loading ? '#ccc' : '#007acc',
+              backgroundColor: loading ? '#ccc' : '#021048',
               border: 'none',
               borderRadius: 8,
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'background-color 0.2s'
             }}
             onMouseOver={e => {
-              if (!loading) e.target.style.backgroundColor = '#005fa3';
+              if (!loading) e.target.style.backgroundColor = '#010a2e';
             }}
             onMouseOut={e => {
-              if (!loading) e.target.style.backgroundColor = '#007acc';
+              if (!loading) e.target.style.backgroundColor = '#021048';
             }}
           >
             {loading ? 'Sending magic link...' : 'Send magic link'}
@@ -161,7 +161,7 @@ export default function Login() {
             No password needed. We'll send you a secure link that signs you in instantly.
           </p>
           <p style={{ margin: 0 }}>
-            <a href="/" style={{ color: '#007acc', textDecoration: 'none' }}>
+            <a href="/" style={{ color: '#021048', textDecoration: 'none' }}>
               ← Back to home
             </a>
           </p>

@@ -46,7 +46,7 @@ export default function SuggestionBanner({ suggestion, onSave, onDismiss }) {
               color: '#1a1a1a',
               backgroundColor: 'white'
             }}
-            onFocus={e => e.target.style.borderColor = '#007acc'}
+            onFocus={e => e.target.style.borderColor = '#021048'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
           />
           <textarea
@@ -66,7 +66,7 @@ export default function SuggestionBanner({ suggestion, onSave, onDismiss }) {
               color: '#1a1a1a',
               backgroundColor: 'white'
             }}
-            onFocus={e => e.target.style.borderColor = '#007acc'}
+            onFocus={e => e.target.style.borderColor = '#021048'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
           />
         </div>
@@ -75,7 +75,7 @@ export default function SuggestionBanner({ suggestion, onSave, onDismiss }) {
           disabled={saving || !name.trim() || !uncertainty.trim()}
           style={{
             padding: '6px 12px',
-            backgroundColor: (saving || !name.trim() || !uncertainty.trim()) ? '#ccc' : '#007acc',
+            backgroundColor: (saving || !name.trim() || !uncertainty.trim()) ? '#ccc' : '#021048',
             color: 'white',
             border: 'none',
             borderRadius: 6,
@@ -117,7 +117,7 @@ export default function SuggestionBanner({ suggestion, onSave, onDismiss }) {
           onClick={handleSave}
           style={{
             padding: '6px 12px',
-            backgroundColor: '#007acc',
+            backgroundColor: '#021048',
             color: 'white',
             border: 'none',
             borderRadius: 6,
@@ -133,8 +133,8 @@ export default function SuggestionBanner({ suggestion, onSave, onDismiss }) {
           style={{
             padding: '6px 12px',
             backgroundColor: 'white',
-            color: '#007acc',
-            border: '1px solid #007acc',
+            color: '#021048',
+            border: '1px solid #021048',
             borderRadius: 6,
             fontSize: 13,
             fontWeight: 500,

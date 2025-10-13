@@ -136,7 +136,7 @@ export default function NewProject() {
               boxSizing: 'border-box',
               color: '#1a1a1a'
             }}
-            onFocus={e => e.target.style.borderColor = '#007acc'}
+            onFocus={e => e.target.style.borderColor = '#021048'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
           />
         </div>
@@ -165,7 +165,7 @@ export default function NewProject() {
               boxSizing: 'border-box',
               color: '#1a1a1a'
             }}
-            onFocus={e => e.target.style.borderColor = '#007acc'}
+            onFocus={e => e.target.style.borderColor = '#021048'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
           />
           <p style={{
@@ -200,7 +200,7 @@ export default function NewProject() {
                 color: '#1a1a1a',
                 backgroundColor: 'white'
               }}
-              onFocus={e => e.target.style.borderColor = '#007acc'}
+              onFocus={e => e.target.style.borderColor = '#021048'}
               onBlur={e => e.target.style.borderColor = '#ddd'}
             >
               {Array.from({length: 10}, (_, i) => {
@@ -236,7 +236,7 @@ export default function NewProject() {
               color: '#1a1a1a',
               backgroundColor: 'white'
             }}
-            onFocus={e => e.target.style.borderColor = '#007acc'}
+            onFocus={e => e.target.style.borderColor = '#021048'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
           />
           <p style={{
@@ -253,15 +253,15 @@ export default function NewProject() {
             fontSize: 16,
             fontWeight: 500,
             color: 'white',
-            backgroundColor: '#007acc',
+            backgroundColor: '#021048',
             border: 'none',
             borderRadius: 6,
             cursor: 'pointer',
             marginTop: 8,
             transition: 'background-color 0.2s'
           }}
-          onMouseOver={e => e.target.style.backgroundColor = '#005fa3'}
-          onMouseOut={e => e.target.style.backgroundColor = '#007acc'}
+          onMouseOver={e => e.target.style.backgroundColor = '#010a2e'}
+          onMouseOut={e => e.target.style.backgroundColor = '#021048'}
         >
           Create project
         </button>
@@ -297,14 +297,14 @@ export default function NewProject() {
           <div style={{fontSize: 14, lineHeight: 1.6}}>
             <p style={{margin: '0 0 8px 0'}}>
               <strong>Timeline:</strong>{' '}
-              <a href={result.timelineUrl} style={{color: '#007acc', textDecoration: 'none', fontWeight: 500}}>
+              <a href={result.timelineUrl} style={{color: '#021048', textDecoration: 'none', fontWeight: 500}}>
                 {result.timelineUrl}
               </a>
             </p>
 
             <p style={{margin: '0 0 8px 0'}}>
               <strong>Quick upload:</strong>{' '}
-              <a href={result.uploadUrl} style={{color: '#007acc', textDecoration: 'none', fontWeight: 500}}>
+              <a href={result.uploadUrl} style={{color: '#021048', textDecoration: 'none', fontWeight: 500}}>
                 {result.uploadUrl}
               </a>
             </p>

@@ -6,7 +6,7 @@ export default function PrintButton() {
       onClick={() => window.print()}
       style={{
         padding: '8px 16px',
-        backgroundColor: '#007acc',
+        backgroundColor: '#021048',
         color: 'white',
         border: 'none',
         borderRadius: 6,

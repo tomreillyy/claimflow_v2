@@ -316,7 +316,7 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onSt
                       padding: '5px 12px',
                       fontSize: 12,
                       color: 'white',
-                      backgroundColor: (reassigning || !newAuthor) ? '#ccc' : '#007acc',
+                      backgroundColor: (reassigning || !newAuthor) ? '#ccc' : '#021048',
                       border: 'none',
                       borderRadius: 3,
                       cursor: (reassigning || !newAuthor) ? 'not-allowed' : 'pointer'
@@ -619,7 +619,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                     color: '#1a1a1a',
                     backgroundColor: 'white'
                   }}
-                  onFocus={e => e.target.style.borderColor = '#007acc'}
+                  onFocus={e => e.target.style.borderColor = '#021048'}
                   onBlur={e => e.target.style.borderColor = '#ddd'}
                 />
               </div>
@@ -633,7 +633,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                   fontSize: 16,
                   fontWeight: 500,
                   color: 'white',
-                  backgroundColor: authLoading ? '#ccc' : '#007acc',
+                  backgroundColor: authLoading ? '#ccc' : '#021048',
                   border: 'none',
                   borderRadius: 8,
                   cursor: authLoading ? 'not-allowed' : 'pointer',
@@ -724,7 +724,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
               target="_blank"
               style={{
                 padding: '6px 12px',
-                backgroundColor: '#007acc',
+                backgroundColor: '#021048',
                 color: 'white',
                 textDecoration: 'none',
                 borderRadius: 3,
@@ -836,7 +836,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#007acc',
+                    color: '#021048',
                     fontSize: 13,
                     cursor: 'pointer',
                     padding: '0 0 0 12px',
@@ -897,7 +897,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                     fontSize: 14,
                     fontWeight: 500,
                     color: 'white',
-                    backgroundColor: hypothesisSaving ? '#ccc' : '#007acc',
+                    backgroundColor: hypothesisSaving ? '#ccc' : '#021048',
                     border: 'none',
                     borderRadius: 6,
                     cursor: hypothesisSaving ? 'not-allowed' : 'pointer'
@@ -955,7 +955,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                     fontSize: 14,
                     fontWeight: 500,
                     color: 'white',
-                    backgroundColor: hypothesisSaving ? '#ccc' : '#007acc',
+                    backgroundColor: hypothesisSaving ? '#ccc' : '#021048',
                     border: 'none',
                     borderRadius: 6,
                     cursor: hypothesisSaving ? 'not-allowed' : 'pointer'
@@ -1030,10 +1030,10 @@ export function AuthenticatedTimeline({ project, items, token }) {
               padding: '10px 20px',
               fontSize: 14,
               fontWeight: 500,
-              color: activeTab === 'timeline' ? '#007acc' : '#666',
+              color: activeTab === 'timeline' ? '#021048' : '#666',
               backgroundColor: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'timeline' ? '2px solid #007acc' : '2px solid transparent',
+              borderBottom: activeTab === 'timeline' ? '2px solid #021048' : '2px solid transparent',
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}
@@ -1046,10 +1046,10 @@ export function AuthenticatedTimeline({ project, items, token }) {
               padding: '10px 20px',
               fontSize: 14,
               fontWeight: 500,
-              color: activeTab === 'costs' ? '#007acc' : '#666',
+              color: activeTab === 'costs' ? '#021048' : '#666',
               backgroundColor: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'costs' ? '2px solid #007acc' : '2px solid transparent',
+              borderBottom: activeTab === 'costs' ? '2px solid #021048' : '2px solid transparent',
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}
@@ -1095,7 +1095,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                     padding: '4px 10px',
                     fontSize: 13,
                     fontWeight: isActive ? 600 : 400,
-                    color: count === 0 ? '#999' : (isActive ? '#007acc' : '#333'),
+                    color: count === 0 ? '#999' : (isActive ? '#021048' : '#333'),
                     backgroundColor: isActive ? '#f0f9ff' : 'transparent',
                     border: 'none',
                     borderRadius: 3,
@@ -1224,7 +1224,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                               <span
                                 style={{
                                   fontSize: 9,
-                                  color: currentEvidence.source === 'manual' ? '#007acc' : '#999',
+                                  color: currentEvidence.source === 'manual' ? '#021048' : '#999',
                                   fontWeight: 400
                                 }}
                                 title={currentEvidence.source === 'manual' ? 'Manually classified' : 'AI classified'}
@@ -1286,7 +1286,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 4,
-                            color: '#007acc',
+                            color: '#021048',
                             textDecoration: 'none',
                             fontSize: 13,
                             fontWeight: 400,

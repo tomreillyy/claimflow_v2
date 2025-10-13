@@ -236,7 +236,7 @@ export default function TeamPage() {
                   fontSize: 13,
                   fontWeight: 500,
                   color: 'white',
-                  backgroundColor: saving ? '#ccc' : '#007acc',
+                  backgroundColor: saving ? '#ccc' : '#021048',
                   border: 'none',
                   borderRadius: 4,
                   cursor: saving ? 'not-allowed' : 'pointer'
@@ -263,7 +263,7 @@ export default function TeamPage() {
                 fontSize: 14,
                 fontWeight: 500,
                 color: 'white',
-                backgroundColor: '#007acc',
+                backgroundColor: '#021048',
                 border: 'none',
                 borderRadius: 4,
                 cursor: 'pointer'
@@ -360,7 +360,7 @@ export default function TeamPage() {
                   fontSize: 14,
                   fontWeight: 500,
                   color: 'white',
-                  backgroundColor: saving ? '#ccc' : '#007acc',
+                  backgroundColor: saving ? '#ccc' : '#021048',
                   border: 'none',
                   borderRadius: 4,
                   cursor: saving ? 'not-allowed' : 'pointer'

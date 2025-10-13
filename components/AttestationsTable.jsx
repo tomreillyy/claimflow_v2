@@ -186,7 +186,7 @@ export default function AttestationsTable({ attestations, activities, projectTok
                                 width: 60,
                                 padding: '4px 6px',
                                 fontSize: 13,
-                                border: '1px solid #007acc',
+                                border: '1px solid #021048',
                                 borderRadius: 3,
                                 textAlign: 'right',
                                 color: '#1a1a1a'
@@ -289,7 +289,7 @@ export default function AttestationsTable({ attestations, activities, projectTok
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#007acc',
+                  color: '#021048',
                   fontSize: 12,
                   cursor: 'pointer',
                   textDecoration: 'underline',
@@ -412,7 +412,7 @@ export default function AttestationsTable({ attestations, activities, projectTok
                     padding: '5px 12px',
                     fontSize: 12,
                     color: 'white',
-                    backgroundColor: saving ? '#ccc' : '#007acc',
+                    backgroundColor: saving ? '#ccc' : '#021048',
                     border: 'none',
                     borderRadius: 3,
                     cursor: saving ? 'not-allowed' : 'pointer'

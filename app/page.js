@@ -128,57 +128,52 @@ export default function Home() {
 
             {/* Sign up */}
             <section style={{
-              padding: '80px 24px',
-              borderTop: '1px solid var(--line)'
+              padding: '100px 24px',
+              borderTop: '1px solid var(--line)',
+              background: 'var(--bg-soft)'
             }} id="signup">
-              <div style={{ maxWidth: 620, margin: '0 auto' }}>
+              <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
                 <h2 style={{
-                  margin: '0 0 12px',
-                  fontSize: 'clamp(22px, 3.8vw, 34px)',
-                  fontWeight: 700
+                  margin: '0 0 16px',
+                  fontSize: 'clamp(28px, 4vw, 42px)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em'
                 }}>
-                  Join early access
+                  Start documenting your R&D today
                 </h2>
                 <p style={{
                   color: 'var(--muted)',
-                  marginBottom: 28
+                  fontSize: 18,
+                  marginBottom: 32,
+                  lineHeight: 1.6
                 }}>
-                  Be the first to use Aird and shape how R&D documentation should work. No spam, ever.
+                  Free during beta. No credit card required.
                 </p>
 
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 10
+                <a href="/admin/new-project" style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '16px 32px',
+                  borderRadius: 'var(--radius)',
+                  background: 'var(--brand)',
+                  color: '#fff',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  border: '1px solid var(--brand)',
+                  fontSize: 17,
+                  boxShadow: '0 4px 12px rgba(2,16,72,0.25)',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(2,16,72,0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(2,16,72,0.25)';
                 }}>
-                  <input
-                    type="email"
-                    placeholder="your@email.com"
-                    style={{
-                      padding: '10px 14px',
-                      border: '1px solid var(--line)',
-                      borderRadius: 'var(--radius)',
-                      flex: '1',
-                      minWidth: 220,
-                      fontSize: 15,
-                      fontFamily: 'inherit'
-                    }}
-                  />
-                  <a href="/admin/new-project" style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '10px 18px',
-                    borderRadius: 'var(--radius)',
-                    background: 'var(--brand)',
-                    color: '#fff',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    border: '1px solid var(--brand)',
-                    fontSize: 14
-                  }}>
-                    Sign up
-                  </a>
-                </div>
+                  Start a project
+                </a>
               </div>
             </section>
 

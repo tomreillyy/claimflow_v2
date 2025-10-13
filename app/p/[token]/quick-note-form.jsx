@@ -67,7 +67,7 @@ export default function QuickNoteForm({ token }) {
           fontSize: 13,
           fontWeight: 500,
           color: 'white',
-          backgroundColor: '#007acc',
+          backgroundColor: '#021048',
           border: 'none',
           borderRadius: 3,
           cursor: 'pointer'
@@ -150,7 +150,7 @@ export default function QuickNoteForm({ token }) {
               color: '#1a1a1a',
               backgroundColor: 'white'
             }}
-            onFocus={e => e.target.style.borderColor = '#007acc'}
+            onFocus={e => e.target.style.borderColor = '#021048'}
             onBlur={e => e.target.style.borderColor = '#ddd'}
           />
 
@@ -189,7 +189,7 @@ export default function QuickNoteForm({ token }) {
                     color: '#1a1a1a',
                     backgroundColor: 'white'
                   }}
-                  onFocus={e => e.target.style.borderColor = '#007acc'}
+                  onFocus={e => e.target.style.borderColor = '#021048'}
                   onBlur={e => e.target.style.borderColor = '#ddd'}
                 >
                   <option value="">Select person...</option>
@@ -220,7 +220,7 @@ export default function QuickNoteForm({ token }) {
                     color: '#1a1a1a',
                     backgroundColor: 'white'
                   }}
-                  onFocus={e => e.target.style.borderColor = '#007acc'}
+                  onFocus={e => e.target.style.borderColor = '#021048'}
                   onBlur={e => e.target.style.borderColor = '#ddd'}
                 />
                 <button
@@ -276,7 +276,7 @@ export default function QuickNoteForm({ token }) {
               type="submit"
               style={{
                 padding: '7px 14px',
-                backgroundColor: (saving || !content.trim()) ? '#ccc' : '#007acc',
+                backgroundColor: (saving || !content.trim()) ? '#ccc' : '#021048',
                 color: 'white',
                 border: 'none',
                 borderRadius: 3,

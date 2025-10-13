@@ -161,7 +161,7 @@ export default function Upload({ params }) {
                   boxSizing: 'border-box',
                   color: '#1a1a1a'
                 }}
-                onFocus={e => e.target.style.borderColor = '#007acc'}
+                onFocus={e => e.target.style.borderColor = '#021048'}
                 onBlur={e => e.target.style.borderColor = '#ddd'}
               />
             </div>
@@ -188,7 +188,7 @@ export default function Upload({ params }) {
                 type="submit"
                 style={{
                   padding: '12px 24px',
-                  backgroundColor: (saving || !file) ? '#ccc' : '#007acc',
+                  backgroundColor: (saving || !file) ? '#ccc' : '#021048',
                   color: 'white',
                   border: 'none',
                   borderRadius: 8,

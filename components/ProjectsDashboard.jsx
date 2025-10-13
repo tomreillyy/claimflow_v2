@@ -123,7 +123,7 @@ export function ProjectsDashboard() {
           href="/admin/new-project"
           style={{
             padding: '12px 24px',
-            backgroundColor: '#007acc',
+            backgroundColor: '#021048',
             color: 'white',
             textDecoration: 'none',
             borderRadius: 8,
@@ -163,7 +163,7 @@ export function ProjectsDashboard() {
           href="/admin/new-project"
           style={{
             padding: '14px 28px',
-            backgroundColor: '#007acc',
+            backgroundColor: '#021048',
             color: 'white',
             textDecoration: 'none',
             borderRadius: 8,
@@ -202,7 +202,7 @@ export function ProjectsDashboard() {
           href="/admin/new-project"
           style={{
             padding: '10px 20px',
-            backgroundColor: '#007acc',
+            backgroundColor: '#021048',
             color: 'white',
             textDecoration: 'none',
             borderRadius: 8,
@@ -348,7 +348,7 @@ export function ProjectsDashboard() {
                 href={`/p/${project.project_token}`}
                 style={{
                   padding: '8px 16px',
-                  backgroundColor: '#007acc',
+                  backgroundColor: '#021048',
                   color: 'white',
                   textDecoration: 'none',
                   borderRadius: 6,
@@ -365,12 +365,12 @@ export function ProjectsDashboard() {
                 style={{
                   padding: '8px 16px',
                   backgroundColor: 'white',
-                  color: '#007acc',
+                  color: '#021048',
                   textDecoration: 'none',
                   borderRadius: 6,
                   fontSize: 14,
                   fontWeight: 500,
-                  border: '1px solid #007acc'
+                  border: '1px solid #021048'
                 }}
               >
                 Upload

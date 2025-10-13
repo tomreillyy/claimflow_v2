@@ -79,7 +79,7 @@ export default function CoreActivitiesList({ activities, onUpdate, onCreate }) {
                     color: '#1a1a1a',
                     backgroundColor: 'white'
                   }}
-                  onFocus={e => e.target.style.borderColor = '#007acc'}
+                  onFocus={e => e.target.style.borderColor = '#021048'}
                   onBlur={e => e.target.style.borderColor = '#ddd'}
                 />
                 <textarea
@@ -100,7 +100,7 @@ export default function CoreActivitiesList({ activities, onUpdate, onCreate }) {
                     color: '#1a1a1a',
                     backgroundColor: 'white'
                   }}
-                  onFocus={e => e.target.style.borderColor = '#007acc'}
+                  onFocus={e => e.target.style.borderColor = '#021048'}
                   onBlur={e => e.target.style.borderColor = '#ddd'}
                 />
                 <div style={{ display: 'flex', gap: 6 }}>
@@ -109,7 +109,7 @@ export default function CoreActivitiesList({ activities, onUpdate, onCreate }) {
                     disabled={updating || !editName.trim() || !editUncertainty.trim()}
                     style={{
                       padding: '4px 10px',
-                      backgroundColor: (updating || !editName.trim() || !editUncertainty.trim()) ? '#ccc' : '#007acc',
+                      backgroundColor: (updating || !editName.trim() || !editUncertainty.trim()) ? '#ccc' : '#021048',
                       color: 'white',
                       border: 'none',
                       borderRadius: 4,
@@ -158,7 +158,7 @@ export default function CoreActivitiesList({ activities, onUpdate, onCreate }) {
                 <button
                   onClick={() => startEdit(activity)}
                   style={{
-                    color: '#007acc',
+                    color: '#021048',
                     background: 'none',
                     border: 'none',
                     padding: 0,
@@ -205,7 +205,7 @@ export default function CoreActivitiesList({ activities, onUpdate, onCreate }) {
                 color: '#1a1a1a',
                 backgroundColor: 'white'
               }}
-              onFocus={e => e.target.style.borderColor = '#007acc'}
+              onFocus={e => e.target.style.borderColor = '#021048'}
               onBlur={e => e.target.style.borderColor = '#ddd'}
             />
             <textarea
@@ -226,7 +226,7 @@ export default function CoreActivitiesList({ activities, onUpdate, onCreate }) {
                 color: '#1a1a1a',
                 backgroundColor: 'white'
               }}
-              onFocus={e => e.target.style.borderColor = '#007acc'}
+              onFocus={e => e.target.style.borderColor = '#021048'}
               onBlur={e => e.target.style.borderColor = '#ddd'}
             />
             <div style={{ display: 'flex', gap: 4 }}>
@@ -236,7 +236,7 @@ export default function CoreActivitiesList({ activities, onUpdate, onCreate }) {
                 style={{
                   flex: 1,
                   padding: '5px 8px',
-                  backgroundColor: (creating || !newName.trim() || !newUncertainty.trim()) ? '#ccc' : '#007acc',
+                  backgroundColor: (creating || !newName.trim() || !newUncertainty.trim()) ? '#ccc' : '#021048',
                   color: 'white',
                   border: 'none',
                   borderRadius: 3,
@@ -286,7 +286,7 @@ export default function CoreActivitiesList({ activities, onUpdate, onCreate }) {
               width: '100%',
               padding: '6px',
               backgroundColor: 'white',
-              color: '#007acc',
+              color: '#021048',
               border: '1px solid #e5e5e5',
               borderRadius: 3,
               fontSize: 12,

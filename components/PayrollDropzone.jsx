@@ -89,7 +89,7 @@ export default function PayrollDropzone({ projectToken, onUploadComplete }) {
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         style={{
-          border: dragging ? '2px dashed #007acc' : '2px dashed #ddd',
+          border: dragging ? '2px dashed #021048' : '2px dashed #ddd',
           borderRadius: 4,
           padding: 40,
           textAlign: 'center',
@@ -148,7 +148,7 @@ export default function PayrollDropzone({ projectToken, onUploadComplete }) {
         <a
           href="/sample-payroll-upc.csv"
           download
-          style={{ color: '#007acc', textDecoration: 'underline' }}
+          style={{ color: '#021048', textDecoration: 'underline' }}
         >
           Download sample payroll file (UPC)
         </a>

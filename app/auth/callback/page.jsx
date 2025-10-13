@@ -78,7 +78,7 @@ function AuthCallbackContent() {
         <div style={{
           width: 40,
           height: 40,
-          border: '3px solid #007acc',
+          border: '3px solid #021048',
           borderTop: '3px solid transparent',
           borderRadius: '50%',
           margin: '0 auto 20px',
@@ -119,7 +119,7 @@ export default function AuthCallback() {
           <div style={{
             width: 40,
             height: 40,
-            border: '3px solid #007acc',
+            border: '3px solid #021048',
             borderTop: '3px solid transparent',
             borderRadius: '50%',
             margin: '0 auto 20px',

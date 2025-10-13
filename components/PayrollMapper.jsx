@@ -412,7 +412,7 @@ export default function PayrollMapper({ uploadData, projectToken, onComplete, on
             fontWeight: 500,
             border: 'none',
             borderRadius: 3,
-            backgroundColor: isValid && !confirming ? '#007acc' : '#ccc',
+            backgroundColor: isValid && !confirming ? '#021048' : '#ccc',
             color: 'white',
             cursor: isValid && !confirming ? 'pointer' : 'not-allowed'
           }}
