@@ -35,19 +35,16 @@ export function ParallaxRoles() {
     {
       title: 'For founders',
       description: 'Skip the admin. Capture work as it happens and move faster on funding.',
-      icon: '⚡',
       delay: 0
     },
     {
       title: 'For product & R&D',
       description: 'Turn every update into traceable, compliant documentation.',
-      icon: '🔬',
       delay: 0.1
     },
     {
       title: 'For finance & advisors',
       description: 'Access organized, audit-ready data without chasing threads.',
-      icon: '📊',
       delay: 0.2
     }
   ];
@@ -55,10 +52,12 @@ export function ParallaxRoles() {
   return (
     <div ref={sectionRef} style={{ position: 'relative' }}>
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: 40,
-        position: 'relative'
+        display: 'flex',
+        gap: 48,
+        position: 'relative',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        flexWrap: 'wrap'
       }}>
         {roles.map((role, index) => {
           const parallaxOffset = scrollY * (index === 1 ? 1.2 : index === 0 ? 0.8 : 1);
@@ -72,71 +71,59 @@ export function ParallaxRoles() {
                 opacity: inView ? 1 : 0,
                 transition: `opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${role.delay}s`,
                 textAlign: 'center',
-                padding: '32px 24px'
+                flex: '1 1 280px',
+                maxWidth: '320px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
               }}
             >
-              {/* Animated icon */}
+              {/* Icon */}
               <div style={{
-                fontSize: '48px',
                 marginBottom: '20px',
-                transform: inView ? 'scale(1) rotate(0deg)' : 'scale(0.8) rotate(-10deg)',
-                transition: `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${role.delay + 0.2}s`,
-                display: 'inline-block'
+                transform: inView ? 'scale(1)' : 'scale(0.8)',
+                opacity: inView ? 1 : 0,
+                transition: `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${role.delay + 0.2}s`
               }}>
-                {role.icon}
+                {index === 0 && (
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                  </svg>
+                )}
+                {index === 1 && (
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                )}
+                {index === 2 && (
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="20" x2="12" y2="10"/>
+                    <line x1="18" y1="20" x2="18" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="16"/>
+                  </svg>
+                )}
               </div>
 
-              {/* Title with underline accent */}
+              {/* Title */}
               <h3 style={{
-                margin: '0 0 16px',
-                fontSize: '22px',
+                margin: '0 0 12px',
+                fontSize: '20px',
                 fontWeight: 700,
-                color: 'var(--ink)',
-                position: 'relative',
-                display: 'inline-block',
-                paddingBottom: '8px'
+                color: 'var(--ink)'
               }}>
                 {role.title}
-                <span style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: '50%',
-                  transform: `translateX(-50%) scaleX(${inView ? 1 : 0})`,
-                  width: '60%',
-                  height: '2px',
-                  background: 'var(--brand)',
-                  transition: `transform 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${role.delay + 0.3}s`,
-                  transformOrigin: 'center'
-                }} />
               </h3>
 
               {/* Description */}
               <p style={{
                 margin: 0,
-                fontSize: '16px',
+                fontSize: '15px',
                 lineHeight: 1.7,
-                color: 'var(--muted)',
-                maxWidth: '300px',
-                marginLeft: 'auto',
-                marginRight: 'auto'
+                color: 'var(--muted)'
               }}>
                 {role.description}
               </p>
-
-              {/* Decorative background element */}
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: `translate(-50%, -50%) scale(${inView ? 1 : 0})`,
-                width: '200px',
-                height: '200px',
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(2,16,72,0.03) 0%, transparent 70%)',
-                transition: `transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${role.delay}s`,
-                zIndex: -1,
-                pointerEvents: 'none'
-              }} />
             </div>
           );
         })}
