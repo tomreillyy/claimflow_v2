@@ -39,19 +39,20 @@ export function Hero() {
             display: 'inline-block',
             position: 'relative',
             minWidth: '200px',
-            textAlign: 'left'
+            textAlign: 'left',
+            overflow: 'hidden'
           }}>
             <span style={{
               display: 'inline-block',
-              transform: isAnimating ? 'translateY(-20px)' : 'translateY(0)',
+              transform: isAnimating ? 'translateX(-20px)' : 'translateX(0)',
               opacity: isAnimating ? 0 : 1,
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
               color: 'var(--brand)',
               fontStyle: 'italic'
             }}>
               {verbs[currentIndex]}
             </span>
-          </span>.
+          </span>
         </h1>
 
         <p style={{
