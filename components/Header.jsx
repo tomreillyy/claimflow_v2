@@ -40,11 +40,6 @@ export function Header({ projectName = null, projectToken = null }) {
               color: 'var(--muted)',
               fontSize: 14
             }}>For teams</a>
-            <a href="#pricing" style={{
-              textDecoration: 'none',
-              color: 'var(--muted)',
-              fontSize: 14
-            }}>Pricing</a>
             <a href="/admin/new-project" style={{
               display: 'inline-flex',
               alignItems: 'center',
