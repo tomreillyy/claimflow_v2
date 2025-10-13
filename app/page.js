@@ -1,6 +1,8 @@
 'use client';
 import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
+import { ScrollTimeline } from '@/components/ScrollTimeline';
+import { ParallaxRoles } from '@/components/ParallaxRoles';
 import { ProjectsDashboard } from '@/components/ProjectsDashboard';
 import { useAuth } from '@/components/AuthProvider';
 import { useEffect, useState } from 'react';
@@ -71,136 +73,56 @@ export default function Home() {
 
             {/* How it works */}
             <section style={{
-              padding: '80px 24px',
-              borderTop: '1px solid var(--line)'
+              padding: '120px 24px',
+              borderTop: '1px solid var(--line)',
+              background: 'var(--bg-soft)'
             }} id="how">
-              <div style={{ maxWidth: 960, margin: '0 auto' }}>
+              <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
                 <h2 style={{
                   margin: '0 0 12px',
-                  fontSize: 'clamp(22px, 3.8vw, 34px)',
+                  fontSize: 'clamp(26px, 4vw, 38px)',
                   fontWeight: 700
                 }}>
-                  How Aird works
+                  R&D documentation that writes itself.
                 </h2>
                 <p style={{
                   color: 'var(--muted)',
-                  maxWidth: 620,
-                  marginBottom: 32
+                  fontSize: 18,
+                  marginBottom: 80
                 }}>
-                  Three honest steps. Thoughtful by design.
+                  Three steps, zero admin.
                 </p>
 
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: 16
-                }}>
-                  <div style={{
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--radius)',
-                    padding: 18,
-                    background: 'var(--bg-soft)'
-                  }}>
-                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
-                      1) Send updates
-                    </h3>
-                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
-                      Each project gets a unique address. Forward emails, upload files, or drop notes — Aird captures them automatically.
-                    </p>
-                  </div>
-
-                  <div style={{
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--radius)',
-                    padding: 18,
-                    background: 'var(--bg-soft)'
-                  }}>
-                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
-                      2) We organize the evidence
-                    </h3>
-                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
-                      Aird classifies by Hypothesis, Experiment, Observation, or Evaluation — and keeps a clear, chronological record.
-                    </p>
-                  </div>
-
-                  <div style={{
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--radius)',
-                    padding: 18,
-                    background: 'var(--bg-soft)'
-                  }}>
-                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
-                      3) Export when ready
-                    </h3>
-                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
-                      Generate clean, advisor-ready claim packs with sources, timestamps, and context intact.
-                    </p>
-                  </div>
-                </div>
+                <ScrollTimeline />
               </div>
             </section>
 
             {/* For teams */}
             <section style={{
-              padding: '80px 24px',
-              borderTop: '1px solid var(--line)'
+              padding: '120px 24px',
+              borderTop: '1px solid var(--line)',
+              position: 'relative',
+              overflow: 'hidden'
             }} id="roles">
-              <div style={{ maxWidth: 960, margin: '0 auto' }}>
+              <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
                 <h2 style={{
-                  margin: '0 0 32px',
-                  fontSize: 'clamp(22px, 3.8vw, 34px)',
+                  margin: '0 0 16px',
+                  fontSize: 'clamp(26px, 4vw, 38px)',
                   fontWeight: 700
                 }}>
-                  Made for real teams
+                  Built for the people doing the work.
                 </h2>
-
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: 16
+                <p style={{
+                  color: 'var(--muted)',
+                  fontSize: 18,
+                  marginBottom: 80,
+                  maxWidth: 600,
+                  margin: '0 auto 80px'
                 }}>
-                  <div style={{
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--radius)',
-                    padding: 18,
-                    background: 'var(--bg-soft)'
-                  }}>
-                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
-                      For founders
-                    </h3>
-                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
-                      Skip the admin. Capture as you go. Get claims out faster.
-                    </p>
-                  </div>
+                  From founders to advisors, AIRD adapts to how real teams build.
+                </p>
 
-                  <div style={{
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--radius)',
-                    padding: 18,
-                    background: 'var(--bg-soft)'
-                  }}>
-                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
-                      For product & R&D
-                    </h3>
-                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
-                      Turn weekly updates into traceable, compliant documentation.
-                    </p>
-                  </div>
-
-                  <div style={{
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--radius)',
-                    padding: 18,
-                    background: 'var(--bg-soft)'
-                  }}>
-                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
-                      For finance & advisors
-                    </h3>
-                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
-                      Access audit-ready data without digging through files or threads.
-                    </p>
-                  </div>
-                </div>
+                <ParallaxRoles />
               </div>
             </section>
 
