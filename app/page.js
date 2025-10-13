@@ -3,293 +3,395 @@ import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
 import { ProjectsDashboard } from '@/components/ProjectsDashboard';
 import { useAuth } from '@/components/AuthProvider';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setRevealed(true));
+  }, []);
 
   return (
     <>
       <style jsx global>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
+        :root {
+          --ink: #0f1222;
+          --muted: #5b6374;
+          --line: #e6e8ee;
+          --brand: #021048;
+          --bg: #ffffff;
+          --bg-soft: #fafbff;
+          --radius: 12px;
+          --hl-bg: rgba(2,16,72,0.18);
+        }
+
+        .highlight {
+          position: relative;
+          box-decoration-break: clone;
+          -webkit-box-decoration-break: clone;
+          padding: 0 0.12em;
+          background-image: linear-gradient(to top, var(--hl-bg), var(--hl-bg));
+          background-repeat: no-repeat;
+          background-size: 100% 0;
+          background-position: 0 88%;
+          transition: background-size 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+        }
+
+        .reveal .highlight {
+          background-size: 100% 0.6em;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .highlight {
+            transition: none;
+            background-size: 100% 0.6em;
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in-up {
-          animation: fadeInUp 0.8s ease-out forwards;
-        }
-
-        .glow-pulse {
-          animation: glow 2s ease-in-out infinite;
-        }
-
-        @keyframes glow {
-          0%, 100% { box-shadow: 0 0 8px rgba(0, 122, 204, 0.4); }
-          50% { box-shadow: 0 0 16px rgba(0, 122, 204, 0.6); }
         }
       `}</style>
+
       <main style={{
         minHeight: '100vh',
-        background: '#fff',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
-        WebkitFontSmoothing: 'antialiased',
-        position: 'relative'
+        background: 'var(--bg)',
+        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto',
+        color: 'var(--ink)'
       }}>
-        
         <Header />
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px 24px' }}>
-          <div style={{ fontSize: 18, color: '#666' }}>Loading...</div>
-        </div>
-      ) : user ? (
-        <ProjectsDashboard />
-      ) : (
-        <>
-          <Hero />
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '80px 24px' }}>
+            <div style={{ fontSize: 18, color: 'var(--muted)' }}>Loading...</div>
+          </div>
+        ) : user ? (
+          <ProjectsDashboard />
+        ) : (
+          <div className={revealed ? 'reveal' : ''}>
+            <Hero />
 
-          {/* Value props */}
-          <section style={{
-            padding: '80px 24px',
-            background: '#fafbfc',
-            borderTop: '1px solid #e5e7eb'
-          }}>
-            <div style={{
-              maxWidth: 920,
-              margin: '0 auto'
-            }}>
-              <h2 style={{
-                fontSize: 36,
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: '#111',
-                margin: '0 0 56px 0',
-                textAlign: 'center'
-              }}>
-                Built for teams doing real R&D work
-              </h2>
+            {/* How it works */}
+            <section style={{
+              padding: '80px 24px',
+              borderTop: '1px solid var(--line)'
+            }} id="how">
+              <div style={{ maxWidth: 960, margin: '0 auto' }}>
+                <h2 style={{
+                  margin: '0 0 12px',
+                  fontSize: 'clamp(22px, 3.8vw, 34px)',
+                  fontWeight: 700
+                }}>
+                  How Aird works
+                </h2>
+                <p style={{
+                  color: 'var(--muted)',
+                  maxWidth: 620,
+                  marginBottom: 32
+                }}>
+                  Three honest steps. Thoughtful by design.
+                </p>
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: 40
-              }}>
-                <div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 16
+                }}>
                   <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    background: '#0ea5e9',
-                    marginBottom: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(0, 122, 204, 0.2)'
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 18,
+                    background: 'var(--bg-soft)'
                   }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
+                      1) Send updates
+                    </h3>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
+                      Each project gets a unique address. Forward emails, upload files, or drop notes — Aird captures them automatically.
+                    </p>
                   </div>
-                  <h3 style={{
-                    fontSize: 20,
-                    fontWeight: 600,
-                    color: '#111',
-                    margin: '0 0 12px 0'
-                  }}>
-                    Email your progress
-                  </h3>
-                  <p style={{
-                    fontSize: 16,
-                    lineHeight: 1.6,
-                    color: '#666',
-                    margin: 0
-                  }}>
-                    Each project gets a unique inbox. Forward updates from your actual work—experiments, failures, breakthroughs. Attachments included.
-                  </p>
-                </div>
 
-                <div>
                   <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    background: '#0ea5e9',
-                    marginBottom: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(0, 122, 204, 0.2)'
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 18,
+                    background: 'var(--bg-soft)'
                   }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
+                      2) We organize the evidence
+                    </h3>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
+                      Aird classifies by Hypothesis, Experiment, Observation, or Evaluation — and keeps a clear, chronological record.
+                    </p>
                   </div>
-                  <h3 style={{
-                    fontSize: 20,
-                    fontWeight: 600,
-                    color: '#111',
-                    margin: '0 0 12px 0'
-                  }}>
-                    Import payroll automatically
-                  </h3>
-                  <p style={{
-                    fontSize: 16,
-                    lineHeight: 1.6,
-                    color: '#666',
-                    margin: 0
-                  }}>
-                    Upload payroll files and ClaimFlow maps costs to R&D activities. No spreadsheet archaeology required.
-                  </p>
-                </div>
 
-                <div>
                   <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    background: '#0ea5e9',
-                    marginBottom: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(0, 122, 204, 0.2)'
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 18,
+                    background: 'var(--bg-soft)'
                   }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14 2 14 8 20 8"/>
-                      <line x1="16" y1="13" x2="8" y2="13"/>
-                      <line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
+                      3) Export when ready
+                    </h3>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
+                      Generate clean, advisor-ready claim packs with sources, timestamps, and context intact.
+                    </p>
                   </div>
-                  <h3 style={{
-                    fontSize: 20,
-                    fontWeight: 600,
-                    color: '#111',
-                    margin: '0 0 12px 0'
-                  }}>
-                    Export ATO-ready packs
-                  </h3>
-                  <p style={{
-                    fontSize: 16,
-                    lineHeight: 1.6,
-                    color: '#666',
-                    margin: 0
-                  }}>
-                    Generate formatted claim documentation with evidence timeline, cost ledger, and technical narratives. Print to PDF, submit to ATO.
-                  </p>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Social proof / trust */}
-          <section style={{
-            padding: '80px 24px',
-            borderTop: '1px solid #e5e7eb'
-          }}>
-            <div style={{
-              maxWidth: 720,
-              margin: '0 auto',
-              textAlign: 'center'
+            {/* For teams */}
+            <section style={{
+              padding: '80px 24px',
+              borderTop: '1px solid var(--line)'
+            }} id="roles">
+              <div style={{ maxWidth: 960, margin: '0 auto' }}>
+                <h2 style={{
+                  margin: '0 0 32px',
+                  fontSize: 'clamp(22px, 3.8vw, 34px)',
+                  fontWeight: 700
+                }}>
+                  Made for real teams
+                </h2>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 16
+                }}>
+                  <div style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 18,
+                    background: 'var(--bg-soft)'
+                  }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
+                      For founders
+                    </h3>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
+                      Skip the admin. Capture as you go. Get claims out faster.
+                    </p>
+                  </div>
+
+                  <div style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 18,
+                    background: 'var(--bg-soft)'
+                  }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
+                      For product & R&D
+                    </h3>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
+                      Turn weekly updates into traceable, compliant documentation.
+                    </p>
+                  </div>
+
+                  <div style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 18,
+                    background: 'var(--bg-soft)'
+                  }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
+                      For finance & advisors
+                    </h3>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 15, lineHeight: 1.6 }}>
+                      Access audit-ready data without digging through files or threads.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Pricing */}
+            <section style={{
+              padding: '80px 24px',
+              borderTop: '1px solid var(--line)'
+            }} id="pricing">
+              <div style={{ maxWidth: 960, margin: '0 auto' }}>
+                <h2 style={{
+                  margin: '0 0 12px',
+                  fontSize: 'clamp(22px, 3.8vw, 34px)',
+                  fontWeight: 700
+                }}>
+                  Simple pricing
+                </h2>
+                <p style={{
+                  color: 'var(--muted)',
+                  maxWidth: 620,
+                  marginBottom: 32
+                }}>
+                  Start free, upgrade when your workflow depends on it.
+                </p>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 16
+                }}>
+                  <div style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 24,
+                    background: 'var(--bg-soft)'
+                  }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700 }}>Free</h3>
+                    <p style={{ margin: '0 0 20px', color: 'var(--muted)', fontSize: 14, lineHeight: 1.6 }}>
+                      1 project · 100 evidence items · PDF export
+                    </p>
+                    <a href="/admin/new-project" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '10px 18px',
+                      borderRadius: 'var(--radius)',
+                      background: 'var(--brand)',
+                      color: '#fff',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      border: '1px solid var(--brand)',
+                      fontSize: 14
+                    }}>
+                      Sign up free
+                    </a>
+                  </div>
+
+                  <div style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 24,
+                    background: 'var(--bg-soft)'
+                  }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700 }}>Pro</h3>
+                    <p style={{ margin: '0 0 20px', color: 'var(--muted)', fontSize: 14, lineHeight: 1.6 }}>
+                      Unlimited projects · team access · CSV + attachments
+                    </p>
+                    <a href="/admin/new-project" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '10px 18px',
+                      borderRadius: 'var(--radius)',
+                      background: 'var(--brand)',
+                      color: '#fff',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      border: '1px solid var(--brand)',
+                      fontSize: 14
+                    }}>
+                      Get Pro
+                    </a>
+                  </div>
+
+                  <div style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius)',
+                    padding: 24,
+                    background: 'var(--bg-soft)'
+                  }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 700 }}>Advisor</h3>
+                    <p style={{ margin: '0 0 20px', color: 'var(--muted)', fontSize: 14, lineHeight: 1.6 }}>
+                      Multi-client workspaces · bulk exports · white-label
+                    </p>
+                    <a href="/admin/new-project" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '10px 18px',
+                      borderRadius: 'var(--radius)',
+                      background: 'var(--brand)',
+                      color: '#fff',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      border: '1px solid var(--brand)',
+                      fontSize: 14
+                    }}>
+                      Contact us
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Sign up */}
+            <section style={{
+              padding: '80px 24px',
+              borderTop: '1px solid var(--line)'
+            }} id="signup">
+              <div style={{ maxWidth: 620, margin: '0 auto' }}>
+                <h2 style={{
+                  margin: '0 0 12px',
+                  fontSize: 'clamp(22px, 3.8vw, 34px)',
+                  fontWeight: 700
+                }}>
+                  Join early access
+                </h2>
+                <p style={{
+                  color: 'var(--muted)',
+                  marginBottom: 28
+                }}>
+                  Be the first to use Aird and shape how R&D documentation should work. No spam, ever.
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 10
+                }}>
+                  <input
+                    type="email"
+                    placeholder="your@email.com"
+                    style={{
+                      padding: '10px 14px',
+                      border: '1px solid var(--line)',
+                      borderRadius: 'var(--radius)',
+                      flex: '1',
+                      minWidth: 220,
+                      fontSize: 15,
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  <a href="/admin/new-project" style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '10px 18px',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--brand)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    border: '1px solid var(--brand)',
+                    fontSize: 14
+                  }}>
+                    Sign up
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            {/* Footer */}
+            <footer style={{
+              borderTop: '1px solid var(--line)',
+              color: 'var(--muted)',
+              fontSize: 13,
+              padding: '32px 24px'
             }}>
               <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 16,
-                padding: '12px 24px',
-                background: 'rgba(0, 122, 204, 0.05)',
-                border: '1px solid rgba(0, 122, 204, 0.1)',
-                borderRadius: 8,
-                marginBottom: 24
+                maxWidth: 960,
+                margin: '0 auto',
+                display: 'flex',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007acc" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-                <span style={{ fontSize: 14, color: '#007acc', fontWeight: 500 }}>
-                  Your data stays in Australia
-                </span>
+                <div>© {new Date().getFullYear()} aird</div>
+                <div style={{ display: 'flex', gap: 14 }}>
+                  <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
+                  <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Terms</a>
+                  <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Contact</a>
+                </div>
               </div>
-
-              <h2 style={{
-                fontSize: 32,
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: '#111',
-                margin: '0 0 16px 0'
-              }}>
-                Designed for Australian R&D Tax Incentive claims
-              </h2>
-
-              <p style={{
-                fontSize: 18,
-                lineHeight: 1.6,
-                color: '#666',
-                margin: '0 0 40px 0'
-              }}>
-                Export formats match ATO requirements. Evidence categories align with DSIR guidelines. Built by founders who've filed R&D claims.
-              </p>
-
-              <a
-                href="/admin/new-project"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '16px 32px',
-                  fontSize: 17,
-                  fontWeight: 600,
-                  color: '#fff',
-                  background: '#0ea5e9',
-                  textDecoration: 'none',
-                  borderRadius: 8,
-                  boxShadow: '0 2px 8px rgba(0, 122, 204, 0.25), inset 0 1px 0 rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(0, 122, 204, 0.3)',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  position: 'relative'
-                }}
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - rect.left - rect.width / 2;
-                  const y = e.clientY - rect.top - rect.height / 2;
-                  e.currentTarget.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px) translateY(-2px)`;
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 122, 204, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translate(0, 0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 122, 204, 0.25), inset 0 1px 0 rgba(255,255,255,0.1)';
-                }}
-              >
-                Create your first project
-              </a>
-            </div>
-          </section>
-
-          {/* Footer */}
-          <footer style={{
-            borderTop: '1px solid #e5e7eb',
-            padding: '40px 24px',
-            textAlign: 'center'
-          }}>
-            <div style={{
-              maxWidth: 920,
-              margin: '0 auto',
-              fontSize: 14,
-              color: '#999'
-            }}>
-              © {new Date().getFullYear()} ClaimFlow · Australian R&D evidence collection
-            </div>
-          </footer>
-        </>
-      )}
+            </footer>
+          </div>
+        )}
       </main>
     </>
   );
