@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "ClaimFlow - R&D Evidence Tracking",
+  title: "Aird - R&D Evidence Tracking",
   description: "Track your R&D work and build evidence as you go",
 };
 

@@ -53,7 +53,7 @@ export default function Login() {
             color: '#1a1a1a',
             margin: '0 0 8px 0'
           }}>
-            Sign in to ClaimFlow
+            Sign in to Aird
           </h1>
           <p style={{
             fontSize: 16,

@@ -42,12 +42,20 @@ export default function Upload({ params }) {
         }}>
           <div>
             <a href="/" style={{
-              fontSize: 20,
-              fontWeight: 600,
-              color: '#1a1a1a',
+              display: 'inline-flex',
+              alignItems: 'center',
               textDecoration: 'none',
               marginRight: 12
-            }}>ClaimFlow</a>
+            }}>
+              <img
+                src="/Aird Logo.png"
+                alt="Aird"
+                style={{
+                  height: 28,
+                  width: 'auto'
+                }}
+              />
+            </a>
             <span style={{color: '#333'}}>→</span>
             <a href={`/p/${token}`} style={{
               marginLeft: 12,
