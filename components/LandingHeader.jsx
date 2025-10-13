@@ -24,16 +24,16 @@ export function LandingHeader() {
         <a href="/" style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 10,
           textDecoration: 'none'
         }}>
-          <div style={{
-            width: 24,
-            height: 24,
-            borderRadius: 6,
-            background: '#0ea5e9'
-          }} />
-          <span style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>ClaimFlow</span>
+          <img
+            src="/Aird Logo.png"
+            alt="Aird"
+            style={{
+              height: 24,
+              width: 'auto'
+            }}
+          />
         </a>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -66,7 +66,7 @@ export function LandingHeader() {
                 textDecoration: 'none',
                 padding: '10px 16px',
                 borderRadius: 8,
-                background: '#0ea5e9',
+                background: '#021048',
                 border: '1px solid rgba(14,165,233,0.4)'
               }}>Start a project</a>
             </>
