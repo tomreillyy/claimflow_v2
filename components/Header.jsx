@@ -23,7 +23,7 @@ export function Header({ projectName = null, projectToken = null }) {
           textTransform: 'lowercase',
           letterSpacing: '0.2px',
           fontSize: 18,
-          color: 'var(--ink)'
+          color: '#021048'
         }}>
           aird
         </a>
@@ -32,12 +32,12 @@ export function Header({ projectName = null, projectToken = null }) {
           <nav style={{display: 'flex', alignItems: 'center', gap: 18}}>
             <a href="#how" style={{
               textDecoration: 'none',
-              color: 'var(--muted)',
+              color: '#021048',
               fontSize: 14
             }}>How it works</a>
             <a href="#roles" style={{
               textDecoration: 'none',
-              color: 'var(--muted)',
+              color: '#021048',
               fontSize: 14
             }}>For teams</a>
             <a href="/admin/new-project" style={{
@@ -63,12 +63,12 @@ export function Header({ projectName = null, projectToken = null }) {
               <nav style={{display: 'flex', gap: 18, marginRight: 12}}>
                 <a href="/" style={{
                   textDecoration: 'none',
-                  color: 'var(--muted)',
+                  color: '#021048',
                   fontSize: 14
                 }}>Projects</a>
                 <a href="/settings/team" style={{
                   textDecoration: 'none',
-                  color: 'var(--muted)',
+                  color: '#021048',
                   fontSize: 14
                 }}>Team</a>
               </nav>
@@ -76,7 +76,7 @@ export function Header({ projectName = null, projectToken = null }) {
             {projectName && (
               <span style={{
                 fontSize: 14,
-                color: 'var(--muted)',
+                color: '#021048',
                 marginRight: 12
               }}>{projectName}</span>
             )}
@@ -85,11 +85,11 @@ export function Header({ projectName = null, projectToken = null }) {
               style={{
                 padding: '8px 14px',
                 backgroundColor: 'transparent',
-                color: 'var(--muted)',
-                borderRadius: 'var(--radius)',
+                color: '#021048',
+                borderRadius: '12px',
                 fontSize: 14,
                 fontWeight: 500,
-                border: '1px solid var(--line)',
+                border: '1px solid #021048',
                 cursor: 'pointer',
                 fontFamily: 'inherit'
               }}

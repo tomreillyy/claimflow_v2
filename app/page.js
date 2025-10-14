@@ -18,17 +18,6 @@ export default function Home() {
   return (
     <>
       <style jsx global>{`
-        :root {
-          --ink: #0f1222;
-          --muted: #5b6374;
-          --line: #e6e8ee;
-          --brand: #021048;
-          --bg: #ffffff;
-          --bg-soft: #fafbff;
-          --radius: 12px;
-          --hl-bg: rgba(2,16,72,0.18);
-        }
-
         .highlight {
           position: relative;
           box-decoration-break: clone;

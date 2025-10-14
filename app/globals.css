@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --ink: #0f1222;
+  --muted: #5b6374;
+  --line: #e6e8ee;
+  --brand: #021048;
+  --bg: #ffffff;
+  --bg-soft: #fafbff;
+  --radius: 12px;
+  --hl-bg: rgba(2,16,72,0.18);
 }
 
 @theme inline {
@@ -14,8 +22,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #171717;
   }
 }
 
