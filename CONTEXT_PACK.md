@@ -1,7 +1,7 @@
 # ClaimFlow - Complete Context Pack
 
 **Product**: R&D Evidence Collection & RDTI Compliance Platform
-**Stack**: Next.js 15, React 19, Supabase (Postgres+Auth+Storage), SendGrid, OpenAI GPT-4o-mini
+**Stack**: Next.js 15, React 19, Supabase (Postgres+Auth+Storage), SendGrid, OpenAI GPT-4o-mini, GitHub OAuth
 **Maturity**: Production-ready MVP (Beta)
 **Working Dir**: `c:\Users\tomre\OneDrive\Desktop\claimflow-app`
 
@@ -24,14 +24,14 @@
 
 ## Executive Summary
 
-**What**: ClaimFlow automates R&D Tax Incentive evidence collection for Australian companies (ITAA 1997 s.355-25). Teams collect evidence via web forms, email, and file uploads. AI classifies evidence into systematic steps (Hypothesis→Experiment→Observation→Evaluation→Conclusion), links evidence to core R&D activities, and generates narrative summaries.
+**What**: ClaimFlow automates R&D Tax Incentive evidence collection for Australian companies (ITAA 1997 s.355-25). Teams collect evidence via web forms, email, file uploads, and GitHub commit syncing. AI classifies evidence into systematic steps (Hypothesis→Experiment→Observation→Evaluation→Conclusion), links evidence to core R&D activities, and generates narrative summaries.
 
 **For Whom**:
 - **Accountants/Advisors**: Prepare RDTI claims with organized evidence packs
 - **Tech Founders**: Document R&D work passively without admin overhead
 - **Engineering Teams**: Submit evidence via email/web without context-switching
 
-**Current State**: Fully functional MVP with 19 features shipped, AI-powered classification & linking, payroll cost apportionment, and PDF export.
+**Current State**: Fully functional MVP with 20 features shipped, AI-powered classification & linking, GitHub commit syncing, payroll cost apportionment, and PDF export.
 
 **Reliability**:
 - Production-ready with soft deletes, idempotent operations, error boundaries
@@ -80,10 +80,12 @@ graph TB
 
     Users -->|Web Browser| App
     Users -->|Email Evidence| SendGrid
+    Users -->|GitHub Auth| GitHub[GitHub OAuth]
     App -->|SQL Queries| DB
     App -->|File Upload/Download| Storage
     App -->|Auth Verify| Auth
     App -->|Send Nudges| SendGrid
+    App -->|Fetch Commits| GitHub
     SendGrid -->|Parse Webhook| App
     App -->|Classify/Link/Narrate| OpenAI
 ```
@@ -441,6 +443,75 @@ stateDiagram-v2
 
 ---
 
+#### **Feature: GitHub Commit Sync**
+
+**User Value**: Automatically sync GitHub commits as evidence - zero-friction R&D documentation for dev teams.
+
+**Entry Points**:
+- UI: "GitHub" button at top of `/p/{token}` page
+- API: POST `/api/projects/{token}/github/sync`
+- OAuth: GET `/api/github/auth/start`, GET `/api/github/auth/callback`
+
+**Trigger Matrix**:
+
+| Source | Condition | Handler | Side Effects | Evidence |
+|--------|-----------|---------|--------------|----------|
+| UI: "GitHub" button | Not connected | GET `/api/github/auth/start` | Redirect to GitHub OAuth | [api/github/auth/start/route.js:6-29] |
+| GitHub OAuth callback | Authorization granted | GET `/api/github/auth/callback` | Store access token, show repo picker | [api/github/auth/callback/route.js:7-107] |
+| UI: Repo dropdown | Repo selected + connected | GET `/api/projects/{token}/github/repos` | Fetch user's accessible repos from GitHub API | [api/projects/[token]/github/repos/route.js:7-70] |
+| UI: "Sync" button | Repo connected | POST `/api/projects/{token}/github/sync` | Fetch commits, filter, INSERT as evidence, trigger auto-classify | [api/projects/[token]/github/sync/route.js:7-65] |
+
+**What It Does**:
+1. User clicks "GitHub" → OAuth flow to GitHub
+2. After auth, fetch user's accessible repositories via GitHub API
+3. User selects repo from dropdown
+4. User clicks "Sync now" → Fetch commits since last sync (or past 30 days)
+5. **Pre-filter commits**:
+   - Skip merge commits, version bumps, dependency updates
+   - Skip formatting/linting commits
+   - Skip README/docs updates
+   - Require length ≥15 chars
+   - Only include commits from project participants
+6. For each filtered commit:
+   - INSERT into `evidence`: `{project_id, content: message, author_email, source: 'github', created_at: commit_date}`
+   - Store metadata in `meta` JSONB: `{sha, commit_url, repo, files_changed, additions, deletions}`
+7. Update `github_repos.last_synced_at` and `last_synced_sha`
+8. Trigger auto-classification and auto-linking (background)
+
+**Outputs**:
+- DB: New evidence rows with `source='github'`
+- Storage: GitHub access token in `project_github_tokens`
+- Response: `{ok: true, synced: count, skipped: count}`
+
+**Permissions**: Public (token-based access)
+
+**Error Cases**:
+- GitHub API timeout → 502 Bad Gateway
+- Invalid/expired token → 401 Unauthorized
+- Repository not found → 404 Not Found
+- No commits in date range → 200 OK with `{synced: 0}`
+
+**Config/Flags**:
+- `GITHUB_CLIENT_ID` - OAuth app client ID
+- `GITHUB_CLIENT_SECRET` - OAuth app client secret
+- `GITHUB_REDIRECT_URI` - OAuth callback URL (optional, auto-detected from request)
+
+**Smart Filtering**: Automatically skips noise commits using pattern matching:
+- Merge commits: `/^merge/i`
+- Version bumps: `/^bump|version/i`
+- Dependencies: `/^update dependencies/i`
+- Formatting: `/^(format|lint|prettier)/i`
+- Docs: `/^(readme|docs?):/i`
+
+**Setup Required**:
+1. Create GitHub OAuth App with callback: `https://domain.com/api/github/auth/callback`
+2. Add env vars: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
+3. Set OAuth scope to `repo` for private repository access
+
+**Evidence**: [lib/githubSync.js:1-257], [api/github/auth/start/route.js:6-29], [api/github/auth/callback/route.js:7-107], [api/projects/[token]/github/connect/route.js:8-116], [api/projects/[token]/github/sync/route.js:7-65], [GITHUB_INTEGRATION.md:1-228]
+
+---
+
 ### AI Classification & Linking
 
 #### **Feature: Evidence Classification**
@@ -728,6 +799,8 @@ erDiagram
     projects ||--o{ payroll_uploads : tracks
     projects ||--o{ monthly_attestations : allocates
     projects ||--o{ cost_ledger : records
+    projects ||--o{ github_repos : syncs_from
+    projects ||--|| project_github_tokens : authenticated_via
     projects }o--|| auth_users : owned_by
 
     core_activities ||--o| activity_narratives : summarizes
@@ -769,7 +842,26 @@ erDiagram
         timestamptz link_updated_at
         varchar content_hash
         boolean soft_deleted
+        jsonb meta
         timestamptz created_at
+    }
+
+    github_repos {
+        uuid id PK
+        uuid project_id FK
+        text repo_owner
+        text repo_name
+        timestamptz last_synced_at
+        text last_synced_sha
+        timestamptz created_at
+    }
+
+    project_github_tokens {
+        uuid id PK
+        uuid project_id FK_UK
+        text access_token
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     core_activities {
@@ -938,6 +1030,13 @@ erDiagram
 | POST | `/api/inbound/sendgrid` | Email webhook | Public | [api/inbound/sendgrid/route.js:16-66] |
 | GET | `/api/cron/nudge` | Daily nudges | Public | [api/cron/nudge/route.js:7-56] |
 | POST | `/api/cron/process-narratives` | Narrative queue | Public | [api/cron/process-narratives/route.js:214-382] |
+| GET | `/api/github/auth/start` | GitHub OAuth start | Public | [api/github/auth/start/route.js:6-29] |
+| GET | `/api/github/auth/callback` | GitHub OAuth callback | Public | [api/github/auth/callback/route.js:7-107] |
+| GET | `/api/projects/[token]/github/connect` | Get GitHub connection | Public | [api/projects/[token]/github/connect/route.js:63-91] |
+| POST | `/api/projects/[token]/github/connect` | Connect repository | Public | [api/projects/[token]/github/connect/route.js:8-61] |
+| POST | `/api/projects/[token]/github/disconnect` | Disconnect GitHub | Public | [api/projects/[token]/github/disconnect/route.js:7-52] |
+| GET | `/api/projects/[token]/github/repos` | List user repos | Public | [api/projects/[token]/github/repos/route.js:7-70] |
+| POST | `/api/projects/[token]/github/sync` | Sync commits | Public | [api/projects/[token]/github/sync/route.js:7-65] |
 
 **Note**: "Public" = Token-based access (no Bearer token), "✅ Bearer" = Authenticated via `Authorization: Bearer {jwt}`
 
@@ -1011,6 +1110,9 @@ npm run dev
 | `SENDGRID_API_KEY` | SendGrid key | `SG.abc...` | Optional | [api/cron/nudge/route.js:15] |
 | `FROM_EMAIL` | Sender address | `noreply@domain.com` | Optional | [api/cron/nudge/route.js:16] |
 | `OPENAI_API_KEY` | OpenAI key | `sk-...` | Optional | [api/classify/route.js:53] |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID | `Iv1.abc123...` | Optional | [api/github/auth/start/route.js:14] |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret | `abc123...` | Optional | [api/github/auth/callback/route.js:44] |
+| `GITHUB_REDIRECT_URI` | OAuth callback URL | `https://domain.com/api/github/auth/callback` | Optional | [api/github/auth/start/route.js:19] |
 
 **Evidence**: [.env.local.example:1-11]
 
@@ -1233,8 +1335,8 @@ Classify this evidence.
 ---
 
 **END OF CONTEXT PACK**
-**Generated**: 2025-10-14
-**Total Features Documented**: 19
-**Total API Routes**: 32
-**Lines of Code Analyzed**: ~15,000+
-**Files Referenced**: 50+
+**Generated**: 2025-01-16
+**Total Features Documented**: 20
+**Total API Routes**: 39
+**Lines of Code Analyzed**: ~16,500+
+**Files Referenced**: 60+

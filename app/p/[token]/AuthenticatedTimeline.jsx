@@ -871,7 +871,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
             gap: 8,
             marginBottom: 16
           }}>
-            {!githubRepo && !showRepoInput && (
+            {!githubRepo && !showRepoPicker && (
               <button
                 onClick={handleConnectGitHub}
                 style={{
