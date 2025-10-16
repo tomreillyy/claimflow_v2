@@ -21,10 +21,19 @@ The GitHub integration allows you to automatically sync commit messages from a G
 2. Click "New OAuth App"
 3. Fill in the details:
    - **Application name**: ClaimFlow (or your app name)
-   - **Homepage URL**: `http://localhost:3000` (or your domain)
-   - **Authorization callback URL**: `http://localhost:3000/api/github/auth/callback`
+   - **Homepage URL**: `https://www.getaird.com` (your production domain)
+   - **Authorization callback URL**: `https://www.getaird.com/api/github/auth/callback`
 4. Click "Register application"
 5. Note your **Client ID** and generate a **Client Secret**
+
+**IMPORTANT**: The callback URL must match your exact domain including:
+- Protocol (`https://` not `http://`)
+- Subdomain (`www.` if your app uses it)
+- No trailing slash
+
+If you're testing locally, you'll need to create a separate OAuth app for development:
+- Homepage URL: `http://localhost:3000`
+- Callback URL: `http://localhost:3000/api/github/auth/callback`
 
 ### 2. Configure Environment Variables
 
