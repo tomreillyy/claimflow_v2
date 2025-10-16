@@ -376,9 +376,10 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const [githubHasAuth, setGithubHasAuth] = useState(false);
   const [githubSyncing, setGithubSyncing] = useState(false);
   const [githubConnecting, setGithubConnecting] = useState(false);
-  const [showRepoInput, setShowRepoInput] = useState(false);
-  const [repoOwner, setRepoOwner] = useState('');
-  const [repoName, setRepoName] = useState('');
+  const [showRepoPicker, setShowRepoPicker] = useState(false);
+  const [availableRepos, setAvailableRepos] = useState([]);
+  const [selectedRepo, setSelectedRepo] = useState('');
+  const [loadingRepos, setLoadingRepos] = useState(false);
   const [githubError, setGithubError] = useState('');
 
   // Fetch core activities and step counts
@@ -409,15 +410,39 @@ export function AuthenticatedTimeline({ project, items, token }) {
         if (data) {
           setGithubHasAuth(data.has_auth);
           setGithubRepo(data.repo);
-          // Check for connection callback
+          // Check for connection callback - fetch repos if just connected
           const params = new URLSearchParams(window.location.search);
           if (params.get('github_connected') === 'true' && data.has_auth && !data.repo) {
-            setShowRepoInput(true);
+            setShowRepoPicker(true);
+            fetchAvailableRepos();
           }
         }
       })
       .catch(err => console.error('Failed to fetch GitHub status:', err));
   }, [token]);
+
+  // Fetch available GitHub repositories
+  const fetchAvailableRepos = async () => {
+    setLoadingRepos(true);
+    setGithubError('');
+
+    try {
+      const response = await fetch(`/api/projects/${token}/github/repos`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setGithubError(data.error || 'Failed to fetch repositories');
+        return;
+      }
+
+      setAvailableRepos(data.repos || []);
+    } catch (error) {
+      console.error('Failed to fetch repos:', error);
+      setGithubError('Failed to fetch repositories');
+    } finally {
+      setLoadingRepos(false);
+    }
+  };
 
   // Fetch costs data when Costs tab is active
   useEffect(() => {
@@ -455,14 +480,18 @@ export function AuthenticatedTimeline({ project, items, token }) {
 
   const handleConnectRepo = async (e) => {
     e.preventDefault();
+    if (!selectedRepo) return;
+
     setGithubConnecting(true);
     setGithubError('');
 
     try {
+      const [repo_owner, repo_name] = selectedRepo.split('/');
+
       const response = await fetch(`/api/projects/${token}/github/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repo_owner: repoOwner, repo_name: repoName })
+        body: JSON.stringify({ repo_owner, repo_name })
       });
 
       const data = await response.json();
@@ -473,9 +502,8 @@ export function AuthenticatedTimeline({ project, items, token }) {
       }
 
       setGithubRepo(data.repo);
-      setShowRepoInput(false);
-      setRepoOwner('');
-      setRepoName('');
+      setShowRepoPicker(false);
+      setSelectedRepo('');
       showToast('Repository connected!');
 
       // Clean up URL
@@ -958,8 +986,8 @@ export function AuthenticatedTimeline({ project, items, token }) {
             maxWidth: 900,
             margin: '0 auto'
           }}>
-            {/* GitHub Repository Input Form */}
-            {showRepoInput && (
+            {/* GitHub Repository Picker */}
+            {showRepoPicker && (
               <div style={{
                 padding: 20,
                 background: '#f6f8fa',
@@ -979,49 +1007,49 @@ export function AuthenticatedTimeline({ project, items, token }) {
                   <svg width="20" height="20" viewBox="0 0 16 16" fill="#24292f">
                     <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
                   </svg>
-                  Connect Repository
+                  Select Repository
                 </h3>
                 <p style={{
                   fontSize: 14,
                   color: '#666',
                   margin: '0 0 16px 0'
                 }}>
-                  Enter the repository you want to sync commits from
+                  Choose which repository to sync commits from
                 </p>
                 <form onSubmit={handleConnectRepo}>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                    <input
-                      type="text"
-                      value={repoOwner}
-                      onChange={(e) => setRepoOwner(e.target.value)}
-                      placeholder="owner"
+                  {loadingRepos ? (
+                    <div style={{
+                      padding: 16,
+                      textAlign: 'center',
+                      color: '#666',
+                      fontSize: 14
+                    }}>
+                      Loading your repositories...
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedRepo}
+                      onChange={(e) => setSelectedRepo(e.target.value)}
                       required
                       style={{
-                        flex: 1,
+                        width: '100%',
                         padding: '10px 12px',
                         fontSize: 14,
                         border: '1px solid #ddd',
                         borderRadius: 6,
-                        outline: 'none'
+                        outline: 'none',
+                        marginBottom: 12,
+                        backgroundColor: 'white'
                       }}
-                    />
-                    <span style={{ display: 'flex', alignItems: 'center', color: '#666' }}>/</span>
-                    <input
-                      type="text"
-                      value={repoName}
-                      onChange={(e) => setRepoName(e.target.value)}
-                      placeholder="repository-name"
-                      required
-                      style={{
-                        flex: 2,
-                        padding: '10px 12px',
-                        fontSize: 14,
-                        border: '1px solid #ddd',
-                        borderRadius: 6,
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
+                    >
+                      <option value="">Select a repository...</option>
+                      {availableRepos.map(repo => (
+                        <option key={repo.full_name} value={repo.full_name}>
+                          {repo.full_name} {repo.private ? '(Private)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   {githubError && (
                     <div style={{
                       padding: 10,
@@ -1038,23 +1066,27 @@ export function AuthenticatedTimeline({ project, items, token }) {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       type="submit"
-                      disabled={githubConnecting}
+                      disabled={githubConnecting || loadingRepos || !selectedRepo}
                       style={{
                         padding: '10px 16px',
                         fontSize: 14,
                         fontWeight: 500,
                         color: 'white',
-                        backgroundColor: githubConnecting ? '#ccc' : '#24292f',
+                        backgroundColor: (githubConnecting || loadingRepos || !selectedRepo) ? '#ccc' : '#24292f',
                         border: 'none',
                         borderRadius: 6,
-                        cursor: githubConnecting ? 'not-allowed' : 'pointer'
+                        cursor: (githubConnecting || loadingRepos || !selectedRepo) ? 'not-allowed' : 'pointer'
                       }}
                     >
                       {githubConnecting ? 'Connecting...' : 'Connect'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowRepoInput(false)}
+                      onClick={() => {
+                        setShowRepoPicker(false);
+                        setSelectedRepo('');
+                        setGithubError('');
+                      }}
                       style={{
                         padding: '10px 16px',
                         fontSize: 14,
