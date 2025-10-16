@@ -12,7 +12,11 @@ export async function GET(req) {
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID;
-  const redirectUri = process.env.GITHUB_REDIRECT_URI || `${process.env.NEXT_PUBLIC_BASE}/api/github/auth/callback`;
+
+  // Use GITHUB_REDIRECT_URI if set, otherwise build from request URL (works in dev and prod)
+  const requestUrl = new URL(req.url);
+  const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+  const redirectUri = process.env.GITHUB_REDIRECT_URI || `${baseUrl}/api/github/auth/callback`;
 
   if (!clientId) {
     return NextResponse.json({ error: 'GitHub OAuth not configured' }, { status: 500 });

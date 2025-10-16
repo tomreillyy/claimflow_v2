@@ -10,12 +10,16 @@ export async function GET(req) {
   const state = searchParams.get('state'); // This is the project_token
   const error = searchParams.get('error');
 
+  // Get the base URL from the request (works in both dev and production)
+  const requestUrl = new URL(req.url);
+  const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+
   // Handle OAuth errors
   if (error) {
     const errorDescription = searchParams.get('error_description') || 'GitHub authorization failed';
     const redirectUrl = state
-      ? `${process.env.NEXT_PUBLIC_BASE}/p/${state}?github_error=${encodeURIComponent(errorDescription)}`
-      : `${process.env.NEXT_PUBLIC_BASE}`;
+      ? `${baseUrl}/p/${state}?github_error=${encodeURIComponent(errorDescription)}`
+      : baseUrl;
     return NextResponse.redirect(redirectUrl);
   }
 
@@ -92,12 +96,12 @@ export async function GET(req) {
     }
 
     // Redirect to project timeline with success message and prompt for repo
-    const redirectUrl = `${process.env.NEXT_PUBLIC_BASE}/p/${projectToken}?github_connected=true`;
+    const redirectUrl = `${baseUrl}/p/${projectToken}?github_connected=true`;
     return NextResponse.redirect(redirectUrl);
 
   } catch (err) {
     console.error('[GitHub OAuth] Callback error:', err);
-    const redirectUrl = `${process.env.NEXT_PUBLIC_BASE}/p/${projectToken}?github_error=${encodeURIComponent(err.message)}`;
+    const redirectUrl = `${baseUrl}/p/${projectToken}?github_error=${encodeURIComponent(err.message)}`;
     return NextResponse.redirect(redirectUrl);
   }
 }
