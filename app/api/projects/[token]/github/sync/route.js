@@ -51,7 +51,6 @@ export async function POST(req, { params }) {
 
     console.log(`[GitHub Sync API] Starting sync for ${repo.repo_owner}/${repo.repo_name}`);
     console.log(`[GitHub Sync API] Project ID: ${project.id}`);
-    console.log(`[GitHub Sync API] Participants: ${JSON.stringify(project.participants)}`);
     console.log(`[GitHub Sync API] Has token: ${!!tokenRecord.access_token}`);
 
     // Perform sync
@@ -59,8 +58,7 @@ export async function POST(req, { params }) {
       project.id,
       repo.repo_owner,
       repo.repo_name,
-      tokenRecord.access_token,
-      project.participants || []
+      tokenRecord.access_token
     );
 
     console.log(`[GitHub Sync API] Sync complete:`, result);
@@ -71,9 +69,6 @@ export async function POST(req, { params }) {
       message += ` (${result.skipped} skipped`;
 
       const reasons = [];
-      if (result.reasons?.not_participant > 0) {
-        reasons.push(`${result.reasons.not_participant} not from participants`);
-      }
       if (result.reasons?.too_short > 0) {
         reasons.push(`${result.reasons.too_short} too short`);
       }
