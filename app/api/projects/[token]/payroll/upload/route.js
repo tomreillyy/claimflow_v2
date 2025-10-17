@@ -42,14 +42,14 @@ export async function POST(req, { params }) {
     }
 
     // Validate file with size limit and magic byte checking
-    const validation = await validateFileUpload(file, {
+    const fileValidation = await validateFileUpload(file, {
       maxSizeMB: MAX_PAYROLL_FILE_SIZE_MB,
       allowedMimeTypes: ALLOWED_PAYROLL_TYPES,
       checkMagicBytes: true
     });
 
-    if (!validation.valid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
+    if (!fileValidation.valid) {
+      return NextResponse.json({ error: fileValidation.error }, { status: 400 });
     }
 
     // Parse file
