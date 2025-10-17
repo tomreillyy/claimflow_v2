@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyCronSecret } from '@/lib/serverAuth';
 import crypto from 'crypto';
 
 export const runtime = 'nodejs';
@@ -212,6 +213,12 @@ JSON format (no code fences):
 
 // Main cron handler
 export async function POST(req) {
+  // Verify cron secret to prevent unauthorized triggering
+  if (!verifyCronSecret(req)) {
+    console.error('[Cron/ProcessNarratives] Unauthorized access attempt');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const startTime = Date.now();
   const results = { processed: 0, failed: 0, skipped: 0, errors: [] };
 

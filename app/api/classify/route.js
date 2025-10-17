@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { rateLimitMiddleware, getClientIp, RATE_LIMITS } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -109,19 +110,31 @@ export async function POST(req) {
     return NextResponse.json({ error: 'id required' }, { status: 400 });
   }
 
+  // Fetch evidence to get project info for rate limiting
+  const { data: evidence, error: fetchError } = await supabaseAdmin
+    .from('evidence')
+    .select('id, content, systematic_step_primary, systematic_step_source, classified_at, project_id, projects(project_token)')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !evidence) {
+    return NextResponse.json({ error: 'evidence not found' }, { status: 404 });
+  }
+
+  const projectToken = evidence.projects?.project_token;
+
+  // Apply rate limiting (per-IP + per-project)
+  const clientIp = getClientIp(req);
+  const rateLimitResponse = await rateLimitMiddleware(req, [
+    { identifier: clientIp, config: RATE_LIMITS.CLASSIFY_PER_IP, name: 'per-ip' },
+    { identifier: projectToken || 'unknown', config: RATE_LIMITS.CLASSIFY_PER_PROJECT, name: 'per-project' }
+  ]);
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
-    // Fetch evidence
-    const { data: evidence, error: fetchError } = await supabaseAdmin
-      .from('evidence')
-      .select('id, content, systematic_step_primary, systematic_step_source, classified_at')
-      .eq('id', id)
-      .single();
-
-    if (fetchError || !evidence) {
-      console.error('Evidence not found:', id);
-      return NextResponse.json({ error: 'evidence not found' }, { status: 404 });
-    }
-
     // Skip manually classified evidence
     if (evidence.systematic_step_source === 'manual') {
       return NextResponse.json({

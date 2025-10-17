@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyCronSecret } from '@/lib/serverAuth';
 import sgMail from '@sendgrid/mail';
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-export async function GET() {
+export async function GET(req) {
+  // Verify cron secret to prevent unauthorized triggering
+  if (!verifyCronSecret(req)) {
+    console.error('[Cron/Nudge] Unauthorized access attempt');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { data: projects, error } = await supabaseAdmin
     .from('projects')
     .select('id,name,project_token,participants,inbound_email_local')

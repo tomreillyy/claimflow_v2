@@ -36,6 +36,45 @@ function useStepGapHint(token) {
   return hint;
 }
 
+// Hook to fetch signed URLs for private evidence files
+function useSignedUrls(token, evidenceItems) {
+  const [signedUrls, setSignedUrls] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!token || !evidenceItems || evidenceItems.length === 0) return;
+
+    // Extract evidence IDs that have file_url
+    const evidenceWithFiles = evidenceItems.filter(ev => ev.file_url);
+    if (evidenceWithFiles.length === 0) return;
+
+    const evidenceIds = evidenceWithFiles.map(ev => ev.id);
+
+    setLoading(true);
+
+    // Fetch signed URLs in batch
+    fetch(`/api/evidence/${token}/signed-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ evidence_ids: evidenceIds })
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.signedUrls) {
+          setSignedUrls(data.signedUrls);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch signed URLs:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [token, evidenceItems?.length]); // Re-fetch when evidence list changes
+
+  return { signedUrls, loading };
+}
+
 function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onStepChange, onDelete, onReassign }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showStepPicker, setShowStepPicker] = useState(false);
@@ -337,6 +376,7 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onSt
 export function AuthenticatedTimeline({ project, items, token }) {
   const { user, loading } = useAuth();
   const stepHint = useStepGapHint(token);
+  const { signedUrls, loading: signedUrlsLoading } = useSignedUrls(token, items);
   const [stepCounts, setStepCounts] = useState({});
   const [authLoading, setAuthLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
@@ -1604,26 +1644,56 @@ export function AuthenticatedTimeline({ project, items, token }) {
                     {/* Attachment */}
                     {ev.file_url && (
                       <div style={{ marginTop: 8 }}>
-                        <a
-                          href={ev.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
+                        {signedUrls[ev.id] ? (
+                          <a
+                            href={signedUrls[ev.id]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              color: '#021048',
+                              textDecoration: 'none',
+                              fontSize: 13,
+                              fontWeight: 400,
+                              padding: '4px 8px',
+                              backgroundColor: '#f8f8f8',
+                              borderRadius: 3,
+                              border: '1px solid #e5e5e5'
+                            }}
+                          >
+                            📎 attachment
+                          </a>
+                        ) : signedUrlsLoading ? (
+                          <span style={{
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 4,
-                            color: '#021048',
-                            textDecoration: 'none',
+                            color: '#999',
                             fontSize: 13,
-                            fontWeight: 400,
                             padding: '4px 8px',
                             backgroundColor: '#f8f8f8',
                             borderRadius: 3,
                             border: '1px solid #e5e5e5'
-                          }}
-                        >
-                          📎 attachment
-                        </a>
+                          }}>
+                            📎 loading...
+                          </span>
+                        ) : (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            color: '#999',
+                            fontSize: 13,
+                            padding: '4px 8px',
+                            backgroundColor: '#fef2f2',
+                            borderRadius: 3,
+                            border: '1px solid #fecaca'
+                          }}>
+                            📎 unavailable
+                          </span>
+                        )}
                       </div>
                     )}
 

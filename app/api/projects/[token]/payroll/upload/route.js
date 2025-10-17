@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { parsePayrollFile, autoDetectPreset, generateSmartMapping, detectDateFormat, validatePayrollData } from '@/lib/payrollParser';
+import { validateFileUpload, sanitizeFilename } from '@/lib/serverAuth';
 
 export const config = {
   api: {
     bodyParser: false // We handle file upload via FormData
   }
 };
+
+const MAX_PAYROLL_FILE_SIZE_MB = 25; // Larger limit for payroll files
+const ALLOWED_PAYROLL_TYPES = [
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+];
 
 export async function POST(req, { params }) {
   try {
@@ -33,17 +41,15 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Validate file type
-    const allowedTypes = [
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    ];
+    // Validate file with size limit and magic byte checking
+    const validation = await validateFileUpload(file, {
+      maxSizeMB: MAX_PAYROLL_FILE_SIZE_MB,
+      allowedMimeTypes: ALLOWED_PAYROLL_TYPES,
+      checkMagicBytes: true
+    });
 
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({
-        error: 'Invalid file type. Please upload CSV or XLSX files only.'
-      }, { status: 400 });
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
     // Parse file
@@ -99,8 +105,8 @@ export async function POST(req, { params }) {
 
     // Upload file to Supabase Storage (private bucket)
     const timestamp = Date.now();
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const storagePath = `${project.id}/${timestamp}_${sanitizedFilename}`;
+    const sanitizedFilenameSecure = sanitizeFilename(file.name);
+    const storagePath = `${project.id}/${timestamp}_${sanitizedFilenameSecure}`;
 
     const fileBuffer = await file.arrayBuffer();
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
