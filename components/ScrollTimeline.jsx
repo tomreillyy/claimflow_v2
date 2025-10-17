@@ -46,7 +46,7 @@ export function ScrollTimeline() {
     {
       number: '1',
       title: 'You keep building',
-      description: 'Each project gets its own unique email address. Just forward updates, drop files, or let your team\'s commits and notes flow in — AIRD captures everything automatically.'
+      description: 'Each project gets its own unique email address. Just forward updates, drop files, sync your GitHub repo, or let your team\'s commits and notes flow in — AIRD captures everything automatically.'
     },
     {
       number: '2',
