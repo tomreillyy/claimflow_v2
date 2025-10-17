@@ -49,6 +49,11 @@ export async function POST(req, { params }) {
       );
     }
 
+    console.log(`[GitHub Sync API] Starting sync for ${repo.repo_owner}/${repo.repo_name}`);
+    console.log(`[GitHub Sync API] Project ID: ${project.id}`);
+    console.log(`[GitHub Sync API] Participants: ${JSON.stringify(project.participants)}`);
+    console.log(`[GitHub Sync API] Has token: ${!!tokenRecord.access_token}`);
+
     // Perform sync
     const result = await syncCommits(
       project.id,
@@ -57,6 +62,8 @@ export async function POST(req, { params }) {
       tokenRecord.access_token,
       project.participants || []
     );
+
+    console.log(`[GitHub Sync API] Sync complete:`, result);
 
     // Build detailed message
     let message = `Synced ${result.synced} commits`;
