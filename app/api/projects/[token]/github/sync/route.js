@@ -58,11 +58,38 @@ export async function POST(req, { params }) {
       project.participants || []
     );
 
+    // Build detailed message
+    let message = `Synced ${result.synced} commits`;
+    if (result.skipped > 0) {
+      message += ` (${result.skipped} skipped`;
+
+      const reasons = [];
+      if (result.reasons?.not_participant > 0) {
+        reasons.push(`${result.reasons.not_participant} not from participants`);
+      }
+      if (result.reasons?.too_short > 0) {
+        reasons.push(`${result.reasons.too_short} too short`);
+      }
+      if (result.reasons?.duplicate > 0) {
+        reasons.push(`${result.reasons.duplicate} duplicates`);
+      }
+      const patternCount = Object.values(result.reasons?.pattern_matched || {}).reduce((a, b) => a + b, 0);
+      if (patternCount > 0) {
+        reasons.push(`${patternCount} noise commits`);
+      }
+
+      if (reasons.length > 0) {
+        message += `: ${reasons.join(', ')}`;
+      }
+      message += ')';
+    }
+
     return NextResponse.json({
       ok: true,
       synced: result.synced,
       skipped: result.skipped,
-      message: `Synced ${result.synced} commits (${result.skipped} skipped)`
+      reasons: result.reasons,
+      message
     });
 
   } catch (err) {

@@ -533,10 +533,18 @@ export function AuthenticatedTimeline({ project, items, token }) {
         return;
       }
 
-      showToast(`Synced ${data.synced} commits`);
+      // Use the detailed message from the API
+      showToast(data.message || `Synced ${data.synced} commits`);
 
-      // Reload page to show new evidence
-      setTimeout(() => window.location.reload(), 1500);
+      // Log detailed reasons to console for debugging
+      if (data.reasons) {
+        console.log('[GitHub Sync] Detailed results:', data.reasons);
+      }
+
+      // Reload page to show new evidence (only if we synced something)
+      if (data.synced > 0) {
+        setTimeout(() => window.location.reload(), 1500);
+      }
     } catch (error) {
       console.error('Failed to sync:', error);
       setGithubError('Failed to sync commits');
