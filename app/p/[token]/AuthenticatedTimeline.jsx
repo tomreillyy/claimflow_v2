@@ -4,6 +4,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/Header';
 import QuickNoteForm from './quick-note-form';
+import CoreActivitiesList from '@/components/CoreActivitiesList';
 import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
 
 // Hook to fetch step counts and compute gap hint
@@ -894,13 +895,13 @@ export function AuthenticatedTimeline({ project, items, token }) {
       <Header projectName={project.name} projectToken={token} />
 
       <main style={{
-        maxWidth: 1400,
+        maxWidth: 1600,
         margin: '0 auto',
-        padding: '40px 24px'
+        padding: '40px 48px'
       }}>
         {/* Action buttons */}
         <div style={{
-          maxWidth: 900,
+          maxWidth: 1200,
           margin: '0 auto',
           display: 'flex',
           justifyContent: 'flex-end',
@@ -974,7 +975,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
 
         {/* Main content */}
         <div style={{
-          maxWidth: 900,
+          maxWidth: 1200,
           margin: '0 auto'
         }}>
             {/* GitHub Repository Picker */}
@@ -1326,16 +1327,12 @@ export function AuthenticatedTimeline({ project, items, token }) {
         {/* Timeline Tab Content */}
         {activeTab === 'timeline' && (
           <div>
-        {/* Step Distribution Chip Bar */}
+        {/* Step Distribution Pills */}
         <div style={{ marginBottom: 20 }}>
           {stepCounts && Object.keys(stepCounts).length > 0 && (
             <div style={{
-              padding: '12px 16px',
-              backgroundColor: '#fafafa',
-              border: '1px solid #e5e5e5',
-              borderRadius: 4,
               display: 'flex',
-              gap: 16,
+              gap: 8,
               flexWrap: 'wrap',
               alignItems: 'center'
             }}>
@@ -1357,17 +1354,19 @@ export function AuthenticatedTimeline({ project, items, token }) {
                     setFilterSteps(newSet);
                   }}
                   style={{
-                    padding: '4px 10px',
+                    padding: '6px 14px',
                     fontSize: 13,
-                    fontWeight: isActive ? 600 : 400,
-                    color: count === 0 ? '#999' : (isActive ? '#021048' : '#333'),
-                    backgroundColor: isActive ? '#f0f9ff' : 'transparent',
-                    border: 'none',
-                    borderRadius: 3,
-                    cursor: 'pointer',
-                    textDecoration: isActive ? 'underline' : 'none'
+                    fontWeight: 500,
+                    color: isActive ? 'white' : (count === 0 ? '#999' : '#666'),
+                    backgroundColor: isActive ? '#021048' : 'white',
+                    border: `1px solid ${isActive ? '#021048' : '#e5e5e5'}`,
+                    borderRadius: 20,
+                    cursor: count === 0 ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    opacity: count === 0 ? 0.5 : 1
                   }}
-                  title={`Click to ${isActive ? 'remove' : 'add'} ${label} filter`}
+                  disabled={count === 0}
+                  title={`${label}: ${count} item${count !== 1 ? 's' : ''}`}
                 >
                   {label}: {count}
                 </button>
@@ -1377,18 +1376,18 @@ export function AuthenticatedTimeline({ project, items, token }) {
               <button
                 onClick={() => setFilterSteps(new Set())}
                 style={{
-                  padding: '4px 8px',
+                  padding: '6px 14px',
                   fontSize: 12,
                   fontWeight: 500,
                   color: '#666',
                   backgroundColor: 'white',
                   border: '1px solid #ddd',
-                  borderRadius: 3,
+                  borderRadius: 20,
                   cursor: 'pointer',
-                  marginLeft: 'auto'
+                  marginLeft: 8
                 }}
               >
-                Clear filter{filterSteps.size > 1 ? 's' : ''}
+                Clear
               </button>
             )}
             </div>
@@ -1682,6 +1681,42 @@ export function AuthenticatedTimeline({ project, items, token }) {
               }}>Add your first note or email updates to get started</p>
             </div>
           )}
+        </div>
+
+        {/* Core Activities Section */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: 4,
+          border: '1px solid #e5e5e5',
+          overflow: 'hidden',
+          marginTop: 20
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid #e5e5e5'
+          }}>
+            <h2 style={{
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#1a1a1a',
+              margin: '0 0 4px 0'
+            }}>Core Activities</h2>
+            <p style={{
+              fontSize: 12,
+              color: '#999',
+              margin: 0,
+              lineHeight: 1.4
+            }}>
+              Auto-generated from your evidence. Add manually if needed.
+            </p>
+          </div>
+          <div style={{ padding: 16 }}>
+            <CoreActivitiesList
+              activities={coreActivities}
+              onUpdate={handleUpdateActivity}
+              onCreate={handleSaveCoreActivity}
+            />
+          </div>
         </div>
           </div>
         )}
