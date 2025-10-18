@@ -15,7 +15,7 @@ export function Header({ projectName = null, projectToken = null }) {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '8px 0'
+        padding: '6px 0'
       }}>
         <a href="/" style={{
           textDecoration: 'none',
@@ -26,7 +26,7 @@ export function Header({ projectName = null, projectToken = null }) {
             src="/Aird__3_-removebg-preview.png"
             alt="Aird"
             style={{
-              height: 60,
+              height: 80,
               width: 'auto'
             }}
           />
