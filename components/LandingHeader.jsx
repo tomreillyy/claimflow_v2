@@ -16,7 +16,7 @@ export function LandingHeader() {
       <div style={{
         maxWidth: 1100,
         margin: '0 auto',
-        padding: '12px 24px',
+        padding: '8px 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'

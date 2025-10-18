@@ -15,7 +15,7 @@ export function Header({ projectName = null, projectToken = null }) {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '14px 0'
+        padding: '8px 0'
       }}>
         <a href="/" style={{
           textDecoration: 'none',
