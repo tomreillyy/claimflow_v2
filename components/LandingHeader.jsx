@@ -27,10 +27,10 @@ export function LandingHeader() {
           textDecoration: 'none'
         }}>
           <img
-            src="/Aird__1_-removebg-preview.png"
+            src="/Aird__3_-removebg-preview.png"
             alt="Aird"
             style={{
-              height: 24,
+              height: 32,
               width: 'auto'
             }}
           />

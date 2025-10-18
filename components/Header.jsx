@@ -7,7 +7,7 @@ export function Header({ projectName = null, projectToken = null }) {
   return (
     <header style={{
       borderBottom: '1px solid var(--line)',
-      background: '#fff'
+      background: '#021048'
     }}>
       <div style={{
         width: 'min(960px, 92vw)',
@@ -19,25 +19,29 @@ export function Header({ projectName = null, projectToken = null }) {
       }}>
         <a href="/" style={{
           textDecoration: 'none',
-          fontWeight: 700,
-          textTransform: 'lowercase',
-          letterSpacing: '0.2px',
-          fontSize: 18,
-          color: '#021048'
+          display: 'flex',
+          alignItems: 'center'
         }}>
-          aird
+          <img
+            src="/Aird__3_-removebg-preview.png"
+            alt="Aird"
+            style={{
+              height: 32,
+              width: 'auto'
+            }}
+          />
         </a>
 
         {!user && (
           <nav style={{display: 'flex', alignItems: 'center', gap: 18}}>
             <a href="#how" style={{
               textDecoration: 'none',
-              color: '#021048',
+              color: '#fff',
               fontSize: 14
             }}>How it works</a>
             <a href="#roles" style={{
               textDecoration: 'none',
-              color: '#021048',
+              color: '#fff',
               fontSize: 14
             }}>For teams</a>
             <a href="/admin/new-project" style={{
@@ -45,11 +49,11 @@ export function Header({ projectName = null, projectToken = null }) {
               alignItems: 'center',
               padding: '10px 18px',
               borderRadius: 'var(--radius)',
-              background: 'var(--brand)',
-              color: '#fff',
+              background: '#fff',
+              color: '#021048',
               fontWeight: 600,
               textDecoration: 'none',
-              border: '1px solid var(--brand)',
+              border: '1px solid #fff',
               fontSize: 14
             }}>
               Sign up
@@ -63,12 +67,12 @@ export function Header({ projectName = null, projectToken = null }) {
               <nav style={{display: 'flex', gap: 18, marginRight: 12}}>
                 <a href="/" style={{
                   textDecoration: 'none',
-                  color: '#021048',
+                  color: '#fff',
                   fontSize: 14
                 }}>Projects</a>
                 <a href="/settings/team" style={{
                   textDecoration: 'none',
-                  color: '#021048',
+                  color: '#fff',
                   fontSize: 14
                 }}>Team</a>
               </nav>
@@ -76,7 +80,7 @@ export function Header({ projectName = null, projectToken = null }) {
             {projectName && (
               <span style={{
                 fontSize: 14,
-                color: '#021048',
+                color: '#fff',
                 marginRight: 12
               }}>{projectName}</span>
             )}
@@ -85,11 +89,11 @@ export function Header({ projectName = null, projectToken = null }) {
               style={{
                 padding: '8px 14px',
                 backgroundColor: 'transparent',
-                color: '#021048',
+                color: '#fff',
                 borderRadius: '12px',
                 fontSize: 14,
                 fontWeight: 500,
-                border: '1px solid #021048',
+                border: '1px solid #fff',
                 cursor: 'pointer',
                 fontFamily: 'inherit'
               }}

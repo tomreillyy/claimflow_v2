@@ -16,7 +16,7 @@ export const metadata = {
   title: "Aird - R&D Evidence Tracking",
   description: "Track your R&D work and build evidence as you go",
   icons: {
-    icon: "/Aird__1_-removebg-preview.png",
+    icon: "/aird-favicon.png",
   },
 };
 
