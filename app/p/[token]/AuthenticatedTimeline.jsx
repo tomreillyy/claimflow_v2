@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/Header';
 import QuickNoteForm from './quick-note-form';
 import CoreActivitiesList from '@/components/CoreActivitiesList';
+import ActionsRow from '@/components/ActionsRow';
 import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
 
 // Hook to fetch step counts and compute gap hint
@@ -885,6 +886,19 @@ export function AuthenticatedTimeline({ project, items, token }) {
     );
   }
 
+  // Calculate data for ActionsRow
+  const totalEvidence = items?.length || 0;
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const weeklyEvidence = items?.filter(ev => new Date(ev.created_at) >= oneWeekAgo).length || 0;
+
+  // Calculate coverage data
+  const coveredSteps = Object.entries(stepCounts || {})
+    .filter(([_, count]) => count > 0)
+    .length;
+  const missingSteps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion']
+    .filter(step => !stepCounts || stepCounts[step.toLowerCase()] === 0);
+
   // Show the authenticated timeline
   return (
     <div style={{
@@ -893,6 +907,18 @@ export function AuthenticatedTimeline({ project, items, token }) {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
     }}>
       <Header projectName={project.name} projectToken={token} />
+
+      <ActionsRow
+        evidenceCount={totalEvidence}
+        weeklyCount={weeklyEvidence}
+        githubConnected={!!githubRepo}
+        coverageData={{
+          covered: coveredSteps,
+          total: 5,
+          missing: missingSteps
+        }}
+        token={token}
+      />
 
       <main style={{
         maxWidth: 1600,
