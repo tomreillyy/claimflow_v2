@@ -16,7 +16,7 @@ export default function ActionsRow({
     <div style={{
       width: '100%',
       backgroundColor: '#f8f9fa',
-      padding: '32px 0',
+      padding: '24px 0',
       borderBottom: '1px solid #e1e4e8'
     }}>
       <div style={{
@@ -27,7 +27,7 @@ export default function ActionsRow({
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 16,
+          gap: 12,
           alignItems: 'stretch'
         }}>
 
@@ -36,39 +36,39 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '20px',
+            padding: '14px 16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16
+            gap: 10
           }}>
             <div>
               <div style={{
-                fontSize: 13,
+                fontSize: 12,
                 color: '#6b7280',
-                marginBottom: 8,
+                marginBottom: 6,
                 fontWeight: 500
               }}>This week</div>
               <div style={{
-                fontSize: 32,
+                fontSize: 24,
                 fontWeight: 700,
                 color: '#111827',
                 lineHeight: 1
               }}>{weeklyCount}</div>
               <div style={{
-                fontSize: 13,
+                fontSize: 12,
                 color: '#6b7280',
-                marginTop: 4
+                marginTop: 3
               }}>evidence items</div>
             </div>
             <button
               onClick={onAddNote}
               style={{
-                padding: '10px 16px',
+                padding: '8px 12px',
                 backgroundColor: '#111827',
                 color: 'white',
                 border: 'none',
-                borderRadius: 6,
-                fontSize: 14,
+                borderRadius: 4,
+                fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.15s'
@@ -89,23 +89,23 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '20px',
+            padding: '14px 16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16
+            gap: 10
           }}>
             <div>
               <div style={{
-                fontSize: 13,
+                fontSize: 12,
                 color: '#6b7280',
-                marginBottom: 8,
+                marginBottom: 6,
                 fontWeight: 500
               }}>GitHub</div>
               <div style={{
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 600,
                 color: '#111827',
-                marginTop: 12
+                marginTop: 8
               }}>
                 {githubConnected ? (
                   <span style={{ color: '#059669' }}>✓ Connected</span>
@@ -118,12 +118,12 @@ export default function ActionsRow({
               <button
                 onClick={onConnectGitHub}
                 style={{
-                  padding: '10px 16px',
+                  padding: '8px 12px',
                   backgroundColor: 'white',
                   color: '#111827',
                   border: '1px solid #d1d5db',
-                  borderRadius: 6,
-                  fontSize: 14,
+                  borderRadius: 4,
+                  fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.15s'
@@ -147,34 +147,34 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '20px',
+            padding: '14px 16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16
+            gap: 10
           }}>
             <div>
               <div style={{
-                fontSize: 13,
+                fontSize: 12,
                 color: '#6b7280',
-                marginBottom: 8,
+                marginBottom: 6,
                 fontWeight: 500
               }}>Coverage</div>
               <div style={{
-                fontSize: 32,
+                fontSize: 24,
                 fontWeight: 700,
                 color: '#111827',
                 lineHeight: 1
               }}>{coveragePercent}%</div>
               <div style={{
-                fontSize: 13,
+                fontSize: 12,
                 color: '#6b7280',
-                marginTop: 4
+                marginTop: 3
               }}>{coverageData.covered}/{coverageData.total} steps</div>
             </div>
             {/* Simple progress bar */}
             <div style={{
               width: '100%',
-              height: 4,
+              height: 3,
               backgroundColor: '#e5e7eb',
               borderRadius: 2,
               overflow: 'hidden'
@@ -193,23 +193,23 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '20px',
+            padding: '14px 16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16
+            gap: 10
           }}>
             <div>
               <div style={{
-                fontSize: 13,
+                fontSize: 12,
                 color: '#6b7280',
-                marginBottom: 8,
+                marginBottom: 6,
                 fontWeight: 500
               }}>Claim pack</div>
               <div style={{
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 600,
                 color: '#111827',
-                marginTop: 12
+                marginTop: 8
               }}>
                 {evidenceCount} items ready
               </div>
@@ -218,12 +218,12 @@ export default function ActionsRow({
               href={`/p/${token}/pack`}
               target="_blank"
               style={{
-                padding: '10px 16px',
+                padding: '8px 12px',
                 backgroundColor: 'white',
                 color: '#111827',
                 border: '1px solid #d1d5db',
-                borderRadius: 6,
-                fontSize: 14,
+                borderRadius: 4,
+                fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.15s',
