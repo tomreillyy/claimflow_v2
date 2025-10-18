@@ -1307,6 +1307,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
             missing: missingSteps
           }}
           token={token}
+          onConnectGitHub={handleConnectGitHub}
         />
 
         {/* Tabs */}
