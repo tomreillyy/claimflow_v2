@@ -1308,6 +1308,16 @@ export function AuthenticatedTimeline({ project, items, token }) {
           }}
           token={token}
           onConnectGitHub={handleConnectGitHub}
+          onAddNote={() => {
+            // Scroll to timeline tab and focus on add note
+            setActiveTab('timeline');
+            setTimeout(() => {
+              const addNoteBtn = document.querySelector('button[data-action="add-note"]');
+              if (addNoteBtn) {
+                addNoteBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }, 100);
+          }}
         />
 
         {/* Tabs */}
