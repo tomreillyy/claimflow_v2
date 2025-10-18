@@ -4,9 +4,6 @@ import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/Header';
 import QuickNoteForm from './quick-note-form';
-import CoreActivitiesList from '@/components/CoreActivitiesList';
-import PayrollDropzone from '@/components/PayrollDropzone';
-import PayrollMapper from '@/components/PayrollMapper';
 import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
 
 // Hook to fetch step counts and compute gap hint
@@ -901,25 +898,15 @@ export function AuthenticatedTimeline({ project, items, token }) {
         margin: '0 auto',
         padding: '40px 24px'
       }}>
-        {/* Two column layout */}
+        {/* Action buttons */}
         <div style={{
+          maxWidth: 900,
+          margin: '0 auto',
           display: 'flex',
-          gap: 24,
-          alignItems: 'start'
+          justifyContent: 'flex-end',
+          gap: 8,
+          marginBottom: 16
         }}>
-          {/* Empty spacer for sidebar */}
-          <div style={{ width: 280, flexShrink: 0 }}></div>
-
-          {/* GitHub and View claim pack buttons - aligned with main content */}
-          <div style={{
-            flex: 1,
-            maxWidth: 900,
-            margin: '0 auto',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: 8,
-            marginBottom: 16
-          }}>
             {!githubRepo && !showRepoPicker && (
               <button
                 onClick={handleConnectGitHub}
@@ -986,55 +973,11 @@ export function AuthenticatedTimeline({ project, items, token }) {
           </div>
         </div>
 
-        {/* Two column layout - main content */}
+        {/* Main content */}
         <div style={{
-          display: 'flex',
-          gap: 24,
-          alignItems: 'start'
+          maxWidth: 900,
+          margin: '0 auto'
         }}>
-          {/* Sidebar - Core Activities */}
-          <aside style={{
-            width: 280,
-            flexShrink: 0,
-            position: 'sticky',
-            top: 24
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: 4,
-              border: '1px solid #e5e5e5',
-              padding: 16
-            }}>
-              <h3 style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#666',
-                margin: '0 0 6px 0',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}>Core Activities</h3>
-              <p style={{
-                fontSize: 11,
-                color: '#999',
-                margin: '0 0 12px 0',
-                lineHeight: 1.4
-              }}>
-                Auto-generated from your evidence. Add manually if needed.
-              </p>
-              <CoreActivitiesList
-                activities={coreActivities}
-                onUpdate={handleUpdateActivity}
-                onCreate={handleSaveCoreActivity}
-              />
-            </div>
-          </aside>
-
-          {/* Main content column */}
-          <div style={{
-            flex: 1,
-            maxWidth: 900,
-            margin: '0 auto'
-          }}>
             {/* GitHub Repository Picker */}
             {showRepoPicker && (
               <div style={{
@@ -1173,214 +1116,170 @@ export function AuthenticatedTimeline({ project, items, token }) {
             fontSize: 14,
             color: '#666',
             margin: '0 0 12px 0'
-          }}>Evidence timeline for {project.year}</p>
+          }}>Everything here becomes contemporaneous R&D evidence.</p>
 
-          {/* Hypothesis Section */}
-          {hypothesis && !isEditingHypothesis ? (
-            <div style={{
-              marginBottom: 16,
-              padding: 12,
-              backgroundColor: '#f0f9ff',
-              border: '1px solid #bfdbfe',
-              borderRadius: 4
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: 4
-              }}>
-                <p style={{
-                  fontSize: 14,
-                  color: '#333',
-                  margin: 0,
-                  flex: 1
-                }}>
-                  <strong>Hypothesis:</strong> {hypothesis}
-                </p>
-                <button
-                  onClick={() => setIsEditingHypothesis(true)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#021048',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    padding: '0 0 0 12px',
-                    textDecoration: 'underline'
-                  }}
-                >
-                  Edit
-                </button>
-              </div>
-              {project.updated_at && (
-                <p style={{
-                  fontSize: 12,
-                  color: '#666',
-                  margin: '4px 0 0 0'
-                }}>
-                  Last updated {new Date(project.updated_at).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          ) : !hypothesis && !isEditingHypothesis ? (
-            <div style={{
-              marginBottom: 16,
-              padding: 12,
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: 4
-            }}>
-              <label style={{
-                display: 'block',
-                fontSize: 13,
-                fontWeight: 500,
-                color: '#333',
-                marginBottom: 6
-              }}>
-                Project hypothesis (one sentence)
-              </label>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <input
-                  value={hypothesis}
-                  onChange={(e) => setHypothesis(e.target.value)}
-                  placeholder="If we <approach> under <conditions>, we expect <measurable outcome> because <technical reason>."
-                  maxLength={280}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    fontSize: 14,
-                    border: '1px solid #ddd',
-                    borderRadius: 6,
-                    outline: 'none',
-                    color: '#1a1a1a'
-                  }}
-                />
-                <button
-                  onClick={handleSaveHypothesis}
-                  disabled={hypothesisSaving}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: 'white',
-                    backgroundColor: hypothesisSaving ? '#ccc' : '#021048',
-                    border: 'none',
-                    borderRadius: 6,
-                    cursor: hypothesisSaving ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {hypothesisSaving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-              <p style={{
-                fontSize: 12,
-                color: '#666',
-                margin: '6px 0 0 0'
-              }}>
-                Technical and testable (not a business goal). 35 words max.
-              </p>
-            </div>
-          ) : isEditingHypothesis ? (
-            <div style={{
-              marginBottom: 16,
-              padding: 12,
-              backgroundColor: '#f0f9ff',
-              border: '1px solid #bfdbfe',
-              borderRadius: 4
-            }}>
-              <label style={{
-                display: 'block',
-                fontSize: 13,
-                fontWeight: 500,
-                color: '#333',
-                marginBottom: 6
-              }}>
-                Project hypothesis (one sentence)
-              </label>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <input
-                  value={hypothesis}
-                  onChange={(e) => setHypothesis(e.target.value)}
-                  placeholder="If we <approach> under <conditions>, we expect <measurable outcome> because <technical reason>."
-                  maxLength={280}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    fontSize: 14,
-                    border: '1px solid #ddd',
-                    borderRadius: 6,
-                    outline: 'none',
-                    color: '#1a1a1a'
-                  }}
-                />
-                <button
-                  onClick={handleSaveHypothesis}
-                  disabled={hypothesisSaving}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: 'white',
-                    backgroundColor: hypothesisSaving ? '#ccc' : '#021048',
-                    border: 'none',
-                    borderRadius: 6,
-                    cursor: hypothesisSaving ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {hypothesisSaving ? 'Saving...' : 'Save'}
-                </button>
-                <button
-                  onClick={() => {
-                    setHypothesis(project.current_hypothesis || '');
-                    setIsEditingHypothesis(false);
-                  }}
-                  style={{
-                    padding: '8px 16px',
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: '#666',
-                    backgroundColor: 'white',
-                    border: '1px solid #ddd',
-                    borderRadius: 6,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-              <p style={{
-                fontSize: 12,
-                color: '#666',
-                margin: '6px 0 0 0'
-              }}>
-                Technical and testable (not a business goal). 35 words max.
-              </p>
-            </div>
-          ) : null}
-
-          <div style={{
+          {/* Hypothesis Section - Collapsed */}
+          <details style={{
+            marginBottom: 16,
             backgroundColor: '#f8fafc',
             border: '1px solid #e2e8f0',
-            borderRadius: 4,
-            padding: 12
+            borderRadius: 4
           }}>
-            <p style={{
+            <summary style={{
+              padding: 12,
               fontSize: 13,
+              fontWeight: 500,
               color: '#666',
-              margin: '0 0 4px 0',
-              fontWeight: 500
-            }}>Send updates via email:</p>
-            <code style={{
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}>
+              Optional project hypothesis
+            </summary>
+            <div style={{ padding: '0 12px 12px 12px' }}>
+              {!isEditingHypothesis ? (
+                <>
+                  {hypothesis ? (
+                    <div style={{
+                      padding: 10,
+                      backgroundColor: '#f0f9ff',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: 4,
+                      marginBottom: 8
+                    }}>
+                      <p style={{
+                        fontSize: 13,
+                        color: '#333',
+                        margin: '0 0 4px 0'
+                      }}>
+                        {hypothesis}
+                      </p>
+                    </div>
+                  ) : (
+                    <p style={{
+                      fontSize: 12,
+                      color: '#999',
+                      margin: '0 0 8px 0',
+                      fontStyle: 'italic'
+                    }}>
+                      e.g., "If we cache API responses, latency will drop below 100ms"
+                    </p>
+                  )}
+                  <button
+                    onClick={() => setIsEditingHypothesis(true)}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: '#021048',
+                      backgroundColor: 'white',
+                      border: '1px solid #ddd',
+                      borderRadius: 4,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {hypothesis ? 'Edit' : 'Add hypothesis'}
+                  </button>
+                </>
+              ) : (
+                <div>
+                  <input
+                    value={hypothesis}
+                    onChange={(e) => setHypothesis(e.target.value)}
+                    placeholder='e.g., "If we cache API responses, latency will drop below 100ms"'
+                    maxLength={280}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      fontSize: 13,
+                      border: '1px solid #ddd',
+                      borderRadius: 4,
+                      outline: 'none',
+                      color: '#1a1a1a',
+                      marginBottom: 8,
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={handleSaveHypothesis}
+                      disabled={hypothesisSaving}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: 'white',
+                        backgroundColor: hypothesisSaving ? '#ccc' : '#021048',
+                        border: 'none',
+                        borderRadius: 4,
+                        cursor: hypothesisSaving ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {hypothesisSaving ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHypothesis(project.current_hypothesis || '');
+                        setIsEditingHypothesis(false);
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: '#666',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: 4,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 16
+          }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: '#f0f9ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: 16,
+              padding: '6px 12px',
               fontSize: 13,
-              backgroundColor: '#e2e8f0',
-              padding: '3px 6px',
-              borderRadius: 3,
-              fontFamily: 'Monaco, monospace',
+              fontFamily: 'ui-monospace, Monaco, monospace',
               color: '#1a1a1a'
             }}>
-              {project.inbound_email_local}@{process.env.NEXT_PUBLIC_INBOUND_DOMAIN}
-            </code>
+              <span>📧</span>
+              <span>{project.inbound_email_local}@{process.env.NEXT_PUBLIC_INBOUND_DOMAIN?.split('.')[0]}…</span>
+            </div>
+            <button
+              onClick={() => {
+                const email = `${project.inbound_email_local}@${process.env.NEXT_PUBLIC_INBOUND_DOMAIN}`;
+                navigator.clipboard.writeText(email);
+                showToast('Email copied!');
+              }}
+              style={{
+                padding: '6px 12px',
+                fontSize: 12,
+                fontWeight: 500,
+                color: '#021048',
+                backgroundColor: 'white',
+                border: '1px solid #ddd',
+                borderRadius: 4,
+                cursor: 'pointer'
+              }}
+            >
+              Copy
+            </button>
           </div>
         </div>
 
@@ -1428,46 +1327,8 @@ export function AuthenticatedTimeline({ project, items, token }) {
         {/* Timeline Tab Content */}
         {activeTab === 'timeline' && (
           <div>
-        {/* R&D Filter and Step Distribution */}
-        <div style={{ marginBottom: 20, display: 'flex', gap: 12, flexDirection: 'column' }}>
-          {/* R&D Only Toggle */}
-          <div style={{
-            padding: '12px 16px',
-            backgroundColor: '#fafafa',
-            border: '1px solid #e5e5e5',
-            borderRadius: 4,
-            display: 'flex',
-            gap: 12,
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <span style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
-              Filter evidence:
-            </span>
-            <button
-              onClick={() => setShowRdOnly(!showRdOnly)}
-              style={{
-                padding: '6px 12px',
-                fontSize: 13,
-                fontWeight: 500,
-                color: showRdOnly ? 'white' : '#666',
-                backgroundColor: showRdOnly ? '#021048' : 'white',
-                border: showRdOnly ? '1px solid #021048' : '1px solid #ddd',
-                borderRadius: 4,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              {showRdOnly ? '✓ R&D Only' : 'Show All'}
-            </button>
-            {showRdOnly && (
-              <span style={{ fontSize: 12, color: '#666' }}>
-                Showing evidence linked to activities
-              </span>
-            )}
-          </div>
-
-          {/* Step Distribution Summary */}
+        {/* Step Distribution Chip Bar */}
+        <div style={{ marginBottom: 20 }}>
           {stepCounts && Object.keys(stepCounts).length > 0 && (
             <div style={{
               padding: '12px 16px',
@@ -1853,10 +1714,8 @@ export function AuthenticatedTimeline({ project, items, token }) {
           </div>
         )}
 
-          </div>
-          {/* End main content column */}
         </div>
-        {/* End two column layout */}
+        {/* End main content */}
 
         {/* Toast notification */}
         {toast && (
