@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Aird - R&D Evidence Tracking",
   description: "Track your R&D work and build evidence as you go",
+  icons: {
+    icon: "/airdfavicon-removebg-preview.png",
+  },
 };
 
 export default function RootLayout({ children }) {
