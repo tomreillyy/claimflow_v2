@@ -400,6 +400,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const [toast, setToast] = useState('');
   const [activitiesFetched, setActivitiesFetched] = useState(false);
   const [filterSteps, setFilterSteps] = useState(new Set());
+  const [showRdOnly, setShowRdOnly] = useState(false);
   const [activeTab, setActiveTab] = useState('timeline');
 
   // Costs tab state
@@ -1427,19 +1428,57 @@ export function AuthenticatedTimeline({ project, items, token }) {
         {/* Timeline Tab Content */}
         {activeTab === 'timeline' && (
           <div>
-        {/* Step Distribution Summary */}
-        {stepCounts && Object.keys(stepCounts).length > 0 && (
+        {/* R&D Filter and Step Distribution */}
+        <div style={{ marginBottom: 20, display: 'flex', gap: 12, flexDirection: 'column' }}>
+          {/* R&D Only Toggle */}
           <div style={{
-            marginBottom: 20,
             padding: '12px 16px',
             backgroundColor: '#fafafa',
             border: '1px solid #e5e5e5',
             borderRadius: 4,
             display: 'flex',
-            gap: 16,
-            flexWrap: 'wrap',
-            alignItems: 'center'
+            gap: 12,
+            alignItems: 'center',
+            justifyContent: 'space-between'
           }}>
+            <span style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
+              Filter evidence:
+            </span>
+            <button
+              onClick={() => setShowRdOnly(!showRdOnly)}
+              style={{
+                padding: '6px 12px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: showRdOnly ? 'white' : '#666',
+                backgroundColor: showRdOnly ? '#021048' : 'white',
+                border: showRdOnly ? '1px solid #021048' : '1px solid #ddd',
+                borderRadius: 4,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {showRdOnly ? '✓ R&D Only' : 'Show All'}
+            </button>
+            {showRdOnly && (
+              <span style={{ fontSize: 12, color: '#666' }}>
+                Showing evidence linked to activities
+              </span>
+            )}
+          </div>
+
+          {/* Step Distribution Summary */}
+          {stepCounts && Object.keys(stepCounts).length > 0 && (
+            <div style={{
+              padding: '12px 16px',
+              backgroundColor: '#fafafa',
+              border: '1px solid #e5e5e5',
+              borderRadius: 4,
+              display: 'flex',
+              gap: 16,
+              flexWrap: 'wrap',
+              alignItems: 'center'
+            }}>
             {['hypothesis', 'experiment', 'observation', 'evaluation', 'conclusion'].map(step => {
               const count = stepCounts[step] || 0;
               const label = step.charAt(0).toUpperCase() + step.slice(1);
@@ -1492,8 +1531,9 @@ export function AuthenticatedTimeline({ project, items, token }) {
                 Clear filter{filterSteps.size > 1 ? 's' : ''}
               </button>
             )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {/* Timeline content */}
         <div style={{
@@ -1541,14 +1581,21 @@ export function AuthenticatedTimeline({ project, items, token }) {
 
           {items && items.length > 0 ? (
             <div>
-              {items.filter(ev => !deletedIds.has(ev.id)).filter(ev => {
-                if (filterSteps.size === 0) return true;
-                const currentEvidence = evidenceSteps[ev.id] || {
-                  step: ev.systematic_step_primary,
-                  source: ev.systematic_step_source || 'auto'
-                };
-                return filterSteps.has(currentEvidence.step);
-              }).map((ev, index) => {
+              {items.filter(ev => !deletedIds.has(ev.id))
+                .filter(ev => {
+                  // R&D filter: only show evidence linked to activities
+                  if (showRdOnly && !ev.linked_activity_id) return false;
+                  return true;
+                })
+                .filter(ev => {
+                  // Step filter
+                  if (filterSteps.size === 0) return true;
+                  const currentEvidence = evidenceSteps[ev.id] || {
+                    step: ev.systematic_step_primary,
+                    source: ev.systematic_step_source || 'auto'
+                  };
+                  return filterSteps.has(currentEvidence.step);
+                }).map((ev, index) => {
                 const currentEvidence = evidenceSteps[ev.id] || {
                   step: ev.systematic_step_primary,
                   source: ev.systematic_step_source || 'auto'
