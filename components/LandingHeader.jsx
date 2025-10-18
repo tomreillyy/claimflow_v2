@@ -27,7 +27,7 @@ export function LandingHeader() {
           textDecoration: 'none'
         }}>
           <img
-            src="/airdfavicon-removebg-preview.png"
+            src="/Aird__1_-removebg-preview.png"
             alt="Aird"
             style={{
               height: 24,
