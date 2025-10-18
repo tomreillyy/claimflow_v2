@@ -26,7 +26,7 @@ export function Header({ projectName = null, projectToken = null }) {
             src="/Aird__3_-removebg-preview.png"
             alt="Aird"
             style={{
-              height: 32,
+              height: 48,
               width: 'auto'
             }}
           />
