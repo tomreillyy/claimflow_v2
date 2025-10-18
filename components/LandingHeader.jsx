@@ -16,7 +16,7 @@ export function LandingHeader() {
       <div style={{
         maxWidth: 1100,
         margin: '0 auto',
-        padding: '6px 24px',
+        padding: '4px 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
@@ -31,7 +31,9 @@ export function LandingHeader() {
             alt="Aird"
             style={{
               height: 80,
-              width: 'auto'
+              width: 'auto',
+              marginTop: '-10px',
+              marginBottom: '-10px'
             }}
           />
         </a>
