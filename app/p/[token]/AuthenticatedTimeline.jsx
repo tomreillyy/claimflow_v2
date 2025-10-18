@@ -970,7 +970,6 @@ export function AuthenticatedTimeline({ project, items, token }) {
             >
               View claim pack
             </a>
-          </div>
         </div>
 
         {/* Main content */}
