@@ -908,18 +908,6 @@ export function AuthenticatedTimeline({ project, items, token }) {
     }}>
       <Header projectName={project.name} projectToken={token} />
 
-      <ActionsRow
-        evidenceCount={totalEvidence}
-        weeklyCount={weeklyEvidence}
-        githubConnected={!!githubRepo}
-        coverageData={{
-          covered: coveredSteps,
-          total: 5,
-          missing: missingSteps
-        }}
-        token={token}
-      />
-
       <main style={{
         maxWidth: 1600,
         margin: '0 auto',
@@ -1308,6 +1296,18 @@ export function AuthenticatedTimeline({ project, items, token }) {
             </button>
           </div>
         </div>
+
+        <ActionsRow
+          evidenceCount={totalEvidence}
+          weeklyCount={weeklyEvidence}
+          githubConnected={!!githubRepo}
+          coverageData={{
+            covered: coveredSteps,
+            total: 5,
+            missing: missingSteps
+          }}
+          token={token}
+        />
 
         {/* Tabs */}
         <div style={{
