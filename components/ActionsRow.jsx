@@ -20,13 +20,12 @@ export default function ActionsRow({
     }}>
       <div style={{
         maxWidth: 1200,
-        margin: '0 auto',
-        padding: '0 48px'
+        margin: '0 auto'
       }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 24,
+          gap: 32,
           alignItems: 'stretch'
         }}>
 
@@ -35,15 +34,16 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: 16,
+            padding: 18,
             display: 'flex',
             flexDirection: 'column',
-            gap: 8
+            justifyContent: 'space-between'
           }}>
             <div style={{
               fontSize: 13,
               color: '#374151',
-              lineHeight: 1.5
+              lineHeight: 1.5,
+              marginBottom: 12
             }}>
               {weeklyCount > 0
                 ? `${weeklyCount} new piece${weeklyCount !== 1 ? 's' : ''} captured this week. Add more to strengthen your claim.`
@@ -53,7 +53,7 @@ export default function ActionsRow({
               onClick={onAddNote}
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#111827',
+                backgroundColor: '#4b5563',
                 color: 'white',
                 border: 'none',
                 borderRadius: 4,
@@ -63,10 +63,10 @@ export default function ActionsRow({
                 transition: 'background-color 0.15s'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1f2937';
+                e.currentTarget.style.backgroundColor = '#374151';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#111827';
+                e.currentTarget.style.backgroundColor = '#4b5563';
               }}
             >
               Add note
@@ -78,15 +78,16 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: 16,
+            padding: 18,
             display: 'flex',
             flexDirection: 'column',
-            gap: 8
+            justifyContent: 'space-between'
           }}>
             <div style={{
               fontSize: 13,
               color: '#374151',
-              lineHeight: 1.5
+              lineHeight: 1.5,
+              marginBottom: 12
             }}>
               {githubConnected ? (
                 'GitHub capturing automatically. Every commit adds to your record.'
@@ -98,7 +99,7 @@ export default function ActionsRow({
               onClick={onConnectGitHub}
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#111827',
+                backgroundColor: '#4b5563',
                 color: 'white',
                 border: 'none',
                 borderRadius: 4,
@@ -108,10 +109,10 @@ export default function ActionsRow({
                 transition: 'background-color 0.15s'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1f2937';
+                e.currentTarget.style.backgroundColor = '#374151';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#111827';
+                e.currentTarget.style.backgroundColor = '#4b5563';
               }}
             >
               {githubConnected ? 'Manage sources' : 'Connect GitHub'}
@@ -123,15 +124,16 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: 16,
+            padding: 18,
             display: 'flex',
             flexDirection: 'column',
-            gap: 8
+            justifyContent: 'space-between'
           }}>
             <div style={{
               fontSize: 13,
               color: '#374151',
-              lineHeight: 1.5
+              lineHeight: 1.5,
+              marginBottom: 12
             }}>
               {coverageData.covered} of {coverageData.total} R&D steps captured. {coverageData.covered < coverageData.total && coverageData.missing.length > 0 && `Add a ${coverageData.missing[0].toLowerCase()} to strengthen your story.`}
             </div>
@@ -139,7 +141,7 @@ export default function ActionsRow({
               onClick={onAddNote}
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#111827',
+                backgroundColor: '#4b5563',
                 color: 'white',
                 border: 'none',
                 borderRadius: 4,
@@ -149,10 +151,10 @@ export default function ActionsRow({
                 transition: 'background-color 0.15s'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1f2937';
+                e.currentTarget.style.backgroundColor = '#374151';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#111827';
+                e.currentTarget.style.backgroundColor = '#4b5563';
               }}
             >
               {coverageData.missing.length > 0 ? `Add ${coverageData.missing[0].toLowerCase()}` : 'Add note'}
@@ -164,15 +166,16 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: 16,
+            padding: 18,
             display: 'flex',
             flexDirection: 'column',
-            gap: 8
+            justifyContent: 'space-between'
           }}>
             <div style={{
               fontSize: 13,
               color: '#374151',
-              lineHeight: 1.5
+              lineHeight: 1.5,
+              marginBottom: 12
             }}>
               Your claim pack updates as you work. Preview what you've built.
             </div>
@@ -181,7 +184,7 @@ export default function ActionsRow({
               target="_blank"
               style={{
                 padding: '8px 12px',
-                backgroundColor: '#111827',
+                backgroundColor: '#4b5563',
                 color: 'white',
                 border: 'none',
                 borderRadius: 4,
@@ -194,10 +197,10 @@ export default function ActionsRow({
                 display: 'block'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1f2937';
+                e.currentTarget.style.backgroundColor = '#374151';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#111827';
+                e.currentTarget.style.backgroundColor = '#4b5563';
               }}
             >
               Preview
