@@ -929,27 +929,6 @@ export function AuthenticatedTimeline({ project, items, token }) {
             color: '#1a1a1a',
             margin: 0
           }}>{project.name}</h1>
-          <div style={{
-            display: 'flex',
-            gap: 8
-          }}>
-            <a
-              href={`/p/${token}/pack`}
-              target="_blank"
-              style={{
-                padding: '6px 12px',
-                backgroundColor: '#021048',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: 3,
-                fontSize: 13,
-                fontWeight: 500,
-                display: 'inline-block'
-              }}
-            >
-              View claim pack
-            </a>
-          </div>
         </div>
 
         {/* Main content */}
