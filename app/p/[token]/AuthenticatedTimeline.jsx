@@ -1129,172 +1129,8 @@ export function AuthenticatedTimeline({ project, items, token }) {
           <p style={{
             fontSize: 14,
             color: '#666',
-            margin: '0 0 12px 0'
+            margin: 0
           }}>Everything here becomes contemporaneous R&D evidence.</p>
-
-          {/* Hypothesis Section - Collapsed */}
-          <details style={{
-            marginBottom: 16,
-            backgroundColor: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: 4
-          }}>
-            <summary style={{
-              padding: 12,
-              fontSize: 13,
-              fontWeight: 500,
-              color: '#666',
-              cursor: 'pointer',
-              userSelect: 'none'
-            }}>
-              Optional project hypothesis
-            </summary>
-            <div style={{ padding: '0 12px 12px 12px' }}>
-              {!isEditingHypothesis ? (
-                <>
-                  {hypothesis ? (
-                    <div style={{
-                      padding: 10,
-                      backgroundColor: '#f0f9ff',
-                      border: '1px solid #bfdbfe',
-                      borderRadius: 4,
-                      marginBottom: 8
-                    }}>
-                      <p style={{
-                        fontSize: 13,
-                        color: '#333',
-                        margin: '0 0 4px 0'
-                      }}>
-                        {hypothesis}
-                      </p>
-                    </div>
-                  ) : (
-                    <p style={{
-                      fontSize: 12,
-                      color: '#999',
-                      margin: '0 0 8px 0',
-                      fontStyle: 'italic'
-                    }}>
-                      e.g., "If we cache API responses, latency will drop below 100ms"
-                    </p>
-                  )}
-                  <button
-                    onClick={() => setIsEditingHypothesis(true)}
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: 12,
-                      fontWeight: 500,
-                      color: '#021048',
-                      backgroundColor: 'white',
-                      border: '1px solid #ddd',
-                      borderRadius: 4,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {hypothesis ? 'Edit' : 'Add hypothesis'}
-                  </button>
-                </>
-              ) : (
-                <div>
-                  <input
-                    value={hypothesis}
-                    onChange={(e) => setHypothesis(e.target.value)}
-                    placeholder='e.g., "If we cache API responses, latency will drop below 100ms"'
-                    maxLength={280}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      fontSize: 13,
-                      border: '1px solid #ddd',
-                      borderRadius: 4,
-                      outline: 'none',
-                      color: '#1a1a1a',
-                      marginBottom: 8,
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      onClick={handleSaveHypothesis}
-                      disabled={hypothesisSaving}
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: 'white',
-                        backgroundColor: hypothesisSaving ? '#ccc' : '#021048',
-                        border: 'none',
-                        borderRadius: 4,
-                        cursor: hypothesisSaving ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      {hypothesisSaving ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setHypothesis(project.current_hypothesis || '');
-                        setIsEditingHypothesis(false);
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: '#666',
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: 4,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </details>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 16
-          }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              backgroundColor: '#f0f9ff',
-              border: '1px solid #bfdbfe',
-              borderRadius: 16,
-              padding: '6px 12px',
-              fontSize: 13,
-              fontFamily: 'ui-monospace, Monaco, monospace',
-              color: '#1a1a1a'
-            }}>
-              <span>📧</span>
-              <span>{project.inbound_email_local}@{process.env.NEXT_PUBLIC_INBOUND_DOMAIN?.split('.')[0]}…</span>
-            </div>
-            <button
-              onClick={() => {
-                const email = `${project.inbound_email_local}@${process.env.NEXT_PUBLIC_INBOUND_DOMAIN}`;
-                navigator.clipboard.writeText(email);
-                showToast('Email copied!');
-              }}
-              style={{
-                padding: '6px 12px',
-                fontSize: 12,
-                fontWeight: 500,
-                color: '#021048',
-                backgroundColor: 'white',
-                border: '1px solid #ddd',
-                borderRadius: 4,
-                cursor: 'pointer'
-              }}
-            >
-              Copy
-            </button>
-          </div>
         </div>
 
         <ActionsRow
@@ -1452,6 +1288,40 @@ export function AuthenticatedTimeline({ project, items, token }) {
               margin: 0
             }}>Evidence Timeline</h2>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: '#f0f9ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: 16,
+                padding: '5px 10px',
+                fontSize: 12,
+                fontFamily: 'ui-monospace, Monaco, monospace',
+                color: '#1a1a1a'
+              }}>
+                <span>📧</span>
+                <span>{project.inbound_email_local}@{process.env.NEXT_PUBLIC_INBOUND_DOMAIN?.split('.')[0]}…</span>
+              </div>
+              <button
+                onClick={() => {
+                  const email = `${project.inbound_email_local}@${process.env.NEXT_PUBLIC_INBOUND_DOMAIN}`;
+                  navigator.clipboard.writeText(email);
+                  showToast('Email copied!');
+                }}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: '#666',
+                  backgroundColor: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: 3,
+                  cursor: 'pointer'
+                }}
+              >
+                Copy
+              </button>
               <a
                 href={`/p/${token}/upload`}
                 style={{
@@ -1474,6 +1344,128 @@ export function AuthenticatedTimeline({ project, items, token }) {
               <QuickNoteForm token={token} />
             </div>
           </div>
+
+          {/* Hypothesis Section - Under Timeline Header */}
+          <details style={{
+            margin: '12px 16px',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: 4
+          }}>
+            <summary style={{
+              padding: 10,
+              fontSize: 12,
+              fontWeight: 500,
+              color: '#666',
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}>
+              Optional project hypothesis
+            </summary>
+            <div style={{ padding: '0 10px 10px 10px' }}>
+              {!isEditingHypothesis ? (
+                <>
+                  {hypothesis ? (
+                    <div style={{
+                      padding: 8,
+                      backgroundColor: '#f0f9ff',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: 3,
+                      marginBottom: 6
+                    }}>
+                      <p style={{
+                        fontSize: 12,
+                        color: '#333',
+                        margin: 0
+                      }}>
+                        {hypothesis}
+                      </p>
+                    </div>
+                  ) : (
+                    <p style={{
+                      fontSize: 11,
+                      color: '#999',
+                      margin: '0 0 6px 0',
+                      fontStyle: 'italic'
+                    }}>
+                      e.g., "If we cache API responses, latency will drop below 100ms"
+                    </p>
+                  )}
+                  <button
+                    onClick={() => setIsEditingHypothesis(true)}
+                    style={{
+                      padding: '5px 10px',
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: '#021048',
+                      backgroundColor: 'white',
+                      border: '1px solid #ddd',
+                      borderRadius: 3,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {hypothesis ? 'Edit' : 'Add hypothesis'}
+                  </button>
+                </>
+              ) : (
+                <div>
+                  <input
+                    value={hypothesis}
+                    onChange={(e) => setHypothesis(e.target.value)}
+                    placeholder='e.g., "If we cache API responses, latency will drop below 100ms"'
+                    maxLength={280}
+                    style={{
+                      width: '100%',
+                      padding: '6px 10px',
+                      fontSize: 12,
+                      border: '1px solid #ddd',
+                      borderRadius: 3,
+                      outline: 'none',
+                      color: '#1a1a1a',
+                      marginBottom: 6,
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      onClick={handleSaveHypothesis}
+                      disabled={hypothesisSaving}
+                      style={{
+                        padding: '5px 10px',
+                        fontSize: 11,
+                        fontWeight: 500,
+                        color: 'white',
+                        backgroundColor: hypothesisSaving ? '#ccc' : '#021048',
+                        border: 'none',
+                        borderRadius: 3,
+                        cursor: hypothesisSaving ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {hypothesisSaving ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHypothesis(project.current_hypothesis || '');
+                        setIsEditingHypothesis(false);
+                      }}
+                      style={{
+                        padding: '5px 10px',
+                        fontSize: 11,
+                        fontWeight: 500,
+                        color: '#666',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: 3,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
 
           {items && items.length > 0 ? (
             <div>

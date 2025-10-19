@@ -62,6 +62,7 @@ export default function QuickNoteForm({ token }) {
     return (
       <button
         onClick={() => setIsOpen(true)}
+        data-action="add-note"
         style={{
           padding: '6px 12px',
           fontSize: 13,
