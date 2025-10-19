@@ -46,6 +46,11 @@ export function Header({ projectName = null, projectToken = null }) {
               color: '#fff',
               fontSize: 14
             }}>For teams</a>
+            <a href="/blog" style={{
+              textDecoration: 'none',
+              color: '#fff',
+              fontSize: 14
+            }}>Blog</a>
             <a href="/admin/new-project" style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -72,6 +77,11 @@ export function Header({ projectName = null, projectToken = null }) {
                   color: '#fff',
                   fontSize: 14
                 }}>Projects</a>
+                <a href="/blog" style={{
+                  textDecoration: 'none',
+                  color: '#fff',
+                  fontSize: 14
+                }}>Blog</a>
                 <a href="/settings/team" style={{
                   textDecoration: 'none',
                   color: '#fff',
