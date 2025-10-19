@@ -5,7 +5,7 @@ import SectionEditor from './SectionEditor';
 import ComplianceValidator from './ComplianceValidator';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/airdMasterContext';
 import { validateClaimPack } from '@/lib/claimPackValidator';
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function ClaimPackEditor({
   project,
@@ -30,7 +30,7 @@ export default function ClaimPackEditor({
 
   // Helper to get auth headers
   const getAuthHeaders = async () => {
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       throw new Error('Not authenticated');
     }
