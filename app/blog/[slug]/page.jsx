@@ -1,12 +1,8 @@
-'use client';
-
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import { getPostBySlug, getAllPosts } from '@/lib/blogPosts';
-import Header from '@/components/Header';
+import { Header } from '@/components/Header';
 
-export default function BlogPostPage() {
-  const params = useParams();
+export default function BlogPostPage({ params }) {
   const post = getPostBySlug(params.slug);
 
   if (!post) {
@@ -111,8 +107,7 @@ export default function BlogPostPage() {
               fontSize: 16,
               transition: 'color 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--brand)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted)'}
+            className="back-link"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path
@@ -231,14 +226,7 @@ export default function BlogPostPage() {
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(2,16,72,0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
-              }}
+              className="cta-button"
             >
               Try Aird free
             </Link>
@@ -280,14 +268,7 @@ export default function BlogPostPage() {
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 background: 'white'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--brand)';
-                e.currentTarget.style.color = 'var(--brand)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--line)';
-                e.currentTarget.style.color = 'var(--ink)';
-              }}
+              className="view-all-link"
             >
               View all articles
             </Link>
@@ -330,7 +311,7 @@ export default function BlogPostPage() {
 }
 
 // Generate metadata for each blog post dynamically
-export async function generateMetadata({ params }) {
+export function generateMetadata({ params }) {
   const post = getPostBySlug(params.slug);
 
   if (!post) {
@@ -365,7 +346,7 @@ export async function generateMetadata({ params }) {
 }
 
 // Generate static params for all blog posts (for static generation)
-export async function generateStaticParams() {
+export function generateStaticParams() {
   const posts = getAllPosts();
   return posts.map((post) => ({
     slug: post.slug

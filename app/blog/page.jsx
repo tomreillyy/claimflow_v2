@@ -1,8 +1,6 @@
-'use client';
-
 import Link from 'next/link';
 import { getAllPosts } from '@/lib/blogPosts';
-import Header from '@/components/Header';
+import { Header } from '@/components/Header';
 
 export default function BlogPage() {
   const posts = getAllPosts();
@@ -66,8 +64,7 @@ export default function BlogPage() {
                     display: 'block',
                     transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                  className="blog-post-link"
                 >
                   {/* Meta info */}
                   <div style={{
@@ -178,14 +175,7 @@ export default function BlogPage() {
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(2,16,72,0.15)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
-              }}
+              className="cta-button"
             >
               Get started free
             </Link>
