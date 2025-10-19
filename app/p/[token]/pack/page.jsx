@@ -151,7 +151,7 @@ export default async function PackV2Page({ params }) {
         />
       </main>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{__html: `
         @media print {
           .print-hide {
             display: none !important;
@@ -174,7 +174,7 @@ export default async function PackV2Page({ params }) {
             page-break-inside: avoid;
           }
         }
-      `}</style>
+      `}} />
     </div>
   );
 }
