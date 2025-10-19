@@ -913,15 +913,26 @@ export function AuthenticatedTimeline({ project, items, token }) {
         margin: '0 auto',
         padding: '40px 48px'
       }}>
-        {/* Action buttons */}
+        {/* Project title and action buttons */}
         <div style={{
           maxWidth: 1200,
           margin: '0 auto',
           display: 'flex',
-          justifyContent: 'flex-end',
-          gap: 8,
-          marginBottom: 16
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 16,
+          marginBottom: 24
         }}>
+          <h1 style={{
+            fontSize: 22,
+            fontWeight: 600,
+            color: '#1a1a1a',
+            margin: 0
+          }}>{project.name}</h1>
+          <div style={{
+            display: 'flex',
+            gap: 8
+          }}>
             {!githubRepo && !showRepoPicker && (
               <button
                 onClick={handleConnectGitHub}
@@ -985,6 +996,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
             >
               View claim pack
             </a>
+          </div>
         </div>
 
         {/* Main content */}
@@ -1110,28 +1122,6 @@ export function AuthenticatedTimeline({ project, items, token }) {
                 </form>
               </div>
             )}
-
-            {/* Project Header */}
-          <div style={{
-          backgroundColor: '#fafafa',
-          borderRadius: 4,
-          padding: 20,
-          marginBottom: 20,
-          border: '1px solid #e5e5e5'
-        }}>
-          <h1 style={{
-            fontSize: 24,
-            fontWeight: 600,
-            color: '#1a1a1a',
-            margin: '0 0 4px 0'
-          }}>{project.name}</h1>
-
-          <p style={{
-            fontSize: 14,
-            color: '#666',
-            margin: 0
-          }}>Everything here becomes contemporaneous R&D evidence.</p>
-        </div>
 
         <ActionsRow
           evidenceCount={totalEvidence}

@@ -81,10 +81,11 @@ export function Header({ projectName = null, projectToken = null }) {
             )}
             {projectName && (
               <span style={{
-                fontSize: 14,
-                color: '#fff',
-                marginRight: 12
-              }}>{projectName}</span>
+                fontSize: 13,
+                color: 'rgba(255, 255, 255, 0.85)',
+                marginRight: 12,
+                fontWeight: 400
+              }}>Everything here becomes contemporaneous R&D evidence</span>
             )}
             <button
               onClick={signOut}
