@@ -72,19 +72,22 @@ export async function POST(req, { params }) {
     console.log(`[ClaimPackGenerate] Starting generation for project ${project.id}:`, sectionsToGenerate);
 
     // Fetch all project data needed for generation
+    // First get activities to use their IDs for narratives query
+    const { data: activities } = await supabaseAdmin
+      .from('core_activities')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('created_at', { ascending: true });
+
+    const activityIds = (activities || []).map(a => a.id);
+
+    // Fetch remaining data in parallel
     const [
-      { data: activities },
       { data: evidence },
       { data: narratives },
       { data: costLedger },
       { data: existingSections }
     ] = await Promise.all([
-      supabaseAdmin
-        .from('core_activities')
-        .select('*')
-        .eq('project_id', project.id)
-        .order('created_at', { ascending: true }),
-
       supabaseAdmin
         .from('evidence')
         .select('*')
@@ -92,15 +95,12 @@ export async function POST(req, { params }) {
         .or('soft_deleted.is.null,soft_deleted.eq.false')
         .order('created_at', { ascending: true }),
 
-      supabaseAdmin
-        .from('activity_narratives')
-        .select('*')
-        .in('activity_id',
-          supabaseAdmin
-            .from('core_activities')
-            .select('id')
-            .eq('project_id', project.id)
-        ),
+      activityIds.length > 0
+        ? supabaseAdmin
+            .from('activity_narratives')
+            .select('*')
+            .in('activity_id', activityIds)
+        : Promise.resolve({ data: [] }),
 
       supabaseAdmin
         .from('cost_ledger')
@@ -124,7 +124,8 @@ export async function POST(req, { params }) {
     };
 
     // Check which sections can be generated (skip manually edited unless force=true)
-    const existingSectionsMap = new Map((existingSections || []).map(s => [s.section_key, s]));
+    const existingSectionsArray = Array.isArray(existingSections) ? existingSections : (existingSections || []);
+    const existingSectionsMap = new Map(existingSectionsArray.map(s => [s.section_key, s]));
     const sectionsToSkip = [];
     const sectionsToProcess = [];
 
