@@ -15,8 +15,7 @@ export default function ActionsRow({
   return (
     <div style={{
       width: '100%',
-      backgroundColor: '#f8f9fa',
-      padding: '24px 0',
+      padding: '32px 0',
       borderBottom: '1px solid #e1e4e8'
     }}>
       <div style={{
@@ -27,7 +26,7 @@ export default function ActionsRow({
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 12,
+          gap: 24,
           alignItems: 'stretch'
         }}>
 
@@ -47,18 +46,17 @@ export default function ActionsRow({
                 color: '#6b7280',
                 marginBottom: 6,
                 fontWeight: 500
-              }}>This week</div>
+              }}>This week's progress</div>
               <div style={{
-                fontSize: 24,
-                fontWeight: 700,
+                fontSize: 13,
                 color: '#111827',
-                lineHeight: 1
-              }}>{weeklyCount}</div>
-              <div style={{
-                fontSize: 12,
-                color: '#6b7280',
-                marginTop: 3
-              }}>evidence items</div>
+                lineHeight: 1.4,
+                marginTop: 8
+              }}>
+                {weeklyCount > 0
+                  ? `${weeklyCount} new piece${weeklyCount !== 1 ? 's' : ''} captured this week.`
+                  : 'No evidence captured yet this week.'}
+              </div>
             </div>
             <button
               onClick={onAddNote}
@@ -68,10 +66,11 @@ export default function ActionsRow({
                 color: 'white',
                 border: 'none',
                 borderRadius: 4,
-                fontSize: 13,
-                fontWeight: 600,
+                fontSize: 12,
+                fontWeight: 500,
                 cursor: 'pointer',
-                transition: 'all 0.15s'
+                transition: 'all 0.15s',
+                textAlign: 'left'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = '#1f2937';
@@ -80,11 +79,11 @@ export default function ActionsRow({
                 e.currentTarget.style.backgroundColor = '#111827';
               }}
             >
-              + Add note
+              Add more to strengthen your claim →
             </button>
           </div>
 
-          {/* 2. GitHub */}
+          {/* 2. Automation */}
           <div style={{
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
@@ -100,17 +99,17 @@ export default function ActionsRow({
                 color: '#6b7280',
                 marginBottom: 6,
                 fontWeight: 500
-              }}>GitHub</div>
+              }}>Automation</div>
               <div style={{
-                fontSize: 14,
-                fontWeight: 600,
+                fontSize: 13,
                 color: '#111827',
+                lineHeight: 1.4,
                 marginTop: 8
               }}>
                 {githubConnected ? (
-                  <span style={{ color: '#059669' }}>✓ Connected</span>
+                  'GitHub capturing automatically.'
                 ) : (
-                  'Not connected'
+                  'Connect GitHub to capture commits automatically.'
                 )}
               </div>
             </div>
@@ -123,10 +122,11 @@ export default function ActionsRow({
                   color: '#111827',
                   border: '1px solid #d1d5db',
                   borderRadius: 4,
-                  fontSize: 13,
-                  fontWeight: 600,
+                  fontSize: 12,
+                  fontWeight: 500,
                   cursor: 'pointer',
-                  transition: 'all 0.15s'
+                  transition: 'all 0.15s',
+                  textAlign: 'left'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = '#9ca3af';
@@ -137,12 +137,12 @@ export default function ActionsRow({
                   e.currentTarget.style.backgroundColor = 'white';
                 }}
               >
-                Connect
+                Connect GitHub to capture commits →
               </button>
             )}
           </div>
 
-          {/* 3. Coverage */}
+          {/* 3. R&D Coverage */}
           <div style={{
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
@@ -158,18 +158,15 @@ export default function ActionsRow({
                 color: '#6b7280',
                 marginBottom: 6,
                 fontWeight: 500
-              }}>Coverage</div>
+              }}>R&D coverage</div>
               <div style={{
-                fontSize: 24,
-                fontWeight: 700,
+                fontSize: 13,
                 color: '#111827',
-                lineHeight: 1
-              }}>{coveragePercent}%</div>
-              <div style={{
-                fontSize: 12,
-                color: '#6b7280',
-                marginTop: 3
-              }}>{coverageData.covered}/{coverageData.total} steps</div>
+                lineHeight: 1.4,
+                marginTop: 8
+              }}>
+                {coverageData.covered} of {coverageData.total} R&D steps captured.
+              </div>
             </div>
             {/* Simple progress bar */}
             <div style={{
@@ -186,6 +183,15 @@ export default function ActionsRow({
                 transition: 'width 0.3s ease'
               }} />
             </div>
+            {coverageData.covered < coverageData.total && coverageData.missing.length > 0 && (
+              <div style={{
+                fontSize: 11,
+                color: '#6b7280',
+                marginTop: -2
+              }}>
+                Add a {coverageData.missing[0].toLowerCase()} to strengthen your story →
+              </div>
+            )}
           </div>
 
           {/* 4. Claim Pack */}
@@ -204,14 +210,14 @@ export default function ActionsRow({
                 color: '#6b7280',
                 marginBottom: 6,
                 fontWeight: 500
-              }}>Claim pack</div>
+              }}>Claim pack in progress</div>
               <div style={{
-                fontSize: 14,
-                fontWeight: 600,
+                fontSize: 13,
                 color: '#111827',
+                lineHeight: 1.4,
                 marginTop: 8
               }}>
-                {evidenceCount} items ready
+                Your claim pack updates as you work.
               </div>
             </div>
             <a
@@ -223,12 +229,12 @@ export default function ActionsRow({
                 color: '#111827',
                 border: '1px solid #d1d5db',
                 borderRadius: 4,
-                fontSize: 13,
-                fontWeight: 600,
+                fontSize: 12,
+                fontWeight: 500,
                 cursor: 'pointer',
                 transition: 'all 0.15s',
                 textDecoration: 'none',
-                textAlign: 'center',
+                textAlign: 'left',
                 display: 'block'
               }}
               onMouseEnter={(e) => {
@@ -240,7 +246,7 @@ export default function ActionsRow({
                 e.currentTarget.style.backgroundColor = 'white';
               }}
             >
-              Preview →
+              Preview what you've built →
             </a>
           </div>
 
