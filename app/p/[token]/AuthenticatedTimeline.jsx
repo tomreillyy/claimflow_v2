@@ -457,6 +457,16 @@ export function AuthenticatedTimeline({ project, items, token }) {
     });
     return stepMap;
   });
+  const [evidenceActivityTypes, setEvidenceActivityTypes] = useState(() => {
+    const typeMap = {};
+    items?.forEach(ev => {
+      typeMap[ev.id] = {
+        activity_type: ev.activity_type || 'core',
+        source: ev.activity_type_source || 'auto'
+      };
+    });
+    return typeMap;
+  });
   const [hypothesis, setHypothesis] = useState(project.current_hypothesis || '');
   const [isEditingHypothesis, setIsEditingHypothesis] = useState(false);
   const [hypothesisSaving, setHypothesisSaving] = useState(false);
@@ -1458,8 +1468,11 @@ export function AuthenticatedTimeline({ project, items, token }) {
             <div>
               {items.filter(ev => !deletedIds.has(ev.id))
                 .filter(ev => {
-                  // R&D filter: only show evidence linked to activities
-                  if (showRdOnly && !ev.linked_activity_id) return false;
+                  // R&D filter: show evidence linked to activities OR classified as core R&D
+                  if (showRdOnly) {
+                    const activityType = evidenceActivityTypes[ev.id]?.activity_type || ev.activity_type || 'core';
+                    if (!ev.linked_activity_id && activityType !== 'core') return false;
+                  }
                   return true;
                 })
                 .filter(ev => {
@@ -1522,6 +1535,39 @@ export function AuthenticatedTimeline({ project, items, token }) {
                             </span>
                           </>
                         )}
+                        {(() => {
+                          const currentActivityType = evidenceActivityTypes[ev.id] || {
+                            activity_type: ev.activity_type || 'core',
+                            source: ev.activity_type_source || 'auto'
+                          };
+                          return currentActivityType.activity_type && (
+                            <>
+                              <span>·</span>
+                              <span style={{
+                                padding: '2px 6px',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                borderRadius: 3,
+                                backgroundColor: currentActivityType.activity_type === 'core' ? '#021048' : '#666',
+                                color: 'white',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 3
+                              }}>
+                                {currentActivityType.activity_type === 'core' ? 'Core R&D' : 'Supporting'}
+                                <span
+                                  style={{
+                                    fontSize: 8,
+                                    color: currentActivityType.source === 'manual' ? '#fff' : 'rgba(255,255,255,0.6)'
+                                  }}
+                                  title={currentActivityType.source === 'manual' ? 'Manually classified' : 'AI classified'}
+                                >
+                                  {currentActivityType.source === 'manual' ? '●' : '○'}
+                                </span>
+                              </span>
+                            </>
+                          );
+                        })()}
                         {ev.author_email && (
                           <>
                             <span>·</span>
@@ -1533,11 +1579,18 @@ export function AuthenticatedTimeline({ project, items, token }) {
                         evidenceId={ev.id}
                         token={token}
                         currentStep={currentEvidence.step}
+                        currentActivityType={evidenceActivityTypes[ev.id] || { activity_type: ev.activity_type || 'core', source: ev.activity_type_source || 'auto' }}
                         currentAuthor={ev.author_email}
                         onStepChange={(step) => {
                           setEvidenceSteps(prev => ({
                             ...prev,
                             [ev.id]: { step, source: 'manual' }
+                          }));
+                        }}
+                        onActivityTypeChange={(activity_type) => {
+                          setEvidenceActivityTypes(prev => ({
+                            ...prev,
+                            [ev.id]: { activity_type, source: 'manual' }
                           }));
                         }}
                         onDelete={() => {
