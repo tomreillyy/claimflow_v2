@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import ClaimPackEditor from '@/components/ClaimPackEditor/ClaimPackEditor';
 import Link from 'next/link';
+import PrintButton from './PrintButton';
 
 export default async function PackV2Page({ params }) {
   const { token } = await params;
@@ -117,22 +118,7 @@ export default async function PackV2Page({ params }) {
             </Link>
           </div>
 
-          <button
-            onClick={() => window.print()}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#021048',
-              color: 'white',
-              border: 'none',
-              borderRadius: 6,
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'system-ui'
-            }}
-          >
-            Print to PDF
-          </button>
+          <PrintButton />
         </div>
       </header>
 
