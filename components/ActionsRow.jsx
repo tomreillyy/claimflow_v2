@@ -35,10 +35,10 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '14px 16px',
+            padding: '16px 18px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10
+            gap: 12
           }}>
             <div>
               <div style={{
@@ -61,25 +61,30 @@ export default function ActionsRow({
             <button
               onClick={onAddNote}
               style={{
-                padding: '8px 12px',
-                backgroundColor: '#111827',
+                padding: '10px 14px',
+                backgroundColor: '#2563eb',
                 color: 'white',
                 border: 'none',
-                borderRadius: 4,
-                fontSize: 12,
-                fontWeight: 500,
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
                 cursor: 'pointer',
-                transition: 'all 0.15s',
-                textAlign: 'left'
+                transition: 'all 0.2s',
+                textAlign: 'center',
+                width: '100%'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1f2937';
+                e.currentTarget.style.backgroundColor = '#1d4ed8';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#111827';
+                e.currentTarget.style.backgroundColor = '#2563eb';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              Add more to strengthen your claim →
+              Add more →
             </button>
           </div>
 
@@ -88,10 +93,10 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '14px 16px',
+            padding: '16px 18px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10
+            gap: 12
           }}>
             <div>
               <div style={{
@@ -117,27 +122,30 @@ export default function ActionsRow({
               <button
                 onClick={onConnectGitHub}
                 style={{
-                  padding: '8px 12px',
-                  backgroundColor: 'white',
-                  color: '#111827',
-                  border: '1px solid #d1d5db',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontWeight: 500,
+                  padding: '10px 14px',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  textAlign: 'left'
+                  transition: 'all 0.2s',
+                  textAlign: 'center',
+                  width: '100%'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#9ca3af';
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                  e.currentTarget.style.backgroundColor = '#059669';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.backgroundColor = '#10b981';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                Connect GitHub to capture commits →
+                Connect GitHub →
               </button>
             )}
           </div>
@@ -147,10 +155,10 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '14px 16px',
+            padding: '16px 18px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10
+            gap: 12
           }}>
             <div>
               <div style={{
@@ -199,10 +207,10 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '14px 16px',
+            padding: '16px 18px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10
+            gap: 12
           }}>
             <div>
               <div style={{
@@ -224,29 +232,31 @@ export default function ActionsRow({
               href={`/p/${token}/pack`}
               target="_blank"
               style={{
-                padding: '8px 12px',
-                backgroundColor: 'white',
-                color: '#111827',
-                border: '1px solid #d1d5db',
-                borderRadius: 4,
-                fontSize: 12,
-                fontWeight: 500,
+                padding: '10px 14px',
+                backgroundColor: '#7c3aed',
+                color: 'white',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
                 cursor: 'pointer',
-                transition: 'all 0.15s',
+                transition: 'all 0.2s',
                 textDecoration: 'none',
-                textAlign: 'left',
+                textAlign: 'center',
                 display: 'block'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#9ca3af';
-                e.currentTarget.style.backgroundColor = '#f9fafb';
+                e.currentTarget.style.backgroundColor = '#6d28d9';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(124, 58, 237, 0.3)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#d1d5db';
-                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.backgroundColor = '#7c3aed';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              Preview what you've built →
+              Preview →
             </a>
           </div>
 
