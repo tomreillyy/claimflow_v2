@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect, useState, useCallback } from 'react';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 export default function SectionEditor({
   sectionKey,
@@ -69,10 +70,17 @@ export default function SectionEditor({
     setSaveStatus('saving');
 
     try {
+      // Get auth session
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
       const response = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({ content: contentToSave })
       });

@@ -5,6 +5,7 @@ import SectionEditor from './SectionEditor';
 import ComplianceValidator from './ComplianceValidator';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/airdMasterContext';
 import { validateClaimPack } from '@/lib/claimPackValidator';
+import { supabaseClient } from '@/lib/supabaseClient';
 
 export default function ClaimPackEditor({
   project,
@@ -27,6 +28,18 @@ export default function ClaimPackEditor({
     costLedger
   );
 
+  // Helper to get auth headers
+  const getAuthHeaders = async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      throw new Error('Not authenticated');
+    }
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    };
+  };
+
   const handleGenerateAll = async () => {
     if (!confirm('Generate all claim pack sections with AI? This may take 10-20 seconds.')) {
       return;
@@ -37,11 +50,10 @@ export default function ClaimPackEditor({
     setGenerationStats(null);
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/projects/${project.project_token}/claim-pack/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({
           // Generate all sections
         })
@@ -82,11 +94,10 @@ export default function ClaimPackEditor({
     setGenerationError(null);
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/projects/${project.project_token}/claim-pack/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({
           regenerate_sections: [sectionKey],
           force: true // Override manual edits
