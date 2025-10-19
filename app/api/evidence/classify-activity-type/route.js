@@ -81,7 +81,7 @@ function preClassifyActivityType(evidence, activities) {
 
   if (evidence.content) {
     const contentLower = evidence.content.toLowerCase();
-    const hasSupporting Keyword = supportingKeywords.some(kw =>
+    const hasSupportingKeyword = supportingKeywords.some(kw =>
       contentLower.includes(kw)
     );
 
