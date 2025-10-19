@@ -30,61 +30,46 @@ export default function ActionsRow({
           alignItems: 'stretch'
         }}>
 
-          {/* 1. Evidence This Week */}
+          {/* 1. Evidence */}
           <div style={{
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '16px 18px',
+            padding: 16,
             display: 'flex',
             flexDirection: 'column',
-            gap: 12
+            gap: 8
           }}>
-            <div>
-              <div style={{
-                fontSize: 12,
-                color: '#6b7280',
-                marginBottom: 6,
-                fontWeight: 500
-              }}>This week's progress</div>
-              <div style={{
-                fontSize: 13,
-                color: '#111827',
-                lineHeight: 1.4,
-                marginTop: 8
-              }}>
-                {weeklyCount > 0
-                  ? `${weeklyCount} new piece${weeklyCount !== 1 ? 's' : ''} captured this week.`
-                  : 'No evidence captured yet this week.'}
-              </div>
+            <div style={{
+              fontSize: 13,
+              color: '#374151',
+              lineHeight: 1.5
+            }}>
+              {weeklyCount > 0
+                ? `${weeklyCount} new piece${weeklyCount !== 1 ? 's' : ''} captured this week. Add more to strengthen your claim.`
+                : 'No evidence captured this week. Add more to strengthen your claim.'}
             </div>
             <button
               onClick={onAddNote}
               style={{
-                padding: '10px 14px',
-                backgroundColor: '#2563eb',
+                padding: '8px 12px',
+                backgroundColor: '#111827',
                 color: 'white',
                 border: 'none',
-                borderRadius: 6,
+                borderRadius: 4,
                 fontSize: 13,
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-                textAlign: 'center',
-                width: '100%'
+                transition: 'background-color 0.15s'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#1d4ed8';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
+                e.currentTarget.style.backgroundColor = '#1f2937';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#2563eb';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.backgroundColor = '#111827';
               }}
             >
-              Add more →
+              Add note
             </button>
           </div>
 
@@ -93,113 +78,85 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '16px 18px',
+            padding: 16,
             display: 'flex',
             flexDirection: 'column',
-            gap: 12
+            gap: 8
           }}>
-            <div>
-              <div style={{
-                fontSize: 12,
-                color: '#6b7280',
-                marginBottom: 6,
-                fontWeight: 500
-              }}>Automation</div>
-              <div style={{
-                fontSize: 13,
-                color: '#111827',
-                lineHeight: 1.4,
-                marginTop: 8
-              }}>
-                {githubConnected ? (
-                  'GitHub capturing automatically.'
-                ) : (
-                  'Connect GitHub to capture commits automatically.'
-                )}
-              </div>
+            <div style={{
+              fontSize: 13,
+              color: '#374151',
+              lineHeight: 1.5
+            }}>
+              {githubConnected ? (
+                'GitHub capturing automatically. Every commit adds to your record.'
+              ) : (
+                'Connect GitHub to capture commits automatically. Every commit adds to your record.'
+              )}
             </div>
-            {!githubConnected && (
-              <button
-                onClick={onConnectGitHub}
-                style={{
-                  padding: '10px 14px',
-                  backgroundColor: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  textAlign: 'center',
-                  width: '100%'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#059669';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#10b981';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                Connect GitHub →
-              </button>
-            )}
+            <button
+              onClick={onConnectGitHub}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#111827',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'background-color 0.15s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#1f2937';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#111827';
+              }}
+            >
+              {githubConnected ? 'Manage sources' : 'Connect GitHub'}
+            </button>
           </div>
 
-          {/* 3. R&D Coverage */}
+          {/* 3. Coverage */}
           <div style={{
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '16px 18px',
+            padding: 16,
             display: 'flex',
             flexDirection: 'column',
-            gap: 12
+            gap: 8
           }}>
-            <div>
-              <div style={{
-                fontSize: 12,
-                color: '#6b7280',
-                marginBottom: 6,
-                fontWeight: 500
-              }}>R&D coverage</div>
-              <div style={{
-                fontSize: 13,
-                color: '#111827',
-                lineHeight: 1.4,
-                marginTop: 8
-              }}>
-                {coverageData.covered} of {coverageData.total} R&D steps captured.
-              </div>
-            </div>
-            {/* Simple progress bar */}
             <div style={{
-              width: '100%',
-              height: 3,
-              backgroundColor: '#e5e7eb',
-              borderRadius: 2,
-              overflow: 'hidden'
+              fontSize: 13,
+              color: '#374151',
+              lineHeight: 1.5
             }}>
-              <div style={{
-                width: `${coveragePercent}%`,
-                height: '100%',
-                backgroundColor: '#111827',
-                transition: 'width 0.3s ease'
-              }} />
+              {coverageData.covered} of {coverageData.total} R&D steps captured. {coverageData.covered < coverageData.total && coverageData.missing.length > 0 && `Add a ${coverageData.missing[0].toLowerCase()} to strengthen your story.`}
             </div>
-            {coverageData.covered < coverageData.total && coverageData.missing.length > 0 && (
-              <div style={{
-                fontSize: 11,
-                color: '#6b7280',
-                marginTop: -2
-              }}>
-                Add a {coverageData.missing[0].toLowerCase()} to strengthen your story →
-              </div>
-            )}
+            <button
+              onClick={onAddNote}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#111827',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'background-color 0.15s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#1f2937';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#111827';
+              }}
+            >
+              {coverageData.missing.length > 0 ? `Add ${coverageData.missing[0].toLowerCase()}` : 'Add note'}
+            </button>
           </div>
 
           {/* 4. Claim Pack */}
@@ -207,59 +164,58 @@ export default function ActionsRow({
             backgroundColor: 'white',
             border: '1px solid #d1d5db',
             borderRadius: 6,
-            padding: '16px 18px',
+            padding: 16,
             display: 'flex',
             flexDirection: 'column',
-            gap: 12
+            gap: 8
           }}>
-            <div>
-              <div style={{
-                fontSize: 12,
-                color: '#6b7280',
-                marginBottom: 6,
-                fontWeight: 500
-              }}>Claim pack in progress</div>
-              <div style={{
-                fontSize: 13,
-                color: '#111827',
-                lineHeight: 1.4,
-                marginTop: 8
-              }}>
-                Your claim pack updates as you work.
-              </div>
+            <div style={{
+              fontSize: 13,
+              color: '#374151',
+              lineHeight: 1.5
+            }}>
+              Your claim pack updates as you work. Preview what you've built.
             </div>
             <a
               href={`/p/${token}/pack`}
               target="_blank"
               style={{
-                padding: '10px 14px',
-                backgroundColor: '#7c3aed',
+                padding: '8px 12px',
+                backgroundColor: '#111827',
                 color: 'white',
                 border: 'none',
-                borderRadius: 6,
+                borderRadius: 4,
                 fontSize: 13,
-                fontWeight: 600,
+                fontWeight: 500,
                 cursor: 'pointer',
-                transition: 'all 0.2s',
+                transition: 'background-color 0.15s',
                 textDecoration: 'none',
                 textAlign: 'center',
                 display: 'block'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#6d28d9';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(124, 58, 237, 0.3)';
+                e.currentTarget.style.backgroundColor = '#1f2937';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#7c3aed';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.backgroundColor = '#111827';
               }}
             >
-              Preview →
+              Preview
             </a>
           </div>
 
+        </div>
+
+        {/* Centered divider text */}
+        <div style={{
+          textAlign: 'center',
+          marginTop: 24,
+          paddingTop: 20,
+          borderTop: '1px solid #e5e7eb',
+          fontSize: 13,
+          color: '#6b7280'
+        }}>
+          Every update you add here flows straight into your claim pack.
         </div>
       </div>
     </div>
