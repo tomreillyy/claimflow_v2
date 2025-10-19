@@ -33,11 +33,29 @@ export async function POST(req, { params }) {
   const startTime = Date.now();
   const token = params.token;
 
-  // Verify user access
-  const { user, project, error: accessError } = await verifyUserAndProjectAccess(req, token);
+  // Get project by token (authentication optional for now - anyone with token can generate)
+  const { data: project, error: projectError } = await supabaseAdmin
+    .from('projects')
+    .select('*')
+    .eq('project_token', token)
+    .is('deleted_at', null)
+    .single();
 
-  if (accessError || !project) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (projectError || !project) {
+    console.error('[ClaimPackGenerate] Project not found:', projectError);
+    return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+  }
+
+  // Try to get authenticated user (optional)
+  let userEmail = 'system';
+  try {
+    const { user } = await verifyUserAndProjectAccess(req, token);
+    if (user) {
+      userEmail = user.email;
+    }
+  } catch (e) {
+    // Auth failed, but we'll continue with system user
+    console.log('[ClaimPackGenerate] No auth, using system user');
   }
 
   try {
@@ -148,7 +166,7 @@ export async function POST(req, { params }) {
             content,
             ai_generated: true,
             last_edited_at: new Date().toISOString(),
-            last_edited_by: user.email,
+            last_edited_by: userEmail,
             version: (existingSectionsMap.get(sectionKey)?.version || 0) + 1
           }, {
             onConflict: 'project_id,section_key'

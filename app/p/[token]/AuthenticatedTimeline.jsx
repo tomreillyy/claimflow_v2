@@ -74,15 +74,20 @@ function useSignedUrls(token, evidenceItems) {
   return { signedUrls, loading };
 }
 
-function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onStepChange, onDelete, onReassign }) {
+function EvidenceKebabMenu({ evidenceId, token, currentStep, currentActivityType, currentAuthor, onStepChange, onActivityTypeChange, onDelete, onReassign }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showStepPicker, setShowStepPicker] = useState(false);
+  const [showActivityTypePicker, setShowActivityTypePicker] = useState(false);
   const [showReassign, setShowReassign] = useState(false);
   const [people, setPeople] = useState([]);
   const [newAuthor, setNewAuthor] = useState('');
   const [reassigning, setReassigning] = useState(false);
 
   const steps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion', 'Unknown'];
+  const activityTypes = [
+    { value: 'core', label: 'Core R&D' },
+    { value: 'supporting', label: 'Supporting R&D' }
+  ];
 
   // Fetch people when reassign is shown
   useEffect(() => {
@@ -113,6 +118,24 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onSt
       });
     } catch (err) {
       console.error('Failed to update step:', err);
+    }
+  };
+
+  const handleActivityTypeSelect = async (activity_type) => {
+    // Optimistic update - UI changes immediately
+    onActivityTypeChange(activity_type);
+    setShowActivityTypePicker(false);
+    setIsOpen(false);
+
+    // Then call API in background
+    try {
+      await fetch(`/api/evidence/${token}/set-activity-type`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evidence_id: evidenceId, activity_type })
+      });
+    } catch (err) {
+      console.error('Failed to update activity type:', err);
     }
   };
 
@@ -201,6 +224,7 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onSt
             onClick={() => {
               setIsOpen(false);
               setShowStepPicker(false);
+              setShowActivityTypePicker(false);
             }}
           />
           <div
@@ -217,7 +241,7 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onSt
               zIndex: 20
             }}
           >
-            {!showStepPicker && !showReassign ? (
+            {!showStepPicker && !showActivityTypePicker && !showReassign ? (
               <>
                 <button
                   onClick={() => setShowStepPicker(true)}
@@ -235,6 +259,23 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onSt
                   onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
                 >
                   Re-classify step
+                </button>
+                <button
+                  onClick={() => setShowActivityTypePicker(true)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    color: '#333'
+                  }}
+                  onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
+                >
+                  Re-classify activity type
                 </button>
                 <button
                   onClick={() => setShowReassign(true)}
@@ -293,6 +334,30 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentAuthor, onSt
                     onMouseLeave={e => e.target.style.backgroundColor = currentStep === step ? '#f0f9ff' : 'transparent'}
                   >
                     {step}
+                  </button>
+                ))}
+              </div>
+            ) : showActivityTypePicker ? (
+              <div style={{ padding: '4px 0' }}>
+                {activityTypes.map(type => (
+                  <button
+                    key={type.value}
+                    onClick={() => handleActivityTypeSelect(type.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: 'none',
+                      background: currentActivityType?.activity_type === type.value ? '#f0f9ff' : 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      color: '#333',
+                      fontWeight: currentActivityType?.activity_type === type.value ? 500 : 400
+                    }}
+                    onMouseEnter={e => e.target.style.backgroundColor = '#f5f5f5'}
+                    onMouseLeave={e => e.target.style.backgroundColor = currentActivityType?.activity_type === type.value ? '#f0f9ff' : 'transparent'}
+                  >
+                    {type.label}
                   </button>
                 ))}
               </div>
