@@ -58,11 +58,20 @@ export default function ClaimPackEditor({
         generated: data.generated.length,
         skipped: data.skipped.length,
         errors: data.errors.length,
+        errorDetails: data.errors,
         duration_ms: data.duration_ms
       });
 
-      // Reload page to show new content
-      window.location.reload();
+      // If there were errors, show them instead of reloading
+      if (data.errors && data.errors.length > 0) {
+        console.error('[ClaimPackEditor] Generation errors:', data.errors);
+        setGenerationError(`${data.errors.length} section(s) failed to generate. Check console for details.`);
+      }
+
+      // Reload page to show new content (even if some sections had errors)
+      if (data.generated.length > 0) {
+        setTimeout(() => window.location.reload(), 2000); // Delay to show error message first
+      }
 
     } catch (error) {
       console.error('[ClaimPackEditor] Generation error:', error);
@@ -190,16 +199,26 @@ export default function ClaimPackEditor({
         <div className="print-hide" style={{
           marginBottom: 24,
           padding: 16,
-          backgroundColor: '#f0fdf4',
-          border: '1px solid #bbf7d0',
+          backgroundColor: generationStats.errors > 0 ? '#fef2f2' : '#f0fdf4',
+          border: generationStats.errors > 0 ? '1px solid #fecaca' : '1px solid #bbf7d0',
           borderRadius: 8,
-          color: '#166534',
+          color: generationStats.errors > 0 ? '#991b1b' : '#166534',
           fontSize: 13
         }}>
-          <strong>✓ Generation complete:</strong> {generationStats.generated} sections generated,
+          <strong>{generationStats.errors > 0 ? '⚠ ' : '✓ '}Generation complete:</strong> {generationStats.generated} sections generated,
           {generationStats.skipped > 0 && ` ${generationStats.skipped} skipped (manual edits),`}
           {generationStats.errors > 0 && ` ${generationStats.errors} errors,`}
           {' '}{(generationStats.duration_ms / 1000).toFixed(1)}s
+          {generationStats.errorDetails && generationStats.errorDetails.length > 0 && (
+            <div style={{ marginTop: 8, fontSize: 12 }}>
+              <strong>Failed sections:</strong>
+              <ul style={{ marginTop: 4, marginBottom: 0, paddingLeft: 20 }}>
+                {generationStats.errorDetails.map((err, i) => (
+                  <li key={i}>{err.section_name}: {err.error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

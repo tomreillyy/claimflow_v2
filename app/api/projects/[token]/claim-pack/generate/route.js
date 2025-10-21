@@ -205,6 +205,11 @@ export async function POST(req, { params }) {
       duration_ms: duration
     });
 
+    // Log errors if any
+    if (results.errors.length > 0) {
+      console.error('[ClaimPackGenerate] Generation errors:', JSON.stringify(results.errors, null, 2));
+    }
+
     return NextResponse.json({
       ok: true,
       generated: results.generated,
