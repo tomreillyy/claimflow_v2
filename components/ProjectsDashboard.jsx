@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
+import { EditProjectModal } from '@/components/EditProjectModal';
 
 export function ProjectsDashboard() {
   const { user } = useAuth();
@@ -9,6 +10,7 @@ export function ProjectsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
   const menuRefs = useRef({});
 
   useEffect(() => {
@@ -58,6 +60,15 @@ export function ProjectsDashboard() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [openMenuId]);
+
+  const handleEditProject = (project) => {
+    setEditingProject(project);
+    setOpenMenuId(null);
+  };
+
+  const handleProjectUpdated = (updatedProject) => {
+    setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+  };
 
   const handleDeleteProject = async (projectId) => {
     if (!confirm('Are you sure you want to delete this project? It will be hidden but can be recovered.')) {
@@ -303,6 +314,28 @@ export function ProjectsDashboard() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          handleEditProject(project);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '10px 16px',
+                          border: 'none',
+                          background: 'none',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          color: '#333',
+                          fontWeight: 500
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                      >
+                        Edit Details
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           handleDeleteProject(project.id);
                         }}
                         style={{
@@ -314,7 +347,8 @@ export function ProjectsDashboard() {
                           cursor: 'pointer',
                           fontSize: 14,
                           color: '#dc3545',
-                          fontWeight: 500
+                          fontWeight: 500,
+                          borderTop: '1px solid #e5e5e5'
                         }}
                         onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
                         onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
@@ -379,6 +413,14 @@ export function ProjectsDashboard() {
           </div>
         ))}
       </div>
+
+      {editingProject && (
+        <EditProjectModal
+          project={editingProject}
+          onClose={() => setEditingProject(null)}
+          onUpdate={handleProjectUpdated}
+        />
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req) {
   try {
-    const { name, year, participants = [], owner_email, current_hypothesis } = await req.json();
+    const { name, year, participants = [], owner_email, current_hypothesis, project_overview } = await req.json();
 
     if (!name || !year) {
       return NextResponse.json({ error: 'name and year required' }, { status: 400 });
@@ -39,7 +39,8 @@ export async function POST(req) {
         inbound_email_local,
         participants,
         owner_id,
-        current_hypothesis: current_hypothesis || null
+        current_hypothesis: current_hypothesis || null,
+        project_overview: project_overview || null
       })
       .select()
       .single();
