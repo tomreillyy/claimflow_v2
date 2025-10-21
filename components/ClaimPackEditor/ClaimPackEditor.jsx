@@ -229,47 +229,128 @@ export default function ClaimPackEditor({
       <div className="print-only" style={{
         marginBottom: 40,
         paddingBottom: 24,
-        borderBottom: '2px solid #333',
-        pageBreakAfter: 'always'
+        borderBottom: '2px solid #021048',
+        pageBreakAfter: 'always',
+        position: 'relative',
+        minHeight: '80vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
       }}>
-        <h1 style={{
-          fontSize: 28,
-          fontWeight: 400,
-          color: '#1a1a1a',
-          margin: '0 0 16px 0'
-        }}>
-          R&D Tax Incentive Claim Pack
-        </h1>
-        <h2 style={{
-          fontSize: 20,
-          fontWeight: 600,
-          color: '#333',
-          margin: '0 0 8px 0'
-        }}>
-          {project.name}
-        </h2>
-        <p style={{
-          fontSize: 14,
-          color: '#666',
-          margin: '0 0 24px 0'
-        }}>
-          Tax Year {project.year} • Generated {new Date().toLocaleDateString('en-AU', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </p>
-        {project.current_hypothesis && (
-          <div style={{
-            padding: 16,
-            backgroundColor: '#f8fafc',
-            borderLeft: '4px solid #021048',
-            marginTop: 24
-          }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Project Hypothesis:</div>
-            <div>{project.current_hypothesis}</div>
+        <div>
+          {/* AIRD Logo */}
+          <div style={{ marginBottom: 48 }}>
+            <img
+              src="/Aird__3_-removebg-preview.png"
+              alt="AIRD"
+              style={{
+                height: 60,
+                width: 'auto'
+              }}
+            />
           </div>
-        )}
+
+          {/* Title Section */}
+          <div style={{ marginTop: 80, marginBottom: 48 }}>
+            <h1 style={{
+              fontSize: 32,
+              fontWeight: 700,
+              color: '#021048',
+              margin: '0 0 16px 0',
+              letterSpacing: '-0.5px'
+            }}>
+              R&D Tax Incentive Claim Pack
+            </h1>
+            <div style={{
+              height: 4,
+              width: 80,
+              backgroundColor: '#021048',
+              margin: '16px 0 32px 0'
+            }}></div>
+            <h2 style={{
+              fontSize: 24,
+              fontWeight: 600,
+              color: '#1a1a1a',
+              margin: '0 0 12px 0'
+            }}>
+              {project.name}
+            </h2>
+            <p style={{
+              fontSize: 16,
+              color: '#666',
+              margin: '0 0 24px 0',
+              fontFamily: 'system-ui'
+            }}>
+              Tax Year {project.year}
+            </p>
+          </div>
+
+          {/* Hypothesis */}
+          {project.current_hypothesis && (
+            <div style={{
+              padding: 24,
+              backgroundColor: '#f8fafc',
+              borderLeft: '4px solid #021048',
+              marginTop: 48,
+              marginBottom: 48
+            }}>
+              <div style={{
+                fontWeight: 600,
+                marginBottom: 12,
+                color: '#021048',
+                fontSize: 14,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>Project Hypothesis</div>
+              <div style={{ fontSize: 15, lineHeight: 1.6 }}>{project.current_hypothesis}</div>
+            </div>
+          )}
+
+          {/* Project Overview */}
+          {project.project_overview && (
+            <div style={{
+              padding: 24,
+              backgroundColor: '#fafafa',
+              border: '1px solid #e5e5e5',
+              marginTop: 24
+            }}>
+              <div style={{
+                fontWeight: 600,
+                marginBottom: 12,
+                color: '#021048',
+                fontSize: 14,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>Project Overview</div>
+              <div style={{ fontSize: 15, lineHeight: 1.6 }}>{project.project_overview}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer on Title Page */}
+        <div style={{
+          marginTop: 'auto',
+          paddingTop: 48
+        }}>
+          <div style={{
+            fontSize: 12,
+            color: '#999',
+            borderTop: '1px solid #e5e5e5',
+            paddingTop: 16
+          }}>
+            <div style={{ marginBottom: 4 }}>
+              <strong>Generated:</strong> {new Date().toLocaleDateString('en-AU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </div>
+            <div style={{ fontSize: 11, marginTop: 8 }}>
+              This claim pack has been prepared using AIRD (AI R&D) software for RDTI compliance documentation.
+              All sections are editable and should be reviewed by qualified advisors before submission.
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Sections */}
@@ -358,14 +439,51 @@ export default function ClaimPackEditor({
 
       {/* Footer (print only) */}
       <div className="print-only" style={{
-        marginTop: 40,
-        paddingTop: 16,
-        borderTop: '1px solid #ddd',
-        fontSize: 11,
-        color: '#999',
-        textAlign: 'center'
+        marginTop: 60,
+        paddingTop: 24,
+        borderTop: '2px solid #021048'
       }}>
-        Generated by AIRD • {new Date().toLocaleDateString('en-AU')} • This document contains AI-assisted content for RDTI compliance
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 16
+        }}>
+          <img
+            src="/Aird__3_-removebg-preview.png"
+            alt="AIRD"
+            style={{
+              height: 32,
+              width: 'auto',
+              opacity: 0.6
+            }}
+          />
+          <div style={{
+            fontSize: 11,
+            color: '#666',
+            textAlign: 'right'
+          }}>
+            <div style={{ marginBottom: 4 }}>
+              <strong>AIRD</strong> - AI R&D Tax Incentive Documentation
+            </div>
+            <div style={{ color: '#999' }}>
+              Generated {new Date().toLocaleDateString('en-AU', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </div>
+          </div>
+        </div>
+        <div style={{
+          fontSize: 10,
+          color: '#999',
+          textAlign: 'center',
+          paddingTop: 12,
+          borderTop: '1px solid #e5e5e5'
+        }}>
+          This claim pack has been generated using AI-assisted technology and should be reviewed by qualified R&D tax advisors before submission to AusIndustry or the ATO.
+        </div>
       </div>
 
       <style jsx global>{`

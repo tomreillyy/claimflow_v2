@@ -48,7 +48,7 @@ export default function Upload({ params }) {
               marginRight: 12
             }}>
               <img
-                src="/Aird Logo.png"
+                src="/Aird__3_-removebg-preview.png"
                 alt="Aird"
                 style={{
                   height: 28,

@@ -168,7 +168,7 @@ export default async function Pack({ params }) {
               marginRight: 12
             }}>
               <img
-                src="/Aird Logo.png"
+                src="/Aird__3_-removebg-preview.png"
                 alt="Aird"
                 style={{
                   height: 24,
