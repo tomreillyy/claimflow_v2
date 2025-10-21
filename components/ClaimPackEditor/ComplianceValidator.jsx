@@ -10,18 +10,76 @@ export default function ComplianceValidator({ validation }) {
     return null;
   }
 
-  const { score, rating, issues, warnings, suggestions, summary } = validation;
+  const { score, rating, issues, warnings, suggestions, summary, isDraft, packStatus, critical_issue_count, evidence_coverage, missingItems } = validation;
   const hasProblems = issues.length > 0 || warnings.length > 0;
 
   return (
-    <div className="print-hide" style={{
-      marginBottom: 24,
-      padding: 16,
-      backgroundColor: '#f8fafc',
-      border: '1px solid #e2e8f0',
-      borderRadius: 8
-    }}>
-      {/* Header */}
+    <>
+      {/* DRAFT STATUS BANNER - High visibility */}
+      {isDraft && (
+        <div className="print-hide" style={{
+          marginBottom: 16,
+          padding: 20,
+          backgroundColor: '#fef2f2',
+          border: '3px solid #ef4444',
+          borderRadius: 8
+        }}>
+          <div style={{
+            fontSize: 18,
+            fontWeight: 700,
+            color: '#991b1b',
+            marginBottom: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <span style={{ fontSize: 24 }}>🚨</span>
+            {packStatus}
+          </div>
+
+          <div style={{
+            fontSize: 14,
+            color: '#7f1d1d',
+            marginBottom: 12,
+            lineHeight: 1.6
+          }}>
+            <strong>Compliance Gating Failed:</strong> This claim pack has {critical_issue_count} critical issue{critical_issue_count !== 1 ? 's' : ''} and {evidence_coverage.toFixed(0)}% evidence coverage (minimum 60% required).
+          </div>
+
+          {missingItems && missingItems.length > 0 && (
+            <>
+              <div style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: '#991b1b',
+                marginBottom: 8
+              }}>
+                ACTION REQUIRED - Missing Items:
+              </div>
+              <ul style={{
+                margin: 0,
+                paddingLeft: 20,
+                fontSize: 13,
+                color: '#7f1d1d',
+                lineHeight: 1.8
+              }}>
+                {missingItems.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="print-hide" style={{
+        marginBottom: 24,
+        padding: 16,
+        backgroundColor: '#f8fafc',
+        border: '1px solid #e2e8f0',
+        borderRadius: 8
+      }}>
+        {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -92,6 +150,12 @@ export default function ComplianceValidator({ validation }) {
               {summary.core_evidence_count}
             </div>
             <div>Evidence</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontWeight: 600, fontSize: 16, color: evidence_coverage < 60 ? '#ef4444' : '#10b981' }}>
+              {evidence_coverage.toFixed(0)}%
+            </div>
+            <div>Coverage</div>
           </div>
         </div>
 
@@ -228,5 +292,6 @@ export default function ComplianceValidator({ validation }) {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -274,25 +274,7 @@ export default function ClaimPackEditor({
 
       {/* Sections */}
       <div>
-        {/* 1. RDTI Overview */}
-        <SectionEditor
-          sectionKey={SECTION_KEYS.RDTI_OVERVIEW}
-          sectionName={SECTION_NAMES[SECTION_KEYS.RDTI_OVERVIEW]}
-          projectId={project.id}
-          {...getSectionData(SECTION_KEYS.RDTI_OVERVIEW)}
-          onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.RDTI_OVERVIEW)}
-        />
-
-        {/* 2. Eligible R&D */}
-        <SectionEditor
-          sectionKey={SECTION_KEYS.ELIGIBLE_RD}
-          sectionName={SECTION_NAMES[SECTION_KEYS.ELIGIBLE_RD]}
-          projectId={project.id}
-          {...getSectionData(SECTION_KEYS.ELIGIBLE_RD)}
-          onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.ELIGIBLE_RD)}
-        />
-
-        {/* 3. Project Overview */}
+        {/* 1. Project Overview */}
         <SectionEditor
           sectionKey={SECTION_KEYS.PROJECT_OVERVIEW}
           sectionName={SECTION_NAMES[SECTION_KEYS.PROJECT_OVERVIEW]}
@@ -301,7 +283,7 @@ export default function ClaimPackEditor({
           onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.PROJECT_OVERVIEW)}
         />
 
-        {/* 4. Core Activities */}
+        {/* 2. Core Activities */}
         <SectionEditor
           sectionKey={SECTION_KEYS.CORE_ACTIVITIES}
           sectionName={SECTION_NAMES[SECTION_KEYS.CORE_ACTIVITIES]}
@@ -310,7 +292,7 @@ export default function ClaimPackEditor({
           onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.CORE_ACTIVITIES)}
         />
 
-        {/* 5. Supporting Activities */}
+        {/* 3. Supporting Activities */}
         <SectionEditor
           sectionKey={SECTION_KEYS.SUPPORTING_ACTIVITIES}
           sectionName={SECTION_NAMES[SECTION_KEYS.SUPPORTING_ACTIVITIES]}
@@ -319,7 +301,7 @@ export default function ClaimPackEditor({
           onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.SUPPORTING_ACTIVITIES)}
         />
 
-        {/* 6. Evidence Index */}
+        {/* 4. Evidence Index */}
         <SectionEditor
           sectionKey={SECTION_KEYS.EVIDENCE_INDEX}
           sectionName={SECTION_NAMES[SECTION_KEYS.EVIDENCE_INDEX]}
@@ -328,7 +310,7 @@ export default function ClaimPackEditor({
           onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.EVIDENCE_INDEX)}
         />
 
-        {/* 7. Financials */}
+        {/* 5. Financials */}
         <SectionEditor
           sectionKey={SECTION_KEYS.FINANCIALS}
           sectionName={SECTION_NAMES[SECTION_KEYS.FINANCIALS]}
@@ -337,7 +319,7 @@ export default function ClaimPackEditor({
           onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.FINANCIALS)}
         />
 
-        {/* 8. R&D Boundary */}
+        {/* 6. R&D Boundary */}
         <SectionEditor
           sectionKey={SECTION_KEYS.RD_BOUNDARY}
           sectionName={SECTION_NAMES[SECTION_KEYS.RD_BOUNDARY]}
@@ -346,7 +328,7 @@ export default function ClaimPackEditor({
           onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.RD_BOUNDARY)}
         />
 
-        {/* 9. Overseas/Contracted */}
+        {/* 7. Overseas/Contracted */}
         <SectionEditor
           sectionKey={SECTION_KEYS.OVERSEAS_CONTRACTED}
           sectionName={SECTION_NAMES[SECTION_KEYS.OVERSEAS_CONTRACTED]}
@@ -355,7 +337,7 @@ export default function ClaimPackEditor({
           onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.OVERSEAS_CONTRACTED)}
         />
 
-        {/* 10. Registration Tie-out */}
+        {/* 8. Registration Tie-out */}
         <SectionEditor
           sectionKey={SECTION_KEYS.REGISTRATION_TIEOUT}
           sectionName={SECTION_NAMES[SECTION_KEYS.REGISTRATION_TIEOUT]}
@@ -364,7 +346,7 @@ export default function ClaimPackEditor({
           onRegenerateClick={() => handleRegenerateSection(SECTION_KEYS.REGISTRATION_TIEOUT)}
         />
 
-        {/* 11. Attestations */}
+        {/* 9. Attestations */}
         <SectionEditor
           sectionKey={SECTION_KEYS.ATTESTATIONS}
           sectionName={SECTION_NAMES[SECTION_KEYS.ATTESTATIONS]}
