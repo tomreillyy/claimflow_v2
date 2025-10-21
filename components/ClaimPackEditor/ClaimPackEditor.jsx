@@ -225,6 +225,90 @@ export default function ClaimPackEditor({
       {/* Compliance Validator */}
       <ComplianceValidator validation={validation} />
 
+      {/* AIRD Blue Cover Page (print only) */}
+      <div className="print-only" style={{
+        backgroundColor: '#021048',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pageBreakAfter: 'always',
+        padding: '60px 40px',
+        textAlign: 'center'
+      }}>
+        {/* AIRD Logo */}
+        <div style={{ marginBottom: '80px' }}>
+          <img
+            src="/Aird__3_-removebg-preview.png"
+            alt="AIRD"
+            style={{
+              height: 120,
+              width: 'auto'
+            }}
+          />
+        </div>
+
+        {/* Title */}
+        <h1 style={{
+          fontSize: 48,
+          fontWeight: 700,
+          color: 'white',
+          margin: '0 0 24px 0',
+          letterSpacing: '-1px'
+        }}>
+          R&D Tax Incentive
+        </h1>
+        <h2 style={{
+          fontSize: 36,
+          fontWeight: 300,
+          color: 'white',
+          margin: '0 0 60px 0'
+        }}>
+          Claim Pack
+        </h2>
+
+        {/* Divider */}
+        <div style={{
+          width: 120,
+          height: 2,
+          backgroundColor: 'rgba(255,255,255,0.3)',
+          margin: '0 0 60px 0'
+        }}></div>
+
+        {/* Project Name */}
+        <h3 style={{
+          fontSize: 28,
+          fontWeight: 600,
+          color: 'white',
+          margin: '0 0 16px 0'
+        }}>
+          {project.name}
+        </h3>
+
+        {/* Tax Year */}
+        <p style={{
+          fontSize: 20,
+          color: 'rgba(255,255,255,0.8)',
+          margin: '0 0 80px 0'
+        }}>
+          Tax Year {project.year}
+        </p>
+
+        {/* Footer */}
+        <div style={{
+          marginTop: 'auto',
+          fontSize: 14,
+          color: 'rgba(255,255,255,0.6)'
+        }}>
+          Generated {new Date().toLocaleDateString('en-AU', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}
+        </div>
+      </div>
+
       {/* Title Page (print only) */}
       <div className="print-only" style={{
         marginBottom: 40,
@@ -232,25 +316,6 @@ export default function ClaimPackEditor({
         borderBottom: '2px solid #333',
         pageBreakAfter: 'always'
       }}>
-        {/* AIRD Logo with blue background header */}
-        <div style={{
-          backgroundColor: '#021048',
-          padding: '40px 32px',
-          marginLeft: '-24px',
-          marginRight: '-24px',
-          marginTop: '-24px',
-          marginBottom: '40px'
-        }}>
-          <img
-            src="/Aird__3_-removebg-preview.png"
-            alt="AIRD"
-            style={{
-              height: 50,
-              width: 'auto'
-            }}
-          />
-        </div>
-
         <h1 style={{
           fontSize: 28,
           fontWeight: 400,
