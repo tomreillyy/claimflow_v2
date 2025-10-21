@@ -54,10 +54,10 @@ export default async function PackV2Page({ params }) {
   const sections = {};
   (sectionsArray || []).forEach(section => {
     sections[section.section_key] = {
-      content: section.content,
-      ai_generated: section.ai_generated,
-      last_edited_at: section.last_edited_at,
-      last_edited_by: section.last_edited_by,
+      initialContent: section.content,
+      aiGenerated: section.ai_generated,
+      lastEditedAt: section.last_edited_at,
+      lastEditedBy: section.last_edited_by,
       version: section.version
     };
   });

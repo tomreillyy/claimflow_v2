@@ -123,10 +123,10 @@ export default function ClaimPackEditor({
   // Helper to get section data
   const getSectionData = (sectionKey) => {
     return sections[sectionKey] || {
-      content: null,
-      ai_generated: null,
-      last_edited_at: null,
-      last_edited_by: null
+      initialContent: null,
+      aiGenerated: null,
+      lastEditedAt: null,
+      lastEditedBy: null
     };
   };
 
