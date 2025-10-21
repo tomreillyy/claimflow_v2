@@ -232,18 +232,20 @@ export default function ClaimPackEditor({
         borderBottom: '2px solid #333',
         pageBreakAfter: 'always'
       }}>
-        {/* AIRD Logo with blue background */}
+        {/* AIRD Logo with blue background header */}
         <div style={{
           backgroundColor: '#021048',
-          padding: '20px',
-          marginBottom: '32px',
-          display: 'inline-block'
+          padding: '40px 32px',
+          marginLeft: '-24px',
+          marginRight: '-24px',
+          marginTop: '-24px',
+          marginBottom: '40px'
         }}>
           <img
             src="/Aird__3_-removebg-preview.png"
             alt="AIRD"
             style={{
-              height: 40,
+              height: 50,
               width: 'auto'
             }}
           />
