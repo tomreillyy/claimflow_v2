@@ -71,8 +71,8 @@ export default async function PackV2Page({ params }) {
     }}>
       {/* Header (hidden in print) */}
       <header className="print-hide" style={{
-        backgroundColor: '#fafafa',
-        borderBottom: '1px solid #e5e5e5',
+        backgroundColor: '#021048',
+        borderBottom: '1px solid #012',
         padding: '16px 0'
       }}>
         <div style={{
@@ -98,18 +98,18 @@ export default async function PackV2Page({ params }) {
                 }}
               />
             </Link>
-            <span style={{ color: '#333' }}>→</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)' }}>→</span>
             <Link href={`/p/${token}`} style={{
-              color: '#333',
+              color: 'white',
               textDecoration: 'none',
               fontFamily: 'system-ui',
               fontSize: 14
             }}>
               Timeline
             </Link>
-            <span style={{ color: '#333' }}>→</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)' }}>→</span>
             <Link href={`/p/${token}/pack-legacy-backup`} style={{
-              color: '#333',
+              color: 'white',
               textDecoration: 'none',
               fontFamily: 'system-ui',
               fontSize: 14
