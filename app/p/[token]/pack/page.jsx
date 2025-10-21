@@ -93,7 +93,7 @@ export default async function PackV2Page({ params }) {
                 src="/Aird__3_-removebg-preview.png"
                 alt="Aird"
                 style={{
-                  height: 40,
+                  height: 24,
                   width: 'auto'
                 }}
               />
