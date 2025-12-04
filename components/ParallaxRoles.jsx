@@ -1,160 +1,131 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+
+function TiltCard({ children, delay = 0 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
+  const cardRef = useRef(null);
+
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    setMousePosition({ x, y });
+  };
+
+  const rotateX = isHovered ? (mousePosition.y - 0.5) * -10 : 0;
+  const rotateY = isHovered ? (mousePosition.x - 0.5) * 10 : 0;
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay, ease: [0.4, 0, 0.2, 1] }}
+      style={{ perspective: '1000px', flex: '1 1 280px', maxWidth: '320px' }}
+    >
+      <motion.div
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          setMousePosition({ x: 0.5, y: 0.5 });
+        }}
+        onMouseMove={handleMouseMove}
+        animate={{
+          rotateX,
+          rotateY,
+          y: isHovered ? -6 : 0,
+          boxShadow: isHovered
+            ? '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+            : '0 10px 30px -10px rgba(0, 0, 0, 0.2)'
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        style={{
+          background: '#fff',
+          borderRadius: 12,
+          padding: '28px 24px',
+          cursor: 'default',
+          transformStyle: 'preserve-3d',
+          position: 'relative',
+          height: '100%'
+        }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
 
 export function ParallaxRoles() {
-  const [scrollY, setScrollY] = useState(0);
   const [inView, setInView] = useState(false);
   const sectionRef = useRef(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (!sectionRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
 
-      const rect = sectionRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
 
-      // Check if section is in view
-      const isInView = rect.top < viewportHeight && rect.bottom > 0;
-      setInView(isInView);
-
-      // Calculate parallax offset
-      if (isInView) {
-        const sectionMiddle = rect.top + rect.height / 2;
-        const offset = (viewportHeight / 2 - sectionMiddle) * 0.15;
-        setScrollY(offset);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => observer.disconnect();
   }, []);
 
   const roles = [
     {
       title: 'For founders',
-      description: 'Skip the admin. Capture work as it happens and move faster on funding.',
-      delay: 0
+      description: 'Skip the admin. Capture work as it happens and move faster on funding.'
     },
     {
       title: 'For product & R&D',
-      description: 'Turn every update into traceable, compliant documentation.',
-      delay: 0.1
+      description: 'Turn every update into traceable, compliant documentation.'
     },
     {
       title: 'For finance & advisors',
-      description: 'Access organized, audit-ready data without chasing threads.',
-      delay: 0.2
+      description: 'Access organized, audit-ready data without chasing threads.'
     }
   ];
 
   return (
     <div ref={sectionRef} style={{ position: 'relative' }}>
-      <div style={{
-        display: 'flex',
-        gap: 48,
-        position: 'relative',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        flexWrap: 'wrap'
-      }}>
-        {roles.map((role, index) => {
-          const parallaxOffset = scrollY * (index === 1 ? 1.2 : index === 0 ? 0.8 : 1);
-
-          return (
-            <div
-              key={index}
-              style={{
-                position: 'relative',
-                transform: `translateY(${parallaxOffset}px)`,
-                opacity: inView ? 1 : 0,
-                transition: `opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${role.delay}s`,
-                textAlign: 'center',
-                flex: '1 1 280px',
-                maxWidth: '320px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-              }}
-            >
-              {/* Icon */}
-              <div style={{
-                marginBottom: '20px',
-                transform: inView ? 'scale(1)' : 'scale(0.8)',
-                opacity: inView ? 1 : 0,
-                transition: `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${role.delay + 0.2}s`
-              }}>
-                {index === 0 && (
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                  </svg>
-                )}
-                {index === 1 && (
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                  </svg>
-                )}
-                {index === 2 && (
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="20" x2="12" y2="10"/>
-                    <line x1="18" y1="20" x2="18" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="16"/>
-                  </svg>
-                )}
-              </div>
-
-              {/* Title */}
+      {inView && (
+        <div style={{
+          display: 'flex',
+          gap: 20,
+          justifyContent: 'center',
+          alignItems: 'stretch',
+          flexWrap: 'wrap'
+        }}>
+          {roles.map((role, index) => (
+            <TiltCard key={index} delay={index * 0.1}>
               <h3 style={{
-                margin: '0 0 12px',
-                fontSize: '20px',
-                fontWeight: 700,
+                margin: '0 0 10px',
+                fontSize: 17,
+                fontWeight: 600,
                 color: 'var(--ink)'
               }}>
                 {role.title}
               </h3>
-
-              {/* Description */}
               <p style={{
                 margin: 0,
-                fontSize: '15px',
-                lineHeight: 1.7,
+                fontSize: 15,
+                lineHeight: 1.6,
                 color: 'var(--muted)'
               }}>
                 {role.description}
               </p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Floating background accents */}
-      <div style={{
-        position: 'absolute',
-        top: '20%',
-        right: '10%',
-        width: '300px',
-        height: '300px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(2,16,72,0.02) 0%, transparent 70%)',
-        transform: `translateY(${-scrollY * 0.5}px)`,
-        pointerEvents: 'none',
-        zIndex: -1
-      }} />
-
-      <div style={{
-        position: 'absolute',
-        bottom: '10%',
-        left: '5%',
-        width: '400px',
-        height: '400px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(2,16,72,0.015) 0%, transparent 70%)',
-        transform: `translateY(${-scrollY * 0.3}px)`,
-        pointerEvents: 'none',
-        zIndex: -1
-      }} />
+            </TiltCard>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

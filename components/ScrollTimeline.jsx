@@ -46,22 +46,22 @@ export function ScrollTimeline() {
     {
       number: '1',
       title: 'You keep building',
-      description: 'Each project gets its own unique email address. Just forward updates, drop files, sync your GitHub repo, or let your team\'s commits and notes flow in — AIRD captures everything automatically.'
+      description: 'Each project gets a unique email address. Forward updates, upload files, sync your GitHub repo, or let commits and notes flow in. AIRD captures the work as it happens.'
     },
     {
       number: '2',
-      title: 'AIRD makes sense of it',
-      description: 'Using AI tuned for R&D Tax Incentive rules, AIRD classifies each piece of evidence by Hypothesis, Experiment, Observation, or Evaluation — and keeps a clean, chronological record.'
+      title: 'AIRD makes sense of it all',
+      description: 'AIRD uses specialised AI to classify each R&D item against the required criteria, including categories and activities. Everything is recorded in a clear chronological evidence trail.'
     },
     {
       number: '3',
-      title: 'You export when it matters',
-      description: 'Generate polished, advisor-ready claim packs with sources, timestamps, and context — ready for submission or audit.'
+      title: 'You export a defensible R&D claim pack',
+      description: 'AIRD compiles your evidence into a structured, compliant report. The system assembles sources, timestamps, classifications, activities, and context into a clean, chronological package that aligns with R&D Tax Incentive requirements. The output is a complete, advisor-ready claim pack suitable for submission, technical review, or audit.'
     }
   ];
 
   return (
-    <div ref={sectionRef} style={{ position: 'relative', minHeight: '600px' }}>
+    <div ref={sectionRef} style={{ position: 'relative', minHeight: '400px' }}>
       {/* Central vertical line */}
       <div style={{
         position: 'absolute',
@@ -89,8 +89,8 @@ export function ScrollTimeline() {
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        gap: '200px',
-        paddingBottom: '100px'
+        gap: '80px',
+        paddingBottom: '40px'
       }}>
         {steps.map((step, index) => {
           const isActive = activeStep >= index;

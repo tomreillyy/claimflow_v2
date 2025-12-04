@@ -2,7 +2,6 @@
 import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
 import { ScrollTimeline } from '@/components/ScrollTimeline';
-import { IntegrationsSection } from '@/components/IntegrationsSection';
 import { ParallaxRoles } from '@/components/ParallaxRoles';
 import { ProjectsDashboard } from '@/components/ProjectsDashboard';
 import { useAuth } from '@/components/AuthProvider';
@@ -87,30 +86,37 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Integrations */}
-            <IntegrationsSection />
-
             {/* For teams */}
             <section style={{
               padding: '120px 24px',
-              borderTop: '1px solid var(--line)',
+              background: 'linear-gradient(180deg, #021048 0%, #0a1a5c 60%, #1a2a6c 100%)',
               position: 'relative',
               overflow: 'hidden'
             }} id="roles">
-              <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
+              {/* Subtle grid overlay */}
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
+                backgroundSize: '32px 32px',
+                pointerEvents: 'none'
+              }} />
+
+              <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
                 <h2 style={{
                   margin: '0 0 16px',
                   fontSize: 'clamp(26px, 4vw, 38px)',
-                  fontWeight: 700
+                  fontWeight: 700,
+                  color: '#fff'
                 }}>
                   Built for the people doing the work.
                 </h2>
                 <p style={{
-                  color: 'var(--muted)',
+                  color: 'rgba(255,255,255,0.7)',
                   fontSize: 18,
                   marginBottom: 80,
                   maxWidth: 600,
-                  margin: '0 auto 80px'
+                  margin: '0 auto 60px'
                 }}>
                   From founders to advisors, AIRD adapts to how real teams build.
                 </p>
@@ -119,7 +125,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Sign up */}
+            {/* Sign up CTA */}
             <section style={{
               padding: '100px 24px',
               borderTop: '1px solid var(--line)',
@@ -167,6 +173,27 @@ export default function Home() {
                 }}>
                   Start a project
                 </a>
+
+                <p style={{
+                  marginTop: 24,
+                  fontSize: 14,
+                  color: 'var(--muted)'
+                }}>
+                  Are you an R&D advisor?{' '}
+                  <a href="/advisors" style={{
+                    color: 'var(--brand)',
+                    textDecoration: 'none',
+                    fontWeight: 500
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.textDecoration = 'underline';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.textDecoration = 'none';
+                  }}>
+                    Learn about partnerships →
+                  </a>
+                </p>
               </div>
             </section>
 
