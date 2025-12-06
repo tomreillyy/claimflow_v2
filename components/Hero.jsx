@@ -19,15 +19,10 @@ export function Hero() {
     return () => clearInterval(interval);
   }, []);
 
-  // Product screenshots
-  const productImages = [
-    { src: '/product-events.png', label: 'Events', zIndex: 1, rotate: 0, translateX: 0, translateY: 0 },
-  ];
-
   return (
     <section style={{
       background: 'linear-gradient(180deg, #021048 0%, #0a1a5c 60%, #1a2a6c 100%)',
-      padding: '160px 24px 80px',
+      padding: '140px 24px 80px',
       position: 'relative',
       overflow: 'hidden'
     }}>
@@ -41,24 +36,21 @@ export function Hero() {
       }} />
 
       <div style={{
-        maxWidth: 1100,
+        maxWidth: 800,
         margin: '0 auto',
-        display: 'grid',
-        gridTemplateColumns: '1fr',
-        gap: 60,
-        alignItems: 'start',
         position: 'relative',
-        zIndex: 1
-      }} className="hero-grid">
-        {/* Left Column - Narrative */}
+        zIndex: 1,
+        textAlign: 'center'
+      }}>
+        {/* Centered Text Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
           <h1 style={{
-            fontSize: 'clamp(32px, 5vw, 52px)',
-            margin: '0 0 20px',
+            fontSize: 'clamp(32px, 5vw, 56px)',
+            margin: '0 0 24px',
             lineHeight: 1.1,
             fontWeight: 800,
             letterSpacing: '-0.02em',
@@ -79,8 +71,8 @@ export function Hero() {
           <p style={{
             color: 'rgba(255, 255, 255, 0.7)',
             fontSize: 18,
-            maxWidth: 540,
-            marginBottom: 32,
+            maxWidth: 600,
+            margin: '0 auto 40px',
             lineHeight: 1.7
           }}>
             AIRD captures and structures R&D evidence for engineering teams, because claims fail when documentation is missing or made too late.
@@ -90,8 +82,9 @@ export function Hero() {
           <div style={{
             display: 'flex',
             gap: 12,
+            justifyContent: 'center',
             flexWrap: 'wrap',
-            marginBottom: 48
+            marginBottom: 32
           }}>
             <a
               href="/admin/new-project"
@@ -147,141 +140,93 @@ export function Hero() {
             </a>
           </div>
 
-          {/* GitHub Integration */}
+          {/* GitHub Integration Badge */}
           <div style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
-            gap: 16,
-            padding: '16px 20px',
+            gap: 12,
+            padding: '12px 20px',
             background: 'rgba(255,255,255,0.05)',
-            borderRadius: 12,
-            border: '1px solid rgba(255,255,255,0.1)',
-            maxWidth: 'fit-content'
+            borderRadius: 100,
+            border: '1px solid rgba(255,255,255,0.1)'
           }}>
-            {/* GitHub Icon */}
             <svg
               viewBox="0 0 24 24"
-              width="32"
-              height="32"
+              width="20"
+              height="20"
               fill="#fff"
               style={{ flexShrink: 0 }}
             >
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
             </svg>
-            <div>
-              <div style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: '#fff',
-                marginBottom: 2
-              }}>
-                Integrates with GitHub
-              </div>
-              <div style={{
-                fontSize: 13,
-                color: 'rgba(255,255,255,0.6)'
-              }}>
-                Connect your repos and capture R&D evidence automatically
-              </div>
-            </div>
+            <span style={{
+              fontSize: 14,
+              color: 'rgba(255,255,255,0.8)'
+            }}>
+              Integrates with GitHub
+            </span>
           </div>
         </motion.div>
 
-        {/* Right Column - Product Visual */}
+        {/* Product Screenshot - Below Text */}
         <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           style={{
-            position: 'relative',
-            height: 400,
-            perspective: '1000px'
+            marginTop: 60,
+            maxWidth: 900,
+            marginLeft: 'auto',
+            marginRight: 'auto'
           }}
-          className="hero-visual"
         >
-          {/* Stacked product screenshots */}
-          {productImages.map((img, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 + index * 0.15 }}
-              style={{
-                position: 'absolute',
-                top: img.translateY,
-                left: img.translateX,
-                right: -img.translateX,
-                zIndex: img.zIndex,
-                transform: `rotate(${img.rotate}deg)`,
-                transformOrigin: 'center center'
-              }}
-            >
+          <div style={{
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',
+            borderRadius: 16,
+            padding: 8,
+            border: '1px solid rgba(255,255,255,0.2)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1) inset'
+          }}>
+            <div style={{
+              background: '#0f172a',
+              borderRadius: 10,
+              overflow: 'hidden'
+            }}>
+              {/* Browser chrome */}
               <div style={{
-                background: 'linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',
-                borderRadius: 16,
-                padding: 8,
-                border: '1px solid rgba(255,255,255,0.2)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1) inset'
+                background: '#1e293b',
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                borderBottom: '1px solid rgba(255,255,255,0.1)'
               }}>
-                <div style={{
-                  background: '#0f172a',
-                  borderRadius: 10,
-                  overflow: 'hidden',
-                  position: 'relative'
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+                <span style={{
+                  marginLeft: 12,
+                  fontSize: 11,
+                  color: 'rgba(255,255,255,0.5)',
+                  fontFamily: 'monospace'
                 }}>
-                  {/* Browser chrome */}
-                  <div style={{
-                    background: '#1e293b',
-                    padding: '8px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    borderBottom: '1px solid rgba(255,255,255,0.1)'
-                  }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#eab308' }} />
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
-                    <span style={{
-                      marginLeft: 12,
-                      fontSize: 11,
-                      color: 'rgba(255,255,255,0.5)',
-                      fontFamily: 'monospace'
-                    }}>
-                      app.aird.com.au
-                    </span>
-                  </div>
-                  {/* Screenshot */}
-                  <img
-                    src={img.src}
-                    alt={img.label}
-                    style={{
-                      width: '100%',
-                      height: 'auto',
-                      display: 'block'
-                    }}
-                  />
-                </div>
+                  app.aird.com.au
+                </span>
               </div>
-            </motion.div>
-          ))}
+              {/* Screenshot */}
+              <img
+                src="/product-events.png"
+                alt="AIRD Dashboard"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block'
+                }}
+              />
+            </div>
+          </div>
         </motion.div>
       </div>
-
-      {/* CSS for responsive grid */}
-      <style jsx>{`
-        @media (min-width: 900px) {
-          .hero-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-        @media (max-width: 899px) {
-          .hero-visual {
-            max-width: 480px;
-            margin: 0 auto;
-            height: 320px !important;
-          }
-        }
-      `}</style>
     </section>
   );
 }
