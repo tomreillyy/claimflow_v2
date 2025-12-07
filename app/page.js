@@ -4,6 +4,7 @@ import { Hero } from '@/components/Hero';
 import { ScrollTimeline } from '@/components/ScrollTimeline';
 import { ParallaxRoles } from '@/components/ParallaxRoles';
 import { ProjectsDashboard } from '@/components/ProjectsDashboard';
+import { Footer } from '@/components/Footer';
 import { useAuth } from '@/components/AuthProvider';
 import { useEffect, useState } from 'react';
 
@@ -62,22 +63,22 @@ export default function Home() {
 
             {/* How it works */}
             <section style={{
-              padding: '120px 24px',
+              padding: 'clamp(60px, 15vw, 120px) 16px',
               borderTop: '1px solid var(--line)',
               background: 'var(--bg-soft)'
             }} id="how">
               <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
                 <h2 style={{
                   margin: '0 0 12px',
-                  fontSize: 'clamp(26px, 4vw, 38px)',
+                  fontSize: 'clamp(24px, 5vw, 38px)',
                   fontWeight: 700
                 }}>
                   R&D documentation that writes itself.
                 </h2>
                 <p style={{
                   color: 'var(--muted)',
-                  fontSize: 18,
-                  marginBottom: 80
+                  fontSize: 'clamp(15px, 3.5vw, 18px)',
+                  marginBottom: 'clamp(40px, 10vw, 80px)'
                 }}>
                   Three steps, zero admin.
                 </p>
@@ -88,35 +89,25 @@ export default function Home() {
 
             {/* For teams */}
             <section style={{
-              padding: '120px 24px',
-              background: 'linear-gradient(180deg, #021048 0%, #0a1a5c 60%, #1a2a6c 100%)',
-              position: 'relative',
-              overflow: 'hidden'
+              padding: 'clamp(24px, 6vw, 48px) 16px',
+              background: 'var(--bg-soft)',
+              borderTop: '1px solid var(--line)'
             }} id="roles">
-              {/* Subtle grid overlay */}
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
-                backgroundSize: '32px 32px',
-                pointerEvents: 'none'
-              }} />
-
-              <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+              <div style={{ maxWidth: 960, margin: '0 auto', textAlign: 'center' }}>
                 <h2 style={{
                   margin: '0 0 16px',
-                  fontSize: 'clamp(26px, 4vw, 38px)',
+                  fontSize: 'clamp(24px, 5vw, 38px)',
                   fontWeight: 700,
-                  color: '#fff'
+                  color: 'var(--ink)'
                 }}>
                   Built for the people doing the work.
                 </h2>
                 <p style={{
-                  color: 'rgba(255,255,255,0.7)',
-                  fontSize: 18,
-                  marginBottom: 80,
+                  color: 'var(--muted)',
+                  fontSize: 'clamp(15px, 3.5vw, 18px)',
+                  marginBottom: 'clamp(40px, 10vw, 80px)',
                   maxWidth: 600,
-                  margin: '0 auto 60px'
+                  margin: '0 auto clamp(32px, 8vw, 60px)'
                 }}>
                   From founders to advisors, AIRD adapts to how real teams build.
                 </p>
@@ -127,111 +118,48 @@ export default function Home() {
 
             {/* Sign up CTA */}
             <section style={{
-              padding: '100px 24px',
+              padding: 'clamp(60px, 12vw, 100px) 16px',
               borderTop: '1px solid var(--line)',
               background: 'var(--bg-soft)'
             }} id="signup">
-              <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
-                <h2 style={{
-                  margin: '0 0 16px',
-                  fontSize: 'clamp(28px, 4vw, 42px)',
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em'
-                }}>
-                  Start documenting your R&D today
-                </h2>
-                <p style={{
-                  color: 'var(--muted)',
-                  fontSize: 18,
-                  marginBottom: 32,
-                  lineHeight: 1.6
-                }}>
-                  Free during beta. No credit card required.
-                </p>
+              <div style={{ maxWidth: 896, margin: '0 auto' }}>
+                <div className="relative w-full overflow-hidden rounded-[40px] p-6 sm:p-10 md:p-20" style={{ background: '#021048' }}>
+                  {/* Decorative circles */}
+                  <div className="absolute inset-0 hidden h-full w-full overflow-hidden md:block">
+                    <div className="absolute top-1/2 right-[-45%] aspect-square h-[800px] w-[800px] -translate-y-1/2">
+                      <div className="absolute inset-0 rounded-full opacity-30" style={{ background: '#0a2060' }}></div>
+                      <div className="absolute inset-0 scale-[0.8] rounded-full opacity-30" style={{ background: '#1a3080' }}></div>
+                      <div className="absolute inset-0 scale-[0.6] rounded-full opacity-30" style={{ background: '#2a40a0' }}></div>
+                      <div className="absolute inset-0 scale-[0.4] rounded-full opacity-30" style={{ background: '#4060c0' }}></div>
+                      <div className="absolute inset-0 scale-[0.2] rounded-full opacity-30" style={{ background: '#6080e0' }}></div>
+                      <div className="absolute inset-0 scale-[0.1] rounded-full opacity-30" style={{ background: 'rgba(255,255,255,0.5)' }}></div>
+                    </div>
+                  </div>
 
-                <a href="/admin/new-project" style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '16px 32px',
-                  borderRadius: 'var(--radius)',
-                  background: 'var(--brand)',
-                  color: '#fff',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  border: '1px solid var(--brand)',
-                  fontSize: 17,
-                  boxShadow: '0 4px 12px rgba(2,16,72,0.25)',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(2,16,72,0.35)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(2,16,72,0.25)';
-                }}>
-                  Start a project
-                </a>
+                  <div className="relative z-10">
+                    <h2 className="mb-3 text-3xl font-bold text-white sm:text-4xl md:mb-4 md:text-5xl">
+                      Start documenting your R&D today.
+                    </h2>
+                    <p className="mb-6 max-w-md text-base text-white/90 sm:text-lg md:mb-8">
+                      Free during beta. No credit card required.
+                    </p>
 
-                <p style={{
-                  marginTop: 24,
-                  fontSize: 14,
-                  color: 'var(--muted)'
-                }}>
-                  Are you an R&D advisor?{' '}
-                  <a href="/advisors" style={{
-                    color: 'var(--brand)',
-                    textDecoration: 'none',
-                    fontWeight: 500
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.textDecoration = 'underline';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.textDecoration = 'none';
-                  }}>
-                    Learn about partnerships →
-                  </a>
-                </p>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
+                      <a href="/auth/login" className="flex w-full items-center justify-between rounded-full bg-white px-5 py-3 text-[#021048] sm:w-[240px] hover:bg-gray-100 transition-colors">
+                        <span className="font-medium">Get started</span>
+                        <span className="h-5 w-5 flex-shrink-0 rounded-full bg-[#021048]"></span>
+                      </a>
+                      <a href="/advisors" className="flex w-full items-center justify-between rounded-full bg-white/10 border border-white/20 px-5 py-3 text-white sm:w-[240px] hover:bg-white/20 transition-colors">
+                        <span className="font-medium">R&D Advisors</span>
+                        <span className="h-5 w-5 flex-shrink-0 rounded-full bg-white"></span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
-            {/* Footer */}
-            <footer style={{
-              borderTop: '1px solid var(--line)',
-              color: 'var(--muted)',
-              fontSize: 13,
-              padding: '32px 24px'
-            }}>
-              <div style={{
-                maxWidth: 960,
-                margin: '0 auto',
-                display: 'flex',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 12
-              }}>
-                <div>© {new Date().getFullYear()} aird</div>
-                <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                  <a href="https://www.linkedin.com/company/109357134/" target="_blank" rel="noopener noreferrer" style={{
-                    color: 'inherit',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                    </svg>
-                    LinkedIn
-                  </a>
-                  <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
-                  <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Terms</a>
-                  <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Contact</a>
-                </div>
-              </div>
-            </footer>
+            <Footer />
           </div>
         )}
       </main>

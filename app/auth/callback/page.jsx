@@ -65,8 +65,8 @@ function AuthCallbackContent() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: 'white',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+      background: '#fff',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center'
@@ -78,15 +78,15 @@ function AuthCallbackContent() {
         <div style={{
           width: 40,
           height: 40,
-          border: '3px solid #021048',
-          borderTop: '3px solid transparent',
+          border: '3px solid #e5e7eb',
+          borderTop: '3px solid #021048',
           borderRadius: '50%',
           margin: '0 auto 20px',
           animation: 'spin 1s linear infinite'
         }}></div>
         <p style={{
           fontSize: 16,
-          color: '#333',
+          color: '#6b7280',
           margin: 0
         }}>Signing you in...</p>
       </div>
@@ -106,8 +106,8 @@ export default function AuthCallback() {
     <Suspense fallback={
       <div style={{
         minHeight: '100vh',
-        backgroundColor: 'white',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+        background: '#fff',
+        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -119,15 +119,15 @@ export default function AuthCallback() {
           <div style={{
             width: 40,
             height: 40,
-            border: '3px solid #021048',
-            borderTop: '3px solid transparent',
+            border: '3px solid #e5e7eb',
+            borderTop: '3px solid #021048',
             borderRadius: '50%',
             margin: '0 auto 20px',
             animation: 'spin 1s linear infinite'
           }}></div>
           <p style={{
             fontSize: 16,
-            color: '#333',
+            color: '#6b7280',
             margin: 0
           }}>Loading...</p>
         </div>

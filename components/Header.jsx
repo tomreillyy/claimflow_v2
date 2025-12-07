@@ -220,6 +220,20 @@ export function Header({ projectName = null, projectToken = null }) {
               For teams
             </motion.a>
             <motion.a
+              href="/pricing"
+              style={{
+                textDecoration: 'none',
+                color: 'rgba(255, 255, 255, 0.85)',
+                fontWeight: 500,
+                fontSize: isScrolled ? 13 : 14,
+                transition: 'font-size 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s ease',
+                whiteSpace: 'nowrap'
+              }}
+              whileHover={{ color: '#fff' }}
+            >
+              Pricing
+            </motion.a>
+            <motion.a
               href="/blog"
               style={{
                 textDecoration: 'none',
@@ -234,7 +248,7 @@ export function Header({ projectName = null, projectToken = null }) {
               Blog
             </motion.a>
             <motion.a
-              href="/admin/new-project"
+              href="/auth/login"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -334,6 +348,21 @@ export function Header({ projectName = null, projectToken = null }) {
               For teams
             </a>
             <a
+              href="/pricing"
+              style={{
+                display: 'block',
+                fontSize: 16,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textDecoration: 'none',
+                padding: '14px 16px',
+                borderRadius: 10,
+                fontWeight: 500
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Pricing
+            </a>
+            <a
               href="/blog"
               style={{
                 display: 'block',
@@ -350,7 +379,7 @@ export function Header({ projectName = null, projectToken = null }) {
             </a>
             <div style={{ padding: '8px 8px 4px' }}>
               <a
-                href="/admin/new-project"
+                href="/auth/login"
                 style={{
                   display: 'block',
                   fontSize: 16,

@@ -37,167 +37,257 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: 'white',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+      background: '#fff',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       <main style={{
         maxWidth: 400,
         margin: '0 auto',
-        padding: '80px 24px',
-        textAlign: 'center'
+        padding: '80px 24px'
       }}>
         {!message ? (
           <>
-            <header style={{ marginBottom: 40 }}>
+            {/* Logo */}
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+                <img
+                  src="/ChatGPT Image Dec 7, 2025, 12_08_23 PM.png"
+                  alt="Aird"
+                  style={{ height: 120, width: 'auto' }}
+                />
+              </a>
+              <p style={{
+                color: '#6b7280',
+                fontSize: 15,
+                lineHeight: 1.5,
+                maxWidth: 320,
+                margin: '16px auto 0'
+              }}>
+                Aird automatically captures and structures your R&D evidence as you build.
+              </p>
+            </div>
+
+            {/* Card */}
+            <div style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: '32px 24px',
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
               <h1 style={{
-                fontSize: 28,
+                fontSize: 20,
                 fontWeight: 600,
                 color: '#1a1a1a',
-                margin: '0 0 8px 0'
+                margin: '0 0 24px 0',
+                textAlign: 'center'
               }}>
-                Welcome to Aird
+                Sign in to your account
               </h1>
-              <p style={{
-                fontSize: 16,
-                color: '#333',
-                margin: 0
-              }}>
-                Enter your email to sign in or create your account
-              </p>
-            </header>
 
-            <form onSubmit={handleLogin} style={{ marginBottom: 32 }}>
-              <div style={{ marginBottom: 20, textAlign: 'left' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: '#333',
-                  marginBottom: 6
+              <form onSubmit={handleLogin}>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: '#374151',
+                    marginBottom: 6
+                  }}>
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="your@email.com"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      fontSize: 15,
+                      border: '1px solid #d1d5db',
+                      borderRadius: 8,
+                      outline: 'none',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                      boxSizing: 'border-box',
+                      color: '#1a1a1a',
+                      backgroundColor: '#fff'
+                    }}
+                    onFocus={e => {
+                      e.target.style.borderColor = '#021048';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(2, 16, 72, 0.1)';
+                    }}
+                    onBlur={e => {
+                      e.target.style.borderColor = '#d1d5db';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+
+                <p style={{
+                  fontSize: 13,
+                  color: '#6b7280',
+                  margin: '0 0 20px 0',
+                  lineHeight: 1.5
                 }}>
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="your@email.com"
+                  No password needed. We'll email you a secure sign-in link.
+                </p>
+
+                {error && (
+                  <div style={{
+                    padding: 12,
+                    backgroundColor: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    color: '#dc2626',
+                    marginBottom: 16
+                  }}>
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
                   style={{
                     width: '100%',
-                    padding: '12px 16px',
-                    fontSize: 16,
-                    border: '1px solid #ddd',
+                    padding: '12px 24px',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: 'white',
+                    backgroundColor: loading ? '#9ca3af' : '#021048',
+                    border: 'none',
                     borderRadius: 8,
-                    outline: 'none',
-                    transition: 'border-color 0.2s',
-                    boxSizing: 'border-box',
-                    color: '#1a1a1a',
-                    backgroundColor: 'white'
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    transition: 'background-color 0.2s'
                   }}
-                  onFocus={e => e.target.style.borderColor = '#021048'}
-                  onBlur={e => e.target.style.borderColor = '#ddd'}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '12px 24px',
-                  fontSize: 16,
-                  fontWeight: 500,
-                  color: 'white',
-                  backgroundColor: loading ? '#ccc' : '#021048',
-                  border: 'none',
-                  borderRadius: 8,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  transition: 'background-color 0.2s'
-                }}
-                onMouseOver={e => {
-                  if (!loading) e.target.style.backgroundColor = '#010a2e';
-                }}
-                onMouseOut={e => {
-                  if (!loading) e.target.style.backgroundColor = '#021048';
-                }}
-              >
-                {loading ? 'Sending...' : 'Continue'}
-              </button>
-            </form>
-
-            {error && (
-              <div style={{
-                padding: 16,
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: 8,
-                fontSize: 14,
-                color: '#dc2626',
-                marginBottom: 20
-              }}>
-                {error}
-              </div>
-            )}
-
-            <div style={{
-              fontSize: 14,
-              color: '#666',
-              lineHeight: 1.5
-            }}>
-              <p style={{ margin: '0 0 8px 0' }}>
-                No password needed — we'll email you a secure sign-in link.
-              </p>
-              <p style={{ margin: 0 }}>
-                <a href="/" style={{ color: '#021048', textDecoration: 'none' }}>
-                  ← Back to home
-                </a>
-              </p>
+                  onMouseOver={e => {
+                    if (!loading) e.target.style.backgroundColor = '#010a2e';
+                  }}
+                  onMouseOut={e => {
+                    if (!loading) e.target.style.backgroundColor = '#021048';
+                  }}
+                >
+                  {loading ? 'Sending...' : 'Sign in'}
+                </button>
+              </form>
             </div>
+
+            {/* Outside card */}
+            <p style={{
+              textAlign: 'center',
+              marginTop: 24,
+              fontSize: 14,
+              color: '#6b7280'
+            }}>
+              Not a member?{' '}
+              <a
+                href="/admin/new-project"
+                style={{
+                  color: '#021048',
+                  textDecoration: 'none',
+                  fontWeight: 500
+                }}
+                onMouseOver={e => e.target.style.textDecoration = 'underline'}
+                onMouseOut={e => e.target.style.textDecoration = 'none'}
+              >
+                Start a 14 day free trial
+              </a>
+            </p>
           </>
         ) : (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: 64,
-              height: 64,
-              margin: '0 auto 24px',
-              backgroundColor: '#f0f9ff',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 32
-            }}>
-              📧
+          <>
+            {/* Logo */}
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+                <img
+                  src="/ChatGPT Image Dec 7, 2025, 12_08_23 PM.png"
+                  alt="Aird"
+                  style={{ height: 120, width: 'auto' }}
+                />
+              </a>
             </div>
-            <h1 style={{
-              fontSize: 28,
-              fontWeight: 600,
-              color: '#1a1a1a',
-              margin: '0 0 12px 0'
+
+            {/* Success Card */}
+            <div style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: '40px 24px',
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              textAlign: 'center'
             }}>
-              Check your email
-            </h1>
+              <div style={{
+                width: 56,
+                height: 56,
+                margin: '0 auto 20px',
+                backgroundColor: '#ecfdf5',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </div>
+              <h1 style={{
+                fontSize: 22,
+                fontWeight: 600,
+                color: '#1a1a1a',
+                margin: '0 0 12px 0'
+              }}>
+                Check your email
+              </h1>
+              <p style={{
+                fontSize: 15,
+                color: '#4b5563',
+                margin: '0 0 8px 0',
+                lineHeight: 1.6
+              }}>
+                We sent a magic link to
+              </p>
+              <p style={{
+                fontSize: 15,
+                fontWeight: 600,
+                color: '#1a1a1a',
+                margin: '0 0 20px 0'
+              }}>
+                {email}
+              </p>
+              <p style={{
+                fontSize: 14,
+                color: '#6b7280',
+                margin: 0
+              }}>
+                Click the link in the email to sign in.
+              </p>
+            </div>
+
+            {/* Outside card */}
             <p style={{
-              fontSize: 16,
-              color: '#333',
-              margin: '0 0 32px 0',
-              lineHeight: 1.5
-            }}>
-              We sent a magic link to <strong>{email}</strong>
-              <br />
-              Click the link to sign in or create your account.
-            </p>
-            <p style={{
+              textAlign: 'center',
+              marginTop: 24,
               fontSize: 14,
-              color: '#666',
-              margin: 0
+              color: '#6b7280'
             }}>
-              <a href="/" style={{ color: '#021048', textDecoration: 'none' }}>
+              <a
+                href="/"
+                style={{
+                  color: '#021048',
+                  textDecoration: 'none',
+                  fontWeight: 500
+                }}
+                onMouseOver={e => e.target.style.textDecoration = 'underline'}
+                onMouseOut={e => e.target.style.textDecoration = 'none'}
+              >
                 ← Back to home
               </a>
             </p>
-          </div>
+          </>
         )}
       </main>
     </div>

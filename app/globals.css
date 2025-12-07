@@ -33,6 +33,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+
 /* Print styles for claim pack */
 @media print {
   .print-hide {
