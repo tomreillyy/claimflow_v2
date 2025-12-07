@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 export function Header({ projectName = null, projectToken = null }) {
   const { user, signOut, loading } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isWhoDropdownOpen, setIsWhoDropdownOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -192,7 +193,7 @@ export function Header({ projectName = null, projectToken = null }) {
             }}
           >
             <motion.a
-              href="#how"
+              href="/#how"
               style={{
                 textDecoration: 'none',
                 color: 'rgba(255, 255, 255, 0.85)',
@@ -205,20 +206,123 @@ export function Header({ projectName = null, projectToken = null }) {
             >
               How it works
             </motion.a>
-            <motion.a
-              href="#roles"
-              style={{
-                textDecoration: 'none',
-                color: 'rgba(255, 255, 255, 0.85)',
-                fontWeight: 500,
-                fontSize: isScrolled ? 13 : 14,
-                transition: 'font-size 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s ease',
-                whiteSpace: 'nowrap'
-              }}
-              whileHover={{ color: '#fff' }}
+            {/* Who it's for dropdown */}
+            <div
+              style={{ position: 'relative' }}
+              onMouseEnter={() => setIsWhoDropdownOpen(true)}
+              onMouseLeave={() => setIsWhoDropdownOpen(false)}
             >
-              For teams
-            </motion.a>
+              <motion.button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'rgba(255, 255, 255, 0.85)',
+                  fontWeight: 500,
+                  fontSize: isScrolled ? 13 : 14,
+                  transition: 'font-size 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s ease',
+                  whiteSpace: 'nowrap',
+                  fontFamily: 'inherit',
+                  padding: 0
+                }}
+                whileHover={{ color: '#fff' }}
+              >
+                Who it's for
+                <motion.span
+                  animate={{ rotate: isWhoDropdownOpen ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ display: 'flex', alignItems: 'center' }}
+                >
+                  <ChevronDown size={16} />
+                </motion.span>
+              </motion.button>
+
+              <AnimatePresence>
+                {isWhoDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      marginTop: 12,
+                      width: 340,
+                      borderRadius: 16,
+                      backgroundColor: '#021048',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      boxShadow: '0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) inset',
+                      padding: 8,
+                      overflow: 'hidden',
+                      zIndex: 100
+                    }}
+                  >
+                    <a
+                      href="/#roles"
+                      style={{
+                        display: 'block',
+                        padding: '14px 16px',
+                        borderRadius: 12,
+                        textDecoration: 'none',
+                        transition: 'background 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: 14,
+                        marginBottom: 4
+                      }}>
+                        R&D & Engineering Teams
+                      </div>
+                      <div style={{
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        fontSize: 13,
+                        lineHeight: 1.4
+                      }}>
+                        Capture engineering work as compliant R&D evidence - automatically.
+                      </div>
+                    </a>
+                    <a
+                      href="/advisors"
+                      style={{
+                        display: 'block',
+                        padding: '14px 16px',
+                        borderRadius: 12,
+                        textDecoration: 'none',
+                        transition: 'background 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: 14,
+                        marginBottom: 4
+                      }}>
+                        R&D Advisors & Accountants
+                      </div>
+                      <div style={{
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        fontSize: 13,
+                        lineHeight: 1.4
+                      }}>
+                        Collect client evidence, review timelines, and export claim packs faster.
+                      </div>
+                    </a>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <motion.a
               href="/pricing"
               style={{
@@ -318,7 +422,7 @@ export function Header({ projectName = null, projectToken = null }) {
             }}
           >
             <a
-              href="#how"
+              href="/#how"
               style={{
                 display: 'block',
                 fontSize: 16,
@@ -332,21 +436,64 @@ export function Header({ projectName = null, projectToken = null }) {
             >
               How it works
             </a>
+            <div style={{
+              padding: '10px 16px',
+              color: 'rgba(255, 255, 255, 0.5)',
+              fontSize: 12,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              Who it's for
+            </div>
             <a
-              href="#roles"
+              href="/#roles"
               style={{
                 display: 'block',
-                fontSize: 16,
+                fontSize: 15,
                 color: 'rgba(255, 255, 255, 0.9)',
                 textDecoration: 'none',
-                padding: '14px 16px',
+                padding: '12px 16px 4px',
                 borderRadius: 10,
                 fontWeight: 500
               }}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              For teams
+              R&D & Engineering Teams
             </a>
+            <div style={{
+              fontSize: 13,
+              color: 'rgba(255, 255, 255, 0.5)',
+              padding: '0 16px 12px',
+              lineHeight: 1.4
+            }}>
+              Capture engineering work as compliant R&D evidence - automatically.
+            </div>
+            <a
+              href="/advisors"
+              style={{
+                display: 'block',
+                fontSize: 15,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textDecoration: 'none',
+                padding: '12px 16px 4px',
+                borderRadius: 10,
+                fontWeight: 500
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              R&D Advisors & Accountants
+            </a>
+            <div style={{
+              fontSize: 13,
+              color: 'rgba(255, 255, 255, 0.5)',
+              padding: '0 16px 12px',
+              lineHeight: 1.4,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              marginBottom: 8
+            }}>
+              Collect client evidence, review timelines, and export claim packs faster.
+            </div>
             <a
               href="/pricing"
               style={{
