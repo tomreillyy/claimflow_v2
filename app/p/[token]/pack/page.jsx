@@ -1,10 +1,58 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import ClaimPackEditor from '@/components/ClaimPackEditor/ClaimPackEditor';
+import Paywall from '@/components/Paywall';
 import Link from 'next/link';
 import PrintButton from './PrintButton';
 
+async function getUser() {
+  const cookieStore = await cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        get(name) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
+async function checkSubscription(userId) {
+  if (!userId) return false;
+
+  const { data: subscription } = await supabaseAdmin
+    .from('subscriptions')
+    .select('status, current_period_end')
+    .eq('user_id', userId)
+    .single();
+
+  if (!subscription) return false;
+
+  return subscription.status === 'active' &&
+    new Date(subscription.current_period_end) > new Date();
+}
+
 export default async function PackV2Page({ params }) {
   const { token } = await params;
+
+  // Get authenticated user
+  const user = await getUser();
+
+  // Check subscription status
+  const isSubscribed = await checkSubscription(user?.id);
+
+  // If not subscribed, show paywall
+  if (!isSubscribed) {
+    return <Paywall projectToken={token} />;
+  }
 
   // Fetch project
   const { data: project } = await supabaseAdmin

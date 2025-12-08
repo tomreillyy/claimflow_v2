@@ -1,5 +1,9 @@
 'use client';
 
+import { useState } from 'react';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/supabaseClient';
+
 export default function ActionsRow({
   evidenceCount = 0,
   weeklyCount = 0,
@@ -9,8 +13,45 @@ export default function ActionsRow({
   onConnectGitHub,
   onAddNote
 }) {
+  const { isSubscribed, user } = useAuth();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const hasRecentEvidence = weeklyCount > 0;
   const coveragePercent = Math.round((coverageData.covered / coverageData.total) * 100);
+
+  const handlePreviewClick = async (e) => {
+    // If subscribed, let the link work normally
+    if (isSubscribed) return;
+
+    // If not subscribed, prevent default and redirect to checkout
+    e.preventDefault();
+
+    if (!user) {
+      // Redirect to login if not authenticated
+      window.location.href = `/auth/login?redirect=/p/${token}/pack`;
+      return;
+    }
+
+    setCheckoutLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <div style={{
@@ -184,11 +225,14 @@ export default function ActionsRow({
               lineHeight: 1.5,
               marginBottom: 12
             }}>
-              Your claim pack updates as you work. Preview what you've built.
+              {isSubscribed
+                ? 'Your claim pack updates as you work. Preview what you\'ve built.'
+                : 'Subscribe to unlock your AI-generated claim pack.'}
             </div>
             <a
               href={`/p/${token}/pack`}
-              target="_blank"
+              target={isSubscribed ? "_blank" : undefined}
+              onClick={handlePreviewClick}
               style={{
                 padding: '8px 12px',
                 backgroundColor: '#021048',
@@ -197,20 +241,21 @@ export default function ActionsRow({
                 borderRadius: 4,
                 fontSize: 13,
                 fontWeight: 500,
-                cursor: 'pointer',
+                cursor: checkoutLoading ? 'not-allowed' : 'pointer',
                 transition: 'background-color 0.15s',
                 textDecoration: 'none',
                 textAlign: 'center',
-                display: 'block'
+                display: 'block',
+                opacity: checkoutLoading ? 0.7 : 1
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#031560';
+                if (!checkoutLoading) e.currentTarget.style.backgroundColor = '#031560';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = '#021048';
               }}
             >
-              Preview
+              {checkoutLoading ? 'Loading...' : (isSubscribed ? 'Preview' : 'Unlock Claim Pack')}
             </a>
           </div>
 

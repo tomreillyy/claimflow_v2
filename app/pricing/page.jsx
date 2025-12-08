@@ -4,66 +4,55 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { Check } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/supabaseClient';
 
-const plans = [
-  {
-    name: 'Starter',
-    description: 'For small teams getting started with R&D documentation',
-    price: 49,
-    period: 'month',
-    features: [
-      'Up to 3 active projects',
-      '5 team members',
-      'Basic evidence capture',
-      'Standard export formats',
-      'Email support'
-    ],
-    cta: 'Start free trial',
-    highlighted: false
-  },
-  {
-    name: 'Professional',
-    description: 'For growing teams that need comprehensive documentation',
-    price: 149,
-    period: 'month',
-    features: [
-      'Unlimited projects',
-      '20 team members',
-      'Advanced evidence capture',
-      'GitHub integration',
-      'Custom export templates',
-      'Priority support',
-      'API access'
-    ],
-    cta: 'Start free trial',
-    highlighted: true
-  },
-  {
-    name: 'Enterprise',
-    description: 'For organizations with advanced security and compliance needs',
-    price: null,
-    period: null,
-    features: [
-      'Everything in Professional',
-      'Unlimited team members',
-      'SSO & SAML',
-      'Advanced security controls',
-      'Custom integrations',
-      'Dedicated account manager',
-      'SLA guarantee',
-      'On-premise deployment option'
-    ],
-    cta: 'Contact sales',
-    highlighted: false
-  }
+const features = [
+  'Unlimited projects',
+  'Unlimited team members',
+  'AI-generated claim pack sections',
+  'Evidence capture & organization',
+  'GitHub integration',
+  'Export to PDF and Word',
+  'Professional R&D narratives',
+  'Email support'
 ];
 
 export default function PricingPage() {
-  const [isAnnual, setIsAnnual] = useState(false);
+  const { user, isSubscribed } = useAuth();
+  const [loading, setLoading] = useState(false);
 
-  const getPrice = (monthlyPrice) => {
-    if (!monthlyPrice) return null;
-    return isAnnual ? Math.round(monthlyPrice * 0.8) : monthlyPrice;
+  const handleSubscribe = async () => {
+    if (!user) {
+      window.location.href = '/auth/login?redirect=/pricing';
+      return;
+    }
+
+    if (isSubscribed) {
+      window.location.href = '/';
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,7 +79,7 @@ export default function PricingPage() {
               marginBottom: 16
             }}
           >
-            Simple, transparent pricing
+            Simple pricing
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -104,241 +93,137 @@ export default function PricingPage() {
               lineHeight: 1.6
             }}
           >
-            Choose the plan that fits your team. All plans include a 14-day free trial.
+            One plan, everything included. Cancel anytime.
           </motion.p>
+        </section>
 
-          {/* Billing Toggle */}
+        {/* Single Pricing Card */}
+        <section style={{
+          maxWidth: 480,
+          margin: '0 auto',
+          padding: '0 24px 80px'
+        }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 16,
-              marginTop: 40
+              position: 'relative',
+              padding: '32px 28px',
+              borderRadius: 16,
+              border: '2px solid var(--brand)',
+              backgroundColor: '#fafbff',
+              boxShadow: '0 8px 32px rgba(2, 16, 72, 0.12)'
             }}
           >
-            <span style={{
-              fontSize: 15,
-              fontWeight: 500,
-              color: !isAnnual ? 'var(--ink)' : 'var(--muted)'
+            <h3 style={{
+              fontSize: 22,
+              fontWeight: 600,
+              color: 'var(--ink)',
+              marginBottom: 8,
+              textAlign: 'center'
             }}>
-              Monthly
-            </span>
-            <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              style={{
-                position: 'relative',
-                width: 56,
-                height: 32,
-                borderRadius: 9999,
-                border: 'none',
-                backgroundColor: isAnnual ? 'var(--brand)' : 'var(--line)',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s ease'
-              }}
-            >
-              <span style={{
-                position: 'absolute',
-                top: 4,
-                left: isAnnual ? 28 : 4,
-                width: 24,
-                height: 24,
-                borderRadius: '50%',
-                backgroundColor: '#fff',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                transition: 'left 0.2s ease'
-              }} />
-            </button>
-            <span style={{
+              Aird Pro
+            </h3>
+
+            <p style={{
               fontSize: 15,
-              fontWeight: 500,
-              color: isAnnual ? 'var(--ink)' : 'var(--muted)'
+              color: 'var(--muted)',
+              lineHeight: 1.5,
+              marginBottom: 24,
+              textAlign: 'center'
             }}>
-              Annual
-            </span>
-            {isAnnual && (
-              <span style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: '#16a34a',
-                backgroundColor: '#dcfce7',
-                padding: '4px 10px',
-                borderRadius: 9999
-              }}>
-                Save 20%
-              </span>
-            )}
-          </motion.div>
-        </section>
+              Everything you need to build your R&D claim pack
+            </p>
 
-        {/* Pricing Cards */}
-        <section style={{
-          maxWidth: 1100,
-          margin: '0 auto',
-          padding: '0 24px 120px'
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: 24,
-            alignItems: 'start'
-          }}>
-            {plans.map((plan, index) => (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 * (index + 3) }}
-                style={{
-                  position: 'relative',
-                  padding: plan.highlighted ? '32px 28px' : '28px 24px',
-                  borderRadius: 16,
-                  border: plan.highlighted
-                    ? '2px solid var(--brand)'
-                    : '1px solid var(--line)',
-                  backgroundColor: plan.highlighted ? '#fafbff' : '#fff',
-                  boxShadow: plan.highlighted
-                    ? '0 8px 32px rgba(2, 16, 72, 0.12)'
-                    : '0 1px 3px rgba(0,0,0,0.04)'
-                }}
-              >
-                {plan.highlighted && (
-                  <div style={{
-                    position: 'absolute',
-                    top: -12,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    backgroundColor: 'var(--brand)',
-                    color: '#fff',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    padding: '4px 12px',
-                    borderRadius: 9999,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }}>
-                    Most Popular
-                  </div>
-                )}
-
-                <h3 style={{
-                  fontSize: 22,
-                  fontWeight: 600,
+            <div style={{
+              marginBottom: 24,
+              textAlign: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
+                <span style={{
+                  fontSize: 48,
+                  fontWeight: 700,
                   color: 'var(--ink)',
-                  marginBottom: 8
+                  lineHeight: 1
                 }}>
-                  {plan.name}
-                </h3>
-
-                <p style={{
-                  fontSize: 15,
-                  color: 'var(--muted)',
-                  lineHeight: 1.5,
-                  marginBottom: 24,
-                  minHeight: 44
+                  $49
+                </span>
+                <span style={{
+                  fontSize: 16,
+                  color: 'var(--muted)'
                 }}>
-                  {plan.description}
-                </p>
+                  /month
+                </span>
+              </div>
+              <p style={{
+                fontSize: 14,
+                color: 'var(--muted)',
+                marginTop: 4
+              }}>
+                Cancel anytime
+              </p>
+            </div>
 
-                <div style={{
-                  marginBottom: 24
-                }}>
-                  {plan.price ? (
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                      <span style={{
-                        fontSize: 48,
-                        fontWeight: 700,
-                        color: 'var(--ink)',
-                        lineHeight: 1
-                      }}>
-                        ${getPrice(plan.price)}
-                      </span>
-                      <span style={{
-                        fontSize: 16,
-                        color: 'var(--muted)'
-                      }}>
-                        /{isAnnual ? 'mo, billed annually' : 'month'}
-                      </span>
-                    </div>
-                  ) : (
-                    <div style={{
-                      fontSize: 32,
-                      fontWeight: 700,
-                      color: 'var(--ink)',
-                      lineHeight: 1
-                    }}>
-                      Custom
-                    </div>
-                  )}
-                </div>
+            <motion.button
+              onClick={handleSubscribe}
+              disabled={loading}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '14px 24px',
+                borderRadius: 12,
+                border: 'none',
+                backgroundColor: 'var(--brand)',
+                color: '#fff',
+                fontSize: 15,
+                fontWeight: 600,
+                textAlign: 'center',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(2, 16, 72, 0.2)'
+              }}
+              whileHover={!loading ? {
+                scale: 1.02,
+                boxShadow: '0 4px 16px rgba(2, 16, 72, 0.25)'
+              } : {}}
+              whileTap={!loading ? { scale: 0.98 } : {}}
+            >
+              {loading ? 'Loading...' : (isSubscribed ? 'Go to Dashboard' : 'Get Started')}
+            </motion.button>
 
-                <motion.a
-                  href={plan.price ? '/admin/new-project' : '/contact'}
+            <ul style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: '28px 0 0 0'
+            }}>
+              {features.map((feature, featureIndex) => (
+                <li
+                  key={featureIndex}
                   style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '14px 24px',
-                    borderRadius: 12,
-                    border: 'none',
-                    backgroundColor: plan.highlighted ? 'var(--brand)' : 'transparent',
-                    color: plan.highlighted ? '#fff' : 'var(--brand)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
                     fontSize: 15,
-                    fontWeight: 600,
-                    textAlign: 'center',
-                    textDecoration: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: plan.highlighted
-                      ? '0 2px 8px rgba(2, 16, 72, 0.2)'
-                      : 'inset 0 0 0 2px var(--brand)'
+                    color: 'var(--ink)',
+                    padding: '10px 0',
+                    borderTop: featureIndex === 0 ? '1px solid var(--line)' : 'none'
                   }}
-                  whileHover={{
-                    scale: 1.02,
-                    boxShadow: plan.highlighted
-                      ? '0 4px 16px rgba(2, 16, 72, 0.25)'
-                      : 'inset 0 0 0 2px var(--brand)'
-                  }}
-                  whileTap={{ scale: 0.98 }}
                 >
-                  {plan.cta}
-                </motion.a>
-
-                <ul style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: '28px 0 0 0'
-                }}>
-                  {plan.features.map((feature, featureIndex) => (
-                    <li
-                      key={featureIndex}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 12,
-                        fontSize: 15,
-                        color: 'var(--ink)',
-                        padding: '10px 0',
-                        borderTop: featureIndex === 0 ? '1px solid var(--line)' : 'none'
-                      }}
-                    >
-                      <Check
-                        size={18}
-                        style={{
-                          color: '#16a34a',
-                          flexShrink: 0,
-                          marginTop: 2
-                        }}
-                      />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            ))}
-          </div>
+                  <Check
+                    size={18}
+                    style={{
+                      color: '#16a34a',
+                      flexShrink: 0,
+                      marginTop: 2
+                    }}
+                  />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
         </section>
 
         {/* FAQ Section */}
@@ -364,24 +249,20 @@ export default function PricingPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <FaqItem
-                question="How does the 14-day free trial work?"
-                answer="Start using Aird immediately with full access to all features in your chosen plan. No credit card required. If you decide to continue after 14 days, you'll be prompted to add payment details."
-              />
-              <FaqItem
-                question="Can I change plans later?"
-                answer="Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access to new features. When downgrading, changes take effect at your next billing cycle."
+                question="What can I do for free?"
+                answer="You can sign up, create projects, add team members, capture evidence, and use AI to classify your R&D activities - all for free. You only need to subscribe when you're ready to generate and export your claim pack."
               />
               <FaqItem
                 question="What payment methods do you accept?"
-                answer="We accept all major credit cards (Visa, Mastercard, American Express) as well as direct debit for annual plans. Enterprise customers can pay via invoice."
+                answer="We accept all major credit cards (Visa, Mastercard, American Express) via our secure payment processor, Stripe."
+              />
+              <FaqItem
+                question="Can I cancel anytime?"
+                answer="Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your current billing period."
               />
               <FaqItem
                 question="Is my data secure?"
-                answer="Absolutely. All data is encrypted in transit and at rest. We use bank-level security and are SOC 2 compliant. Enterprise plans include additional security features like SSO and audit logs."
-              />
-              <FaqItem
-                question="Do you offer discounts for startups or non-profits?"
-                answer="Yes, we offer special pricing for eligible startups, non-profits, and educational institutions. Contact our sales team to learn more."
+                answer="Absolutely. All data is encrypted in transit and at rest. We use bank-level security to protect your R&D documentation."
               />
             </div>
           </div>
@@ -413,27 +294,30 @@ export default function PricingPage() {
             }}>
               Join thousands of teams capturing their innovation story with Aird.
             </p>
-            <motion.a
-              href="/admin/new-project"
+            <motion.button
+              onClick={handleSubscribe}
+              disabled={loading}
               style={{
                 display: 'inline-block',
                 padding: '14px 28px',
                 background: 'var(--brand)',
                 color: 'white',
                 borderRadius: 'var(--radius)',
-                textDecoration: 'none',
+                border: 'none',
                 fontSize: 16,
                 fontWeight: 500,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
                 boxShadow: '0 2px 8px rgba(2, 16, 72, 0.15)'
               }}
-              whileHover={{
+              whileHover={!loading ? {
                 scale: 1.05,
                 boxShadow: '0 4px 16px rgba(2, 16, 72, 0.25)'
-              }}
-              whileTap={{ scale: 0.98 }}
+              } : {}}
+              whileTap={!loading ? { scale: 0.98 } : {}}
             >
-              Start your free trial
-            </motion.a>
+              {loading ? 'Loading...' : (isSubscribed ? 'Go to Dashboard' : 'Get Started')}
+            </motion.button>
           </div>
         </section>
       </main>

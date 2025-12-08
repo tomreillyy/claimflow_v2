@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "@stripe/stripe-js": "^8.5.3",
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.57.4",
     "@tiptap/extension-placeholder": "^3.7.2",
     "@tiptap/react": "^3.7.2",
@@ -22,6 +24,7 @@
     "puppeteer": "^24.25.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "stripe": "^20.0.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
