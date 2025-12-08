@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
 import { ScrollTimeline } from '@/components/ScrollTimeline';
 import { ParallaxRoles } from '@/components/ParallaxRoles';
-import { DashboardOverview } from '@/components/DashboardOverview';
+import { ProjectsDashboard } from '@/components/ProjectsDashboard';
 import { Footer } from '@/components/Footer';
 import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/components/AuthProvider';

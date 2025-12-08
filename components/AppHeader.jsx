@@ -85,7 +85,7 @@ export function AppHeader() {
               src="/aird-logo-blue.png"
               alt="Aird"
               style={{
-                height: 32,
+                height: 38,
                 width: 'auto',
               }}
             />
