@@ -51,6 +51,9 @@ export async function POST(req) {
         });
     }
 
+    // Get base URL from request origin or env var
+    const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_BASE || 'https://www.getaird.com';
+
     // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -62,8 +65,8 @@ export async function POST(req) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_BASE}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE}/pricing`,
+      success_url: `${origin}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/pricing`,
       metadata: {
         supabase_user_id: user.id,
       },
