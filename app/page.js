@@ -57,7 +57,7 @@ export default function Home() {
             <Spinner />
           </div>
         ) : user ? (
-          <DashboardOverview />
+          <ProjectsDashboard />
         ) : (
           <div className={revealed ? 'reveal' : ''}>
             <Hero />
