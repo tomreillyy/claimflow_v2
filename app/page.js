@@ -5,6 +5,7 @@ import { ScrollTimeline } from '@/components/ScrollTimeline';
 import { ParallaxRoles } from '@/components/ParallaxRoles';
 import { ProjectsDashboard } from '@/components/ProjectsDashboard';
 import { Footer } from '@/components/Footer';
+import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/components/AuthProvider';
 import { useEffect, useState } from 'react';
 
@@ -52,8 +53,8 @@ export default function Home() {
         <Header />
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '80px 24px' }}>
-            <div style={{ fontSize: 18, color: 'var(--muted)' }}>Loading...</div>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '80px 24px' }}>
+            <Spinner />
           </div>
         ) : user ? (
           <ProjectsDashboard />
