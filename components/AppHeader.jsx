@@ -69,7 +69,7 @@ export function AppHeader() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 24px',
+            padding: '8px 24px',
             maxWidth: '1400px',
             margin: '0 auto',
             width: '100%',
@@ -86,7 +86,7 @@ export function AppHeader() {
               src="/aird-logo-blue.png"
               alt="Aird"
               style={{
-                height: 32,
+                height: 36,
                 width: 'auto',
               }}
             />
@@ -106,7 +106,7 @@ export function AppHeader() {
               alignItems: 'center',
               backgroundColor: '#f3f4f6',
               borderRadius: '9999px',
-              padding: '10px 16px',
+              padding: '8px 14px',
               transition: 'all 0.2s ease',
               border: '1px solid transparent',
             }}
@@ -150,8 +150,8 @@ export function AppHeader() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: 40,
-                  height: 40,
+                  width: 34,
+                  height: 34,
                   borderRadius: '50%',
                   backgroundColor: '#f3f4f6',
                   border: 'none',
@@ -161,7 +161,7 @@ export function AppHeader() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
               >
-                <User size={20} color="#6b7280" />
+                <User size={18} color="#6b7280" />
               </button>
 
               {/* User Dropdown Menu */}
@@ -243,7 +243,7 @@ export function AppHeader() {
           style={{
             display: 'flex',
             justifyContent: 'center',
-            padding: '12px 24px',
+            padding: '6px 24px 8px',
           }}
         >
           <nav style={{
@@ -257,9 +257,9 @@ export function AppHeader() {
                   key={tab.name}
                   href={tab.href}
                   style={{
-                    padding: '8px 20px',
+                    padding: '6px 16px',
                     borderRadius: '9999px',
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: 500,
                     textDecoration: 'none',
                     transition: 'all 0.2s ease',
