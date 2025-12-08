@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
 import { ScrollTimeline } from '@/components/ScrollTimeline';
 import { ParallaxRoles } from '@/components/ParallaxRoles';
-import { ProjectsDashboard } from '@/components/ProjectsDashboard';
+import { DashboardOverview } from '@/components/DashboardOverview';
 import { Footer } from '@/components/Footer';
 import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/components/AuthProvider';
@@ -57,7 +57,7 @@ export default function Home() {
             <Spinner />
           </div>
         ) : user ? (
-          <ProjectsDashboard />
+          <DashboardOverview />
         ) : (
           <div className={revealed ? 'reveal' : ''}>
             <Hero />

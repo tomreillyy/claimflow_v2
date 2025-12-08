@@ -57,9 +57,8 @@ export function AppHeader() {
         top: 0,
         zIndex: 50,
         width: '100%',
-        backgroundColor: '#fff',
-        borderBottom: '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+        backgroundColor: '#FAFAFA',
+        borderBottom: '1px solid rgba(229, 231, 235, 0.6)',
       }}>
         <div
           className="app-header-row"
@@ -67,7 +66,8 @@ export function AppHeader() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '10px 24px',
+            padding: '0 24px',
+            height: 56,
             maxWidth: '1400px',
             margin: '0 auto',
             width: '100%',
@@ -79,12 +79,13 @@ export function AppHeader() {
             alignItems: 'center',
             textDecoration: 'none',
             flexShrink: 0,
+            height: '100%',
           }}>
             <img
               src="/aird-logo-blue.png"
               alt="Aird"
               style={{
-                height: 44,
+                height: 32,
                 width: 'auto',
               }}
             />
@@ -95,9 +96,11 @@ export function AppHeader() {
             className="app-header-tabs-desktop"
             style={{
               display: 'flex',
-              gap: 8,
-              marginLeft: 48,
+              alignItems: 'center',
+              gap: 4,
+              marginLeft: 40,
               marginRight: 'auto',
+              height: '100%',
             }}
           >
             {tabs.map((tab) => {
@@ -107,19 +110,19 @@ export function AppHeader() {
                   key={tab.name}
                   href={tab.href}
                   style={{
-                    padding: '8px 18px',
-                    borderRadius: '9999px',
+                    padding: '6px 14px',
+                    borderRadius: 8,
                     fontSize: 14,
                     fontWeight: 500,
                     textDecoration: 'none',
-                    transition: 'all 0.2s ease',
+                    transition: 'all 0.15s ease',
                     backgroundColor: isActive ? '#021048' : 'transparent',
                     color: isActive ? '#fff' : '#6b7280',
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.backgroundColor = '#f3f4f6';
-                      e.currentTarget.style.color = '#1f2937';
+                      e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
+                      e.currentTarget.style.color = '#374151';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -136,27 +139,27 @@ export function AppHeader() {
           </nav>
 
           {/* Right: User Avatar (desktop) + Mobile Menu Button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: '100%' }}>
             {/* User Avatar - Desktop */}
-            <div className="app-header-user-desktop" style={{ position: 'relative' }} ref={userMenuRef}>
+            <div className="app-header-user-desktop" style={{ position: 'relative', display: 'flex', alignItems: 'center' }} ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: 38,
-                  height: 38,
+                  width: 34,
+                  height: 34,
                   borderRadius: '50%',
-                  backgroundColor: '#f3f4f6',
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
                   border: 'none',
                   cursor: 'pointer',
-                  transition: 'background-color 0.2s ease',
+                  transition: 'background-color 0.15s ease',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
               >
-                <User size={20} color="#6b7280" />
+                <User size={18} color="#6b7280" />
               </button>
 
               {/* User Dropdown Menu */}
@@ -166,8 +169,8 @@ export function AppHeader() {
                   top: 'calc(100% + 8px)',
                   right: 0,
                   backgroundColor: '#fff',
-                  borderRadius: 12,
-                  boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+                  borderRadius: 10,
+                  boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04)',
                   minWidth: 160,
                   overflow: 'hidden',
                   zIndex: 100,
@@ -182,7 +185,7 @@ export function AppHeader() {
                       alignItems: 'center',
                       gap: 10,
                       width: '100%',
-                      padding: '12px 16px',
+                      padding: '10px 14px',
                       border: 'none',
                       backgroundColor: 'transparent',
                       cursor: 'pointer',
@@ -191,7 +194,7 @@ export function AppHeader() {
                       fontFamily: 'inherit',
                       transition: 'background-color 0.15s ease',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <LogOut size={16} color="#6b7280" />
@@ -209,12 +212,13 @@ export function AppHeader() {
                 display: 'none',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 borderRadius: 8,
-                backgroundColor: '#f3f4f6',
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
                 border: 'none',
                 cursor: 'pointer',
+                transition: 'background-color 0.15s ease',
               }}
             >
               {isMobileMenuOpen ? <X size={20} color="#6b7280" /> : <Menu size={20} color="#6b7280" />}
@@ -227,13 +231,13 @@ export function AppHeader() {
           <div
             className="app-header-mobile-menu"
             style={{
-              borderTop: '1px solid #e5e7eb',
-              backgroundColor: '#fff',
+              borderTop: '1px solid rgba(229, 231, 235, 0.6)',
+              backgroundColor: '#FAFAFA',
               padding: '8px 16px 16px',
             }}
           >
             {/* Mobile Tabs */}
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 12 }}>
               {tabs.map((tab) => {
                 const isActive = tab.name === activeTab;
                 return (
@@ -242,8 +246,8 @@ export function AppHeader() {
                     href={tab.href}
                     onClick={() => setIsMobileMenuOpen(false)}
                     style={{
-                      padding: '12px 16px',
-                      borderRadius: 10,
+                      padding: '10px 14px',
+                      borderRadius: 8,
                       fontSize: 15,
                       fontWeight: 500,
                       textDecoration: 'none',
@@ -268,10 +272,10 @@ export function AppHeader() {
                 alignItems: 'center',
                 gap: 10,
                 width: '100%',
-                padding: '12px 16px',
+                padding: '10px 14px',
                 border: 'none',
-                borderRadius: 10,
-                backgroundColor: '#f3f4f6',
+                borderRadius: 8,
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
                 cursor: 'pointer',
                 fontSize: 15,
                 fontWeight: 500,
@@ -299,7 +303,8 @@ export function AppHeader() {
             display: flex !important;
           }
           .app-header-row {
-            padding: 12px 16px !important;
+            padding: 0 16px !important;
+            height: 52px !important;
           }
         }
       `}</style>
