@@ -58,9 +58,9 @@ export function AppHeader() {
         top: 0,
         zIndex: 50,
         width: '100%',
-        backgroundColor: '#fff',
-        borderBottom: '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+        backgroundColor: '#021048',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
       }}>
         {/* Row 1 */}
         <div
@@ -83,10 +83,10 @@ export function AppHeader() {
             flexShrink: 0,
           }}>
             <img
-              src="/aird-logo-blue.png"
+              src="/Aird__3_-removebg-preview.png"
               alt="Aird"
               style={{
-                height: 44,
+                height: 54,
                 width: 'auto',
               }}
             />
@@ -104,24 +104,24 @@ export function AppHeader() {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: '#f3f4f6',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
               borderRadius: '9999px',
               padding: '8px 14px',
               transition: 'all 0.2s ease',
-              border: '1px solid transparent',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
             }}
             onFocus={(e) => {
-              e.currentTarget.style.backgroundColor = '#fff';
-              e.currentTarget.style.borderColor = '#d1d5db';
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(2, 16, 72, 0.08)';
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255, 255, 255, 0.1)';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.borderColor = 'transparent';
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
               e.currentTarget.style.boxShadow = 'none';
             }}
             >
-              <Search size={18} color="#9ca3af" style={{ marginRight: 10, flexShrink: 0 }} />
+              <Search size={18} color="rgba(255, 255, 255, 0.6)" style={{ marginRight: 10, flexShrink: 0 }} />
               <input
                 type="text"
                 placeholder="Search"
@@ -133,7 +133,7 @@ export function AppHeader() {
                   backgroundColor: 'transparent',
                   flex: 1,
                   fontSize: 14,
-                  color: '#1f2937',
+                  color: '#fff',
                   fontFamily: 'inherit',
                 }}
               />
@@ -153,15 +153,15 @@ export function AppHeader() {
                   width: 34,
                   height: 34,
                   borderRadius: '50%',
-                  backgroundColor: '#f3f4f6',
-                  border: 'none',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
                   cursor: 'pointer',
                   transition: 'background-color 0.2s ease',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
               >
-                <User size={18} color="#6b7280" />
+                <User size={18} color="rgba(255, 255, 255, 0.85)" />
               </button>
 
               {/* User Dropdown Menu */}
@@ -217,12 +217,12 @@ export function AppHeader() {
                 width: 40,
                 height: 40,
                 borderRadius: 8,
-                backgroundColor: '#f3f4f6',
-                border: 'none',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
                 cursor: 'pointer',
               }}
             >
-              {isMobileMenuOpen ? <X size={20} color="#6b7280" /> : <Menu size={20} color="#6b7280" />}
+              {isMobileMenuOpen ? <X size={20} color="#fff" /> : <Menu size={20} color="#fff" />}
             </button>
           </div>
         </div>
@@ -232,7 +232,7 @@ export function AppHeader() {
           className="app-header-divider"
           style={{
             height: 1,
-            backgroundColor: '#f3f4f6',
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
             margin: '0 24px',
           }}
         />
@@ -266,19 +266,19 @@ export function AppHeader() {
                     fontWeight: 500,
                     textDecoration: 'none',
                     transition: 'all 0.2s ease',
-                    backgroundColor: isActive ? '#021048' : 'transparent',
-                    color: isActive ? '#fff' : '#6b7280',
+                    backgroundColor: isActive ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                    color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.7)',
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.backgroundColor = '#f3f4f6';
-                      e.currentTarget.style.color = '#1f2937';
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.color = '#fff';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
                       e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#6b7280';
+                      e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
                     }
                   }}
                 >
@@ -294,8 +294,8 @@ export function AppHeader() {
           <div
             className="app-header-mobile-menu"
             style={{
-              borderTop: '1px solid #e5e7eb',
-              backgroundColor: '#fff',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              backgroundColor: '#021048',
               padding: '8px 16px 16px',
             }}
           >
@@ -303,12 +303,13 @@ export function AppHeader() {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: '#f3f4f6',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
               borderRadius: '9999px',
               padding: '10px 16px',
               marginBottom: 12,
+              border: '1px solid rgba(255, 255, 255, 0.15)',
             }}>
-              <Search size={18} color="#9ca3af" style={{ marginRight: 10, flexShrink: 0 }} />
+              <Search size={18} color="rgba(255, 255, 255, 0.6)" style={{ marginRight: 10, flexShrink: 0 }} />
               <input
                 type="text"
                 placeholder="Search"
@@ -320,7 +321,7 @@ export function AppHeader() {
                   backgroundColor: 'transparent',
                   flex: 1,
                   fontSize: 14,
-                  color: '#1f2937',
+                  color: '#fff',
                   fontFamily: 'inherit',
                 }}
               />
@@ -341,8 +342,8 @@ export function AppHeader() {
                       fontSize: 15,
                       fontWeight: 500,
                       textDecoration: 'none',
-                      backgroundColor: isActive ? '#021048' : 'transparent',
-                      color: isActive ? '#fff' : '#374151',
+                      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+                      color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.8)',
                     }}
                   >
                     {tab.name}
@@ -363,17 +364,17 @@ export function AppHeader() {
                 gap: 10,
                 width: '100%',
                 padding: '12px 16px',
-                border: 'none',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
                 borderRadius: 10,
-                backgroundColor: '#f3f4f6',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 cursor: 'pointer',
                 fontSize: 15,
                 fontWeight: 500,
-                color: '#374151',
+                color: '#fff',
                 fontFamily: 'inherit',
               }}
             >
-              <LogOut size={18} color="#6b7280" />
+              <LogOut size={18} color="rgba(255, 255, 255, 0.8)" />
               Log out
             </button>
           </div>
