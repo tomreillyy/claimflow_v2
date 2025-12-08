@@ -35,70 +35,9 @@ export function Header({ projectName = null, projectToken = null }) {
     open: { opacity: 1, height: 'auto' }
   };
 
-  // If user is logged in (not on a specific project page), use the new AppHeader
-  if (user && !projectName) {
+  // If user is logged in, use the AppHeader (same nav for all logged-in pages)
+  if (user) {
     return <AppHeader />;
-  }
-
-  // If viewing a specific project, use the project-specific header
-  if (projectName) {
-    return (
-      <header style={{
-        borderBottom: '1px solid var(--line)',
-        background: '#021048'
-      }}>
-        <div style={{
-          width: 'min(960px, 92vw)',
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '4px 0'
-        }}>
-          <a href="/" style={{
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            <img
-              src="/Aird__3_-removebg-preview.png"
-              alt="Aird"
-              style={{
-                height: 80,
-                width: 'auto',
-                marginTop: '-10px',
-                marginBottom: '-10px'
-              }}
-            />
-          </a>
-
-          <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
-            <span style={{
-              fontSize: 13,
-              color: 'rgba(255, 255, 255, 0.85)',
-              marginRight: 12,
-              fontWeight: 400
-            }}>Everything here becomes contemporaneous R&D evidence</span>
-            <button
-              onClick={signOut}
-              style={{
-                padding: '8px 14px',
-                backgroundColor: 'transparent',
-                color: '#fff',
-                borderRadius: '12px',
-                fontSize: 14,
-                fontWeight: 500,
-                border: '1px solid #fff',
-                cursor: 'pointer',
-                fontFamily: 'inherit'
-              }}
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
-    );
   }
 
   // Floating glassy pill navbar for landing page
