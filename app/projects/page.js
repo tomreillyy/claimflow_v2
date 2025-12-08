@@ -1,12 +1,12 @@
 'use client';
-import { DashboardOverview } from '@/components/DashboardOverview';
+import { ProjectsDashboard } from '@/components/ProjectsDashboard';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import { Spinner } from '@/components/Spinner';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-export default function DashboardPage() {
+export default function ProjectsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -42,7 +42,7 @@ export default function DashboardPage() {
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto',
     }}>
       <Header />
-      <DashboardOverview />
+      <ProjectsDashboard />
     </main>
   );
 }

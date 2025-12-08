@@ -7,15 +7,24 @@ import { ProjectsDashboard } from '@/components/ProjectsDashboard';
 import { Footer } from '@/components/Footer';
 import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/components/AuthProvider';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     requestAnimationFrame(() => setRevealed(true));
   }, []);
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
 
   return (
     <>
