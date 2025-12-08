@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
+import { AppHeader } from '@/components/AppHeader';
 
 export function Header({ projectName = null, projectToken = null }) {
   const { user, signOut, loading } = useAuth();
@@ -34,8 +35,13 @@ export function Header({ projectName = null, projectToken = null }) {
     open: { opacity: 1, height: 'auto' }
   };
 
-  // If user is logged in OR has a project context, use the original dark header
-  if (user || projectName) {
+  // If user is logged in (not on a specific project page), use the new AppHeader
+  if (user && !projectName) {
+    return <AppHeader />;
+  }
+
+  // If viewing a specific project, use the project-specific header
+  if (projectName) {
     return (
       <header style={{
         borderBottom: '1px solid var(--line)',
@@ -67,33 +73,12 @@ export function Header({ projectName = null, projectToken = null }) {
           </a>
 
           <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
-            {!projectName && (
-              <nav style={{display: 'flex', gap: 18, marginRight: 12}}>
-                <a href="/" style={{
-                  textDecoration: 'none',
-                  color: '#fff',
-                  fontSize: 14
-                }}>Projects</a>
-                <a href="/blog" style={{
-                  textDecoration: 'none',
-                  color: '#fff',
-                  fontSize: 14
-                }}>Blog</a>
-                <a href="/settings/team" style={{
-                  textDecoration: 'none',
-                  color: '#fff',
-                  fontSize: 14
-                }}>Team</a>
-              </nav>
-            )}
-            {projectName && (
-              <span style={{
-                fontSize: 13,
-                color: 'rgba(255, 255, 255, 0.85)',
-                marginRight: 12,
-                fontWeight: 400
-              }}>Everything here becomes contemporaneous R&D evidence</span>
-            )}
+            <span style={{
+              fontSize: 13,
+              color: 'rgba(255, 255, 255, 0.85)',
+              marginRight: 12,
+              fontWeight: 400
+            }}>Everything here becomes contemporaneous R&D evidence</span>
             <button
               onClick={signOut}
               style={{
