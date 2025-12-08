@@ -86,7 +86,7 @@ export function AppHeader() {
               src="/aird-logo-blue.png"
               alt="Aird"
               style={{
-                height: 36,
+                height: 44,
                 width: 'auto',
               }}
             />
@@ -242,8 +242,11 @@ export function AppHeader() {
           className="app-header-tabs-desktop"
           style={{
             display: 'flex',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             padding: '6px 24px 8px',
+            maxWidth: '1400px',
+            margin: '0 auto',
+            width: '100%',
           }}
         >
           <nav style={{
