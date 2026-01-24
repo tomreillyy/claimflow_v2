@@ -48,8 +48,8 @@ export default function Upload({ params }) {
               marginRight: 12
             }}>
               <img
-                src="/Aird__3_-removebg-preview.png"
-                alt="Aird"
+                src="/claimflow-white-text-and-icon.png"
+                alt="ClaimFlow"
                 style={{
                   height: 28,
                   width: 'auto'

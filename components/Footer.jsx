@@ -31,8 +31,8 @@ export function Footer() {
           <div style={{ gridColumn: 'span 1' }}>
             <a href="/" style={{ display: 'inline-block', marginBottom: 16 }}>
               <img
-                src="/Aird__3_-removebg-preview.png"
-                alt="AIRD"
+                src="/claimflow-white-text-and-icon.png"
+                alt="ClaimFlow"
                 style={{
                   height: 56,
                   width: 'auto'
@@ -149,7 +149,7 @@ export function Footer() {
             fontSize: 13,
             color: 'rgba(255, 255, 255, 0.5)'
           }}>
-            © {currentYear} AIRD. All rights reserved.
+            © {currentYear} ClaimFlow. All rights reserved.
           </p>
 
           {/* Social links */}

@@ -210,7 +210,7 @@ export default function BlogPostPage({ params }) {
               lineHeight: 1.6,
               marginBottom: 32
             }}>
-              Aird captures your innovation story as it unfolds — no archaeology required.
+              ClaimFlow captures your innovation story as it unfolds — no archaeology required.
             </p>
             <Link
               href="/admin/new-project"
@@ -228,7 +228,7 @@ export default function BlogPostPage({ params }) {
               }}
               className="cta-button"
             >
-              Try Aird free
+              Try ClaimFlow free
             </Link>
           </div>
         </section>
@@ -292,7 +292,7 @@ export default function BlogPostPage({ params }) {
             },
             publisher: {
               '@type': 'Organization',
-              name: 'Aird',
+              name: 'ClaimFlow',
               logo: {
                 '@type': 'ImageObject',
                 url: 'https://aird.com.au/logo.png'
@@ -316,13 +316,13 @@ export function generateMetadata({ params }) {
 
   if (!post) {
     return {
-      title: 'Post Not Found | Aird',
+      title: 'Post Not Found | ClaimFlow',
       description: 'The blog post you are looking for could not be found.'
     };
   }
 
   return {
-    title: `${post.title} | Aird Blog`,
+    title: `${post.title} | ClaimFlow Blog`,
     description: post.description,
     keywords: post.keywords,
     authors: [{ name: post.author }],

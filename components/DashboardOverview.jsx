@@ -176,7 +176,7 @@ export function DashboardOverview() {
           color: '#1a1a1a',
           margin: '0 0 16px 0'
         }}>
-          Welcome to Aird!
+          Welcome to ClaimFlow!
         </h2>
         <p style={{
           fontSize: 18,

@@ -56,7 +56,7 @@ export function Hero() {
             letterSpacing: '-0.02em',
             color: '#0f172a'
           }}>
-            Aird substantiates your R&D claim as you{' '}
+            ClaimFlow substantiates your R&D claim as you{' '}
             <span style={{
               display: 'inline-block',
               width: '4.5em',
@@ -82,7 +82,7 @@ export function Hero() {
             lineHeight: 1.7,
             padding: '0 8px'
           }}>
-            AIRD captures and structures R&D evidence for engineering teams, because claims fail when documentation is missing or made too late.
+            ClaimFlow captures and structures R&D evidence for engineering teams, because claims fail when documentation is missing or made too late.
           </p>
 
           {/* CTAs */}
@@ -225,7 +225,7 @@ export function Hero() {
               {/* Screenshot */}
               <img
                 src="/product-events.png"
-                alt="AIRD Dashboard"
+                alt="ClaimFlow Dashboard"
                 style={{
                   width: '100%',
                   height: 'auto',

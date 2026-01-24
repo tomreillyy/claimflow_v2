@@ -24,8 +24,8 @@ function DemoHeader({ projectName }) {
           alignItems: 'center'
         }}>
           <img
-            src="/Aird__3_-removebg-preview.png"
-            alt="Aird"
+            src="/claimflow-white-text-and-icon.png"
+            alt="ClaimFlow"
             style={{
               height: 80,
               width: 'auto',

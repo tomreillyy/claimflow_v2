@@ -96,8 +96,8 @@ export function Header({ projectName = null, projectToken = null }) {
             whileTap={{ scale: 0.98 }}
           >
             <img
-              src="/Aird__3_-removebg-preview.png"
-              alt="Aird"
+              src="/claimflow-white-text-and-icon.png"
+              alt="ClaimFlow"
               style={{
                 height: isScrolled ? 36 : 48,
                 width: 'auto',

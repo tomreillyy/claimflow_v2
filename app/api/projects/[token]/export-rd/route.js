@@ -96,7 +96,7 @@ export async function GET(req, { params }) {
     output += "=".repeat(80) + "\n\n";
     output += "CONTEMPORANEOUS EVIDENCE STATEMENT\n\n";
     output += "All evidence referenced in this document was automatically captured and ";
-    output += "contemporaneously recorded in AIRD (AI R&D Documentation) at the time ";
+    output += "contemporaneously recorded in ClaimFlow at the time ";
     output += "activities were conducted. This demonstrates systematic progression of ";
     output += "R&D work in accordance with ITAA 1997 s 355-25.\n\n";
     output += "Evidence sources include:\n";

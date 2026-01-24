@@ -64,7 +64,7 @@ export default function AdvisorsPage() {
             margin: '0 auto 40px',
             lineHeight: 1.7
           }}>
-            AIRD helps R&D advisors standardise documentation, eliminate reconstruction, and deliver audit-ready claim packs at scale. Work smarter with your clients, not harder.
+            ClaimFlow helps R&D advisors standardise documentation, eliminate reconstruction, and deliver audit-ready claim packs at scale. Work smarter with your clients, not harder.
           </p>
 
           <a
@@ -90,7 +90,7 @@ export default function AdvisorsPage() {
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            Partner with AIRD
+            Partner with ClaimFlow
           </a>
         </div>
       </section>
@@ -107,7 +107,7 @@ export default function AdvisorsPage() {
             textAlign: 'center',
             margin: '0 0 16px'
           }}>
-            Why advisors choose AIRD
+            Why advisors choose ClaimFlow
           </h2>
           <p style={{
             color: 'var(--muted)',
@@ -256,7 +256,7 @@ export default function AdvisorsPage() {
                 lineHeight: 1.7,
                 margin: '0 0 24px'
               }}>
-                Offer AIRD to your clients under your own brand. We handle the infrastructure, AI, and compliance — you deliver the value and maintain your client relationships.
+                Offer ClaimFlow to your clients under your own brand. We handle the infrastructure, AI, and compliance — you deliver the value and maintain your client relationships.
               </p>
               <ul style={{
                 listStyle: 'none',
@@ -449,7 +449,7 @@ export default function AdvisorsPage() {
                 5%
               </div>
               <p style={{ margin: '0 0 24px', opacity: 0.8, fontSize: 14 }}>
-                Of your fee on AIRD-supported claims
+                Of your fee on ClaimFlow-supported claims
               </p>
               <ul style={{
                 listStyle: 'none',
@@ -608,7 +608,7 @@ export default function AdvisorsPage() {
           flexWrap: 'wrap',
           gap: 12
         }}>
-          <div>&copy; {new Date().getFullYear()} aird</div>
+          <div>&copy; {new Date().getFullYear()} ClaimFlow</div>
           <div style={{ display: 'flex', gap: 14 }}>
             <a href="/" style={{ color: 'inherit', textDecoration: 'none' }}>Home</a>
             <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>

@@ -51,8 +51,8 @@ export default function Login() {
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
                 <img
-                  src="/aird-logo-blue.png"
-                  alt="Aird"
+                  src="/claimflow-icon-and-text.png"
+                  alt="ClaimFlow"
                   style={{ height: 120, width: 'auto' }}
                 />
               </a>
@@ -63,7 +63,7 @@ export default function Login() {
                 maxWidth: 320,
                 margin: '16px auto 0'
               }}>
-                Aird automatically captures and structures your R&D evidence as you build.
+                ClaimFlow automatically captures and structures your R&D evidence as you build.
               </p>
             </div>
 
@@ -203,8 +203,8 @@ export default function Login() {
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
                 <img
-                  src="/aird-logo-blue.png"
-                  alt="Aird"
+                  src="/claimflow-icon-and-text.png"
+                  alt="ClaimFlow"
                   style={{ height: 120, width: 'auto' }}
                 />
               </a>

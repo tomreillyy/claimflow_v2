@@ -188,18 +188,18 @@ export default function BlogPage() {
 
 // SEO Metadata
 export const metadata = {
-  title: 'Blog | Aird - R&D Documentation & Innovation Capture',
+  title: 'Blog | ClaimFlow - R&D Documentation & Innovation Capture',
   description: 'Insights on R&D documentation, innovation capture, and building better products. Learn how to capture your innovation story as it unfolds.',
   keywords: ['R&D tax credit', 'innovation documentation', 'R&D process', 'software development blog', 'technical documentation', 'innovation management'],
   openGraph: {
-    title: 'Blog | Aird',
+    title: 'Blog | ClaimFlow',
     description: 'Insights on R&D documentation, innovation capture, and building better products.',
     type: 'website',
     url: 'https://aird.com.au/blog'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Blog | Aird',
+    title: 'Blog | ClaimFlow',
     description: 'Insights on R&D documentation, innovation capture, and building better products.'
   },
   alternates: {

@@ -119,7 +119,7 @@ export default function Home() {
                   maxWidth: 600,
                   margin: '0 auto clamp(32px, 8vw, 60px)'
                 }}>
-                  From founders to advisors, AIRD adapts to how real teams build.
+                  From founders to advisors, ClaimFlow adapts to how real teams build.
                 </p>
 
                 <ParallaxRoles />

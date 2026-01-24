@@ -15,29 +15,29 @@ const geistMono = Geist_Mono({
 export const metadata = {
   metadataBase: new URL('https://aird.com.au'),
   title: {
-    default: "Aird - R&D Evidence Tracking",
-    template: "%s | Aird"
+    default: "ClaimFlow - R&D Evidence Tracking",
+    template: "%s | ClaimFlow"
   },
   description: "Track your R&D work and build evidence as you go. Capture innovation as it unfolds — no archaeology required.",
   keywords: ['R&D tax credit', 'R&D evidence', 'innovation documentation', 'R&D tracking', 'ATO R&D', 'technical documentation', 'R&D tax incentive'],
-  authors: [{ name: 'Aird' }],
-  creator: 'Aird',
-  publisher: 'Aird',
+  authors: [{ name: 'ClaimFlow' }],
+  creator: 'ClaimFlow',
+  publisher: 'ClaimFlow',
   openGraph: {
     type: 'website',
     locale: 'en_AU',
     url: 'https://aird.com.au',
-    siteName: 'Aird',
-    title: 'Aird - R&D Evidence Tracking',
+    siteName: 'ClaimFlow',
+    title: 'ClaimFlow - R&D Evidence Tracking',
     description: 'Track your R&D work and build evidence as you go. Capture innovation as it unfolds — no archaeology required.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Aird - R&D Evidence Tracking',
+    title: 'ClaimFlow - R&D Evidence Tracking',
     description: 'Track your R&D work and build evidence as you go. Capture innovation as it unfolds — no archaeology required.',
   },
   icons: {
-    icon: "/aird-favicon.png",
+    icon: "/claimflow-white-icon.png",
   },
   verification: {
     // Add Google Search Console verification when available

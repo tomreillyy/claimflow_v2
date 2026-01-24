@@ -123,7 +123,7 @@ export default function PricingPage() {
               marginBottom: 8,
               textAlign: 'center'
             }}>
-              Aird Pro
+              ClaimFlow Pro
             </h3>
 
             <p style={{
@@ -292,7 +292,7 @@ export default function PricingPage() {
               lineHeight: 1.6,
               marginBottom: 32
             }}>
-              Join thousands of teams capturing their innovation story with Aird.
+              Join thousands of teams capturing their innovation story with ClaimFlow.
             </p>
             <motion.button
               onClick={handleSubscribe}

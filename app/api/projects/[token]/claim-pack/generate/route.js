@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 import { generateClaimPackSection } from '@/lib/claimPackGenerator';
-import { SECTION_KEYS, SECTION_NAMES } from '@/lib/airdMasterContext';
+import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

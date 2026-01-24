@@ -665,7 +665,7 @@ Evidence Summary:
 CONTEMPORANEOUS EVIDENCE STATEMENT
 
 All evidence referenced in this document was automatically captured and
-contemporaneously recorded in AIRD (AI R&D Documentation) at the time
+contemporaneously recorded in ClaimFlow at the time
 activities were conducted. This demonstrates systematic progression of
 R&D work in accordance with ITAA 1997 s 355-25.
 

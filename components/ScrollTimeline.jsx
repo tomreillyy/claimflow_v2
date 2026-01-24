@@ -55,17 +55,17 @@ export function ScrollTimeline() {
     {
       number: '1',
       title: 'You keep building',
-      description: 'Each project gets a unique email address. Forward updates, upload files, sync your GitHub repo, or let commits and notes flow in. AIRD captures the work as it happens.'
+      description: 'Each project gets a unique email address. Forward updates, upload files, sync your GitHub repo, or let commits and notes flow in. ClaimFlow captures the work as it happens.'
     },
     {
       number: '2',
-      title: 'AIRD makes sense of it all',
-      description: 'AIRD uses specialised AI to classify each R&D item against the required criteria, including categories and activities. Everything is recorded in a clear chronological evidence trail.'
+      title: 'ClaimFlow makes sense of it all',
+      description: 'ClaimFlow uses specialised AI to classify each R&D item against the required criteria, including categories and activities. Everything is recorded in a clear chronological evidence trail.'
     },
     {
       number: '3',
       title: 'You export a defensible R&D claim pack',
-      description: 'AIRD compiles your evidence into a structured, compliant report. The system assembles sources, timestamps, classifications, activities, and context into a clean, chronological package that aligns with R&D Tax Incentive requirements. The output is a complete, advisor-ready claim pack suitable for submission, technical review, or audit.'
+      description: 'ClaimFlow compiles your evidence into a structured, compliant report. The system assembles sources, timestamps, classifications, activities, and context into a clean, chronological package that aligns with R&D Tax Incentive requirements. The output is a complete, advisor-ready claim pack suitable for submission, technical review, or audit.'
     }
   ];
 
@@ -201,7 +201,7 @@ export function ScrollTimeline() {
                         <span style={{ color: '#fff' }}>();</span>{' '}
                         <span style={{ color: '#6b7280' }}>// you keep building</span>
                         {'\n'}
-                        <span style={{ color: '#6b7280' }}>// Aird captures the evidence</span>
+                        <span style={{ color: '#6b7280' }}>// ClaimFlow captures the evidence</span>
                       </code>
                     </pre>
                   </div>
@@ -258,7 +258,7 @@ export function ScrollTimeline() {
                       {/* Screenshot */}
                       <img
                         src="/product-dashboard.png"
-                        alt="AIRD Dashboard"
+                        alt="ClaimFlow Dashboard"
                         style={{
                           width: '100%',
                           height: 'auto',
@@ -320,7 +320,7 @@ export function ScrollTimeline() {
                       {/* Screenshot */}
                       <img
                         src="/claimpack.png"
-                        alt="AIRD Claim Pack"
+                        alt="ClaimFlow Claim Pack"
                         style={{
                           width: '100%',
                           height: 'auto',

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { usePathname } from 'next/navigation';
@@ -74,7 +75,7 @@ export function AppHeader() {
           }}
         >
           {/* Left: Logo */}
-          <a href="/" style={{
+          <Link href="/" style={{
             display: 'flex',
             alignItems: 'center',
             textDecoration: 'none',
@@ -82,14 +83,14 @@ export function AppHeader() {
             height: '100%',
           }}>
             <img
-              src="/aird-logo-blue.png"
-              alt="Aird"
+              src="/claimflow-icon-and-text.png"
+              alt="ClaimFlow"
               style={{
                 height: 38,
                 width: 'auto',
               }}
             />
-          </a>
+          </Link>
 
           {/* Center: Tab Navigation (desktop) */}
           <nav
@@ -106,7 +107,7 @@ export function AppHeader() {
             {tabs.map((tab) => {
               const isActive = tab.name === activeTab;
               return (
-                <a
+                <Link
                   key={tab.name}
                   href={tab.href}
                   style={{
@@ -133,7 +134,7 @@ export function AppHeader() {
                   }}
                 >
                   {tab.name}
-                </a>
+                </Link>
               );
             })}
           </nav>
@@ -241,7 +242,7 @@ export function AppHeader() {
               {tabs.map((tab) => {
                 const isActive = tab.name === activeTab;
                 return (
-                  <a
+                  <Link
                     key={tab.name}
                     href={tab.href}
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -256,7 +257,7 @@ export function AppHeader() {
                     }}
                   >
                     {tab.name}
-                  </a>
+                  </Link>
                 );
               })}
             </nav>

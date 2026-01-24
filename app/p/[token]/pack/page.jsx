@@ -138,8 +138,8 @@ export default async function PackV2Page({ params }) {
               textDecoration: 'none'
             }}>
               <img
-                src="/Aird__3_-removebg-preview.png"
-                alt="Aird"
+                src="/claimflow-white-text-and-icon.png"
+                alt="ClaimFlow"
                 style={{
                   height: 24,
                   width: 'auto'
