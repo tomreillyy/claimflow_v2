@@ -447,7 +447,18 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const { user, loading, isConsultant } = useAuth();
   const stepHint = useStepGapHint(token);
   const { signedUrls, loading: signedUrlsLoading } = useSignedUrls(token, items);
-  const [stepCounts, setStepCounts] = useState({});
+  const [stepCounts, setStepCounts] = useState(() => {
+    // Compute step counts directly from server-fetched items
+    const counts = { hypothesis: 0, experiment: 0, observation: 0, evaluation: 0, conclusion: 0 };
+    (items || []).forEach(ev => {
+      const step = ev.systematic_step_primary;
+      if (step && step !== 'Unknown') {
+        const key = step.toLowerCase();
+        if (counts.hasOwnProperty(key)) counts[key]++;
+      }
+    });
+    return counts;
+  });
   const [authLoading, setAuthLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
   const [authError, setAuthError] = useState('');
@@ -538,22 +549,19 @@ export function AuthenticatedTimeline({ project, items, token }) {
     fetchContext();
   }, [isConsultant, token, consultantBreadcrumb]);
 
-  // Fetch core activities and step counts
+  // Fetch core activities
   useEffect(() => {
     if (!token || activitiesFetched) return;
 
-    Promise.all([
-      fetch(`/api/projects/${token}/core-activities`).then(res => res.ok ? res.json() : null),
-      fetch(`/api/evidence/${token}/step-counts`).then(res => res.ok ? res.json() : null)
-    ]).then(([activitiesData, countsData]) => {
-      if (activitiesData) {
-        setCoreActivities(activitiesData.activities || []);
-      }
-      if (countsData) {
-        setStepCounts(countsData);
-      }
-      setActivitiesFetched(true);
-    }).catch(err => console.error('Failed to fetch data:', err));
+    fetch(`/api/projects/${token}/core-activities`)
+      .then(res => res.ok ? res.json() : null)
+      .then(activitiesData => {
+        if (activitiesData) {
+          setCoreActivities(activitiesData.activities || []);
+        }
+        setActivitiesFetched(true);
+      })
+      .catch(err => console.error('Failed to fetch data:', err));
   }, [token, activitiesFetched]);
 
   // Fetch GitHub connection status

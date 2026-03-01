@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function GET(req, { params }) {
-  const token = params.token;
+  const { token } = await params;
 
   // Fetch project ID from token
   const { data: project } = await supabaseAdmin
