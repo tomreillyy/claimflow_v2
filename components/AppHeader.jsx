@@ -17,13 +17,14 @@ export function AppHeader() {
     ...(isConsultant
       ? [
           { name: 'Clients', href: '/consultant' },
+          { name: 'Team', href: '/consultant/team' },
         ]
       : [
           { name: 'Dashboard', href: '/dashboard' },
           { name: 'Projects', href: '/projects' },
+          { name: 'Team', href: '/settings/team' },
+          { name: 'Timesheets', href: '/timesheets' },
         ]),
-    { name: 'Team', href: '/settings/team' },
-    { name: 'Timesheets', href: '/timesheets' },
     { name: 'Find Advisor', href: '/marketplace' },
     ...(isConsultant
       ? [
@@ -65,6 +66,7 @@ export function AppHeader() {
     if (pathname.startsWith('/marketplace')) return 'Find Advisor';
     if (pathname === '/consultant/profile') return 'Profile';
     if (pathname === '/consultant/settings') return 'Settings';
+    if (pathname === '/consultant/team') return 'Team';
     if (pathname.startsWith('/consultant')) return 'Clients';
     if (isConsultant && pathname.startsWith('/p/')) return 'Clients';
     if (pathname === '/' || pathname === '/projects' || pathname.startsWith('/p/')) return 'Projects';

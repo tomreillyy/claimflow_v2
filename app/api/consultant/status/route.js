@@ -31,5 +31,16 @@ export async function GET(req) {
     // Table may not exist yet — ignore
   }
 
-  return NextResponse.json({ isConsultant: (count || 0) > 0 || hasProfile });
+  let isTeamMember = false;
+  try {
+    const teamResult = await supabaseAdmin
+      .from('consultant_team_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('member_user_id', user.id);
+    isTeamMember = (teamResult.count || 0) > 0;
+  } catch (e) {
+    // Table may not exist yet — ignore
+  }
+
+  return NextResponse.json({ isConsultant: (count || 0) > 0 || hasProfile || isTeamMember });
 }

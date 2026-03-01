@@ -11,8 +11,8 @@ export async function GET(req) {
     return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 });
   }
 
-  // Fetch all consultant_clients rows
-  const { data: clients, error } = await supabaseAdmin
+  // Fetch direct consultant_clients rows
+  const { data: directClients, error } = await supabaseAdmin
     .from('consultant_clients')
     .select('*')
     .eq('consultant_user_id', user.id)
@@ -22,7 +22,47 @@ export async function GET(req) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  if (!clients || clients.length === 0) {
+  // Fetch team-assigned clients (if user is a team member)
+  let teamClients = [];
+  try {
+    const { data: memberships } = await supabaseAdmin
+      .from('consultant_team_members')
+      .select('id')
+      .eq('member_user_id', user.id);
+
+    if (memberships?.length) {
+      const memberIds = memberships.map(m => m.id);
+      const { data: assignments } = await supabaseAdmin
+        .from('consultant_team_assignments')
+        .select('consultant_client_id')
+        .in('team_member_id', memberIds);
+
+      if (assignments?.length) {
+        const assignedClientIds = assignments.map(a => a.consultant_client_id);
+        // Exclude any that are already direct clients
+        const directClientIds = new Set((directClients || []).map(c => c.id));
+        const uniqueAssignedIds = assignedClientIds.filter(id => !directClientIds.has(id));
+
+        if (uniqueAssignedIds.length > 0) {
+          const { data: assignedClients } = await supabaseAdmin
+            .from('consultant_clients')
+            .select('*')
+            .in('id', uniqueAssignedIds);
+          teamClients = assignedClients || [];
+        }
+      }
+    }
+  } catch (e) {
+    // Tables may not exist yet — ignore
+  }
+
+  // Merge direct + team clients
+  const clients = [
+    ...(directClients || []).map(c => ({ ...c, source: 'direct' })),
+    ...teamClients.map(c => ({ ...c, source: 'team' })),
+  ];
+
+  if (clients.length === 0) {
     return NextResponse.json({
       clients: [],
       totals: {
@@ -108,6 +148,7 @@ export async function GET(req) {
         client_email: client.client_email,
         client_user_id: null,
         created_at: client.created_at,
+        source: client.source || 'direct',
         project_count: 0,
         evidence_count: 0,
         evidence_this_week: 0,
@@ -137,6 +178,7 @@ export async function GET(req) {
       client_email: client.client_email,
       client_user_id: client.client_user_id,
       created_at: client.created_at,
+      source: client.source || 'direct',
       project_count: clientProjects.length,
       evidence_count: clientEvidence.length,
       evidence_this_week: evidenceThisWeek,

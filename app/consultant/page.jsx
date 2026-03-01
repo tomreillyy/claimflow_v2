@@ -74,6 +74,7 @@ export default function ConsultantDashboardPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isLeadConsultant, setIsLeadConsultant] = useState(false);
 
   useEffect(() => {
     if (user && consultantStatusLoaded && isConsultant && !hasCompletedOnboarding(user.id)) {
@@ -112,6 +113,9 @@ export default function ConsultantDashboardPage() {
         const data = await statsRes.json();
         setClients(data.clients || []);
         setTotals(data.totals || null);
+        // User is a lead if they have any direct clients
+        const hasDirectClients = (data.clients || []).some(c => c.source !== 'team');
+        setIsLeadConsultant(hasDirectClients);
       }
 
       if (inquiriesRes.ok) {
@@ -211,7 +215,7 @@ export default function ConsultantDashboardPage() {
           <h2 style={{ fontSize: 32, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
             Dashboard
           </h2>
-          {!showAddForm && (
+          {!showAddForm && isLeadConsultant && (
             <button
               onClick={() => {
                 setShowAddForm(true);
@@ -577,10 +581,10 @@ export default function ConsultantDashboardPage() {
                   <span style={{
                     display: 'inline-block', padding: '2px 8px', borderRadius: 10,
                     fontSize: 12, fontWeight: 500,
-                    backgroundColor: client.client_user_id ? '#ecfdf5' : '#fefce8',
-                    color: client.client_user_id ? '#059669' : '#ca8a04',
+                    backgroundColor: client.source === 'team' ? '#f0f4ff' : (client.client_user_id ? '#ecfdf5' : '#fefce8'),
+                    color: client.source === 'team' ? '#021048' : (client.client_user_id ? '#059669' : '#ca8a04'),
                   }}>
-                    {client.client_user_id ? 'Active' : 'Pending'}
+                    {client.source === 'team' ? 'Assigned' : (client.client_user_id ? 'Active' : 'Pending')}
                   </span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
