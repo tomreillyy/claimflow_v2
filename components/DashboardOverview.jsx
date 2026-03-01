@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
 import { Spinner } from '@/components/Spinner';
+import { OnboardingModal } from '@/components/OnboardingModal';
+import { hasCompletedOnboarding } from '@/lib/onboarding';
 
 function formatCurrency(amount) {
   if (amount >= 1000000) {
@@ -111,6 +113,13 @@ export function DashboardOverview() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (user && !hasCompletedOnboarding(user.id)) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -169,41 +178,49 @@ export function DashboardOverview() {
 
   if (!data || data.projects.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '80px 24px' }}>
-        <h2 style={{
-          fontSize: 32,
-          fontWeight: 600,
-          color: '#1a1a1a',
-          margin: '0 0 16px 0'
-        }}>
-          Welcome to ClaimFlow!
-        </h2>
-        <p style={{
-          fontSize: 18,
-          color: '#666',
-          margin: '0 0 32px 0',
-          maxWidth: 500,
-          marginLeft: 'auto',
-          marginRight: 'auto'
-        }}>
-          You don&apos;t have any projects yet. Create your first project to start collecting R&D evidence.
-        </p>
-        <a
-          href="/admin/new-project"
-          style={{
-            padding: '14px 28px',
-            backgroundColor: '#021048',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: 8,
-            fontSize: 16,
-            fontWeight: 500,
-            display: 'inline-block'
-          }}
-        >
-          Create your first project
-        </a>
-      </div>
+      <>
+        <div style={{ textAlign: 'center', padding: '80px 24px' }}>
+          <h2 style={{
+            fontSize: 32,
+            fontWeight: 600,
+            color: '#1a1a1a',
+            margin: '0 0 16px 0'
+          }}>
+            Welcome to ClaimFlow!
+          </h2>
+          <p style={{
+            fontSize: 18,
+            color: '#666',
+            margin: '0 0 32px 0',
+            maxWidth: 500,
+            marginLeft: 'auto',
+            marginRight: 'auto'
+          }}>
+            You don&apos;t have any projects yet. Create your first project to start collecting R&D evidence.
+          </p>
+          <a
+            href="/admin/new-project"
+            style={{
+              padding: '14px 28px',
+              backgroundColor: '#021048',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: 8,
+              fontSize: 16,
+              fontWeight: 500,
+              display: 'inline-block'
+            }}
+          >
+            Create your first project
+          </a>
+        </div>
+        <OnboardingModal
+          isOpen={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+          isConsultant={false}
+          userId={user?.id}
+        />
+      </>
     );
   }
 
@@ -404,6 +421,13 @@ export function DashboardOverview() {
           </a>
         ))}
       </div>
+
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        isConsultant={false}
+        userId={user?.id}
+      />
     </div>
   );
 }

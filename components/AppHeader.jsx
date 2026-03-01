@@ -2,12 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { User, LogOut, Menu, X } from 'lucide-react';
+import { User, LogOut, Menu, X, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { usePathname } from 'next/navigation';
+import { OnboardingModal } from '@/components/OnboardingModal';
+import { resetOnboarding } from '@/lib/onboarding';
 
 export function AppHeader() {
-  const { signOut, isConsultant, consultantBranding } = useAuth();
+  const { signOut, isConsultant, consultantBranding, user } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const pathname = usePathname();
 
   const tabs = isConsultant
@@ -217,6 +220,33 @@ export function AppHeader() {
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
+                      resetOnboarding(user?.id);
+                      setShowOnboarding(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      width: '100%',
+                      padding: '10px 14px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      color: '#374151',
+                      fontFamily: 'inherit',
+                      transition: 'background-color 0.15s ease',
+                      borderBottom: '1px solid rgba(0,0,0,0.06)',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <HelpCircle size={16} color="#6b7280" />
+                    Walkthrough
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
                       signOut();
                     }}
                     style={{
@@ -300,6 +330,33 @@ export function AppHeader() {
               })}
             </nav>
 
+            {/* Mobile Walkthrough */}
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                resetOnboarding(user?.id);
+                setShowOnboarding(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '10px 14px',
+                border: 'none',
+                borderRadius: 8,
+                backgroundColor: 'transparent',
+                cursor: 'pointer',
+                fontSize: 15,
+                fontWeight: 500,
+                color: '#374151',
+                fontFamily: 'inherit',
+                marginBottom: 4,
+              }}
+            >
+              <HelpCircle size={18} color="#6b7280" />
+              Walkthrough
+            </button>
             {/* Mobile Logout */}
             <button
               onClick={() => {
@@ -347,6 +404,15 @@ export function AppHeader() {
           }
         }
       `}</style>
+
+      {showOnboarding && (
+        <OnboardingModal
+          isOpen={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+          isConsultant={isConsultant}
+          userId={user?.id}
+        />
+      )}
     </>
   );
 }

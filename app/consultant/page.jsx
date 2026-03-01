@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/Header';
 import { Spinner } from '@/components/Spinner';
+import { OnboardingModal } from '@/components/OnboardingModal';
+import { hasCompletedOnboarding } from '@/lib/onboarding';
 import Link from 'next/link';
 
 function formatCurrency(amount) {
@@ -70,6 +72,13 @@ export default function ConsultantDashboardPage() {
   const [formData, setFormData] = useState({ email: '', name: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (user && consultantStatusLoaded && isConsultant && !hasCompletedOnboarding(user.id)) {
+      setShowOnboarding(true);
+    }
+  }, [user, consultantStatusLoaded, isConsultant]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -445,6 +454,13 @@ export default function ConsultantDashboardPage() {
         )}
       </main>
       )}
+
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        isConsultant={true}
+        userId={user?.id}
+      />
     </div>
   );
 }
