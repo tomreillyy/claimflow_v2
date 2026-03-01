@@ -133,5 +133,10 @@ export async function POST(req, { params }) {
     console.error('[Knowledge/Upload] Evidence dual-write error:', evidenceError);
   }
 
-  return NextResponse.json({ ok: true, document: doc });
+  return NextResponse.json({
+    ok: true,
+    document: doc,
+    evidence_created: !evidenceError,
+    evidence_error: evidenceError?.message || null
+  });
 }
