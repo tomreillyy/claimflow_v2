@@ -16,12 +16,16 @@ export async function GET(req) {
   // Decode state
   let userId = null;
   let projectToken = null;
+  let consultantId = null;
+  let consultantName = null;
 
   if (stateParam) {
     try {
       const decoded = JSON.parse(Buffer.from(stateParam, 'base64url').toString());
       userId = decoded.user_id;
       projectToken = decoded.project_token;
+      consultantId = decoded.cid;
+      consultantName = decoded.cn;
     } catch {
       // Invalid state
     }
@@ -152,8 +156,10 @@ export async function GET(req) {
       throw insertError;
     }
 
-    // Redirect to project timeline with success
-    const redirectUrl = `${baseUrl}/p/${projectToken}?jira_connected=true`;
+    // Redirect to project Jira tab with success (preserve consultant context)
+    let redirectUrl = `${baseUrl}/p/${projectToken}?view=jira&jira_connected=true`;
+    if (consultantId) redirectUrl += `&cid=${encodeURIComponent(consultantId)}`;
+    if (consultantName) redirectUrl += `&cn=${encodeURIComponent(consultantName)}`;
     return NextResponse.redirect(redirectUrl);
 
   } catch (err) {

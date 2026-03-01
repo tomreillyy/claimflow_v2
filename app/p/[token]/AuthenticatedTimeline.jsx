@@ -2384,7 +2384,11 @@ export function AuthenticatedTimeline({ project, items, token }) {
                           'Content-Type': 'application/json',
                           Authorization: `Bearer ${s.access_token}`
                         },
-                        body: JSON.stringify({ project_token: token })
+                        body: JSON.stringify({
+                          project_token: token,
+                          consultant_id: new URLSearchParams(window.location.search).get('cid'),
+                          consultant_name: new URLSearchParams(window.location.search).get('cn')
+                        })
                       });
                       const data = await res.json();
                       if (data.url) window.location.href = data.url;

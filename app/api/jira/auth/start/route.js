@@ -10,7 +10,7 @@ export async function POST(req) {
     return NextResponse.json({ error: authError || 'Not authenticated' }, { status: 401 });
   }
 
-  const { project_token } = await req.json();
+  const { project_token, consultant_id, consultant_name } = await req.json();
 
   if (!project_token) {
     return NextResponse.json({ error: 'project_token required' }, { status: 400 });
@@ -26,11 +26,11 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Jira OAuth not configured' }, { status: 500 });
   }
 
-  // Encode user_id + project_token into state (same pattern as GitHub)
-  const state = Buffer.from(JSON.stringify({
-    user_id: user.id,
-    project_token
-  })).toString('base64url');
+  // Encode user_id + project_token + consultant context into state
+  const stateObj = { user_id: user.id, project_token };
+  if (consultant_id) stateObj.cid = consultant_id;
+  if (consultant_name) stateObj.cn = consultant_name;
+  const state = Buffer.from(JSON.stringify(stateObj)).toString('base64url');
 
   // Construct Atlassian OAuth 2.0 (3LO) URL
   const jiraAuthUrl = new URL('https://auth.atlassian.com/authorize');
