@@ -9,7 +9,6 @@ import ProjectSidebar from '@/components/ProjectSidebar';
 import ProjectTeam from '@/components/ProjectTeam';
 import QuickNoteForm from './quick-note-form';
 import CoreActivitiesList from '@/components/CoreActivitiesList';
-import ActionsRow from '@/components/ActionsRow';
 import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
 import KnowledgeBase from '@/components/KnowledgeBase';
 import ProjectDashboard from '@/components/ProjectDashboard';
@@ -1510,31 +1509,6 @@ export function AuthenticatedTimeline({ project, items, token }) {
         )}
 
         {/* Timeline Tab Content */}
-        {activeTab === 'timeline' && (
-          <div style={{ marginBottom: 24 }}>
-            <ActionsRow
-              evidenceCount={totalEvidence}
-              weeklyCount={weeklyEvidence}
-              githubConnected={!!githubRepo}
-              coverageData={{
-                covered: coveredSteps,
-                total: 5,
-                missing: missingSteps
-              }}
-              token={token}
-              onConnectGitHub={githubRepo ? handleSyncGitHub : handleConnectGitHub}
-              onAddNote={() => {
-                setTimeout(() => {
-                  const addNoteBtn = document.querySelector('button[data-action="add-note"]');
-                  if (addNoteBtn) {
-                    addNoteBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-                }, 100);
-              }}
-            />
-          </div>
-        )}
-
         {activeTab === 'timeline' && (
           <div>
         {/* Step Distribution Pills */}
