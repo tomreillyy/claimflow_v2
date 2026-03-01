@@ -20,5 +20,16 @@ export async function GET(req) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ isConsultant: (count || 0) > 0 });
+  let hasProfile = false;
+  try {
+    const profileResult = await supabaseAdmin
+      .from('consultant_profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    hasProfile = (profileResult.count || 0) > 0;
+  } catch (e) {
+    // Table may not exist yet — ignore
+  }
+
+  return NextResponse.json({ isConsultant: (count || 0) > 0 || hasProfile });
 }

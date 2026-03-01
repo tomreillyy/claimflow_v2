@@ -243,6 +243,35 @@ export function Header({ projectName = null, projectToken = null }) {
                         Collect client evidence, review timelines, and export claim packs faster.
                       </div>
                     </a>
+                    <a
+                      href="/auth/login?redirect=/marketplace"
+                      style={{
+                        display: 'block',
+                        padding: '14px 16px',
+                        borderRadius: 12,
+                        textDecoration: 'none',
+                        transition: 'background 0.15s ease',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div style={{
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: 14,
+                        marginBottom: 4
+                      }}>
+                        Find an Advisor
+                      </div>
+                      <div style={{
+                        color: 'rgba(255, 255, 255, 0.6)',
+                        fontSize: 13,
+                        lineHeight: 1.4
+                      }}>
+                        Browse our marketplace of R&D tax advisors ready to help.
+                      </div>
+                    </a>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -417,6 +446,31 @@ export function Header({ projectName = null, projectToken = null }) {
               marginBottom: 8
             }}>
               Collect client evidence, review timelines, and export claim packs faster.
+            </div>
+            <a
+              href="/auth/login?redirect=/marketplace"
+              style={{
+                display: 'block',
+                fontSize: 15,
+                color: 'rgba(255, 255, 255, 0.9)',
+                textDecoration: 'none',
+                padding: '12px 16px 4px',
+                borderRadius: 10,
+                fontWeight: 500
+              }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Find an Advisor
+            </a>
+            <div style={{
+              fontSize: 13,
+              color: 'rgba(255, 255, 255, 0.5)',
+              padding: '0 16px 12px',
+              lineHeight: 1.4,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              marginBottom: 8
+            }}>
+              Browse our marketplace of R&D tax advisors ready to help.
             </div>
             <a
               href="/pricing"

@@ -67,6 +67,7 @@ export default function ConsultantDashboardPage() {
   const router = useRouter();
   const [clients, setClients] = useState([]);
   const [totals, setTotals] = useState(null);
+  const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({ email: '', name: '' });
@@ -98,19 +99,53 @@ export default function ConsultantDashboardPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await fetch('/api/consultant/dashboard/stats', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
+      const [statsRes, inquiriesRes] = await Promise.all([
+        fetch('/api/consultant/dashboard/stats', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        }),
+        fetch('/api/marketplace/inquiries?role=consultant', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        }),
+      ]);
 
-      if (response.ok) {
-        const data = await response.json();
+      if (statsRes.ok) {
+        const data = await statsRes.json();
         setClients(data.clients || []);
         setTotals(data.totals || null);
+      }
+
+      if (inquiriesRes.ok) {
+        const data = await inquiriesRes.json();
+        setInquiries(data.inquiries || []);
       }
     } catch (err) {
       console.error('Failed to fetch dashboard:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateInquiryStatus = async (inquiryId, status) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`/api/marketplace/inquiries/${inquiryId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) {
+        setInquiries(prev => prev.map(i =>
+          i.id === inquiryId ? { ...i, status } : i
+        ));
+      }
+    } catch (err) {
+      console.error('Failed to update inquiry:', err);
     }
   };
 
@@ -332,6 +367,123 @@ export default function ConsultantDashboardPage() {
                 </svg>
               }
             />
+          </div>
+        )}
+
+        {/* Marketplace Inquiries */}
+        {inquiries.length > 0 && (
+          <div style={{
+            background: 'linear-gradient(145deg, #ffffff 0%, #fafbfc 100%)',
+            borderRadius: 16,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            overflow: 'hidden',
+            marginBottom: 24,
+          }}>
+            <div style={{
+              padding: '16px 24px',
+              borderBottom: '1px solid rgba(0,0,0,0.06)',
+              backgroundColor: 'rgba(0,0,0,0.01)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', margin: 0 }}>
+                Marketplace Inquiries
+              </h3>
+              {inquiries.filter(i => i.status === 'pending').length > 0 && (
+                <span style={{
+                  padding: '2px 10px',
+                  borderRadius: 10,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  backgroundColor: '#fef3c7',
+                  color: '#92400e',
+                }}>
+                  {inquiries.filter(i => i.status === 'pending').length} new
+                </span>
+              )}
+            </div>
+
+            {inquiries.map((inquiry, index) => (
+              <div
+                key={inquiry.id}
+                style={{
+                  padding: '16px 24px',
+                  borderBottom: index < inquiries.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <span style={{ fontWeight: 600, color: '#0f172a', fontSize: 14 }}>
+                      {inquiry.client_name || inquiry.client_email}
+                    </span>
+                    {inquiry.company_name && (
+                      <span style={{ color: '#64748b', fontSize: 13, marginLeft: 8 }}>
+                        {inquiry.company_name}
+                      </span>
+                    )}
+                    {inquiry.client_name && (
+                      <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                        {inquiry.client_email}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: 10,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      backgroundColor: inquiry.status === 'pending' ? '#fefce8' : inquiry.status === 'responded' ? '#ecfdf5' : '#fef2f2',
+                      color: inquiry.status === 'pending' ? '#ca8a04' : inquiry.status === 'responded' ? '#059669' : '#dc2626',
+                    }}>
+                      {inquiry.status === 'pending' ? 'New' : inquiry.status === 'responded' ? 'Responded' : 'Declined'}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                      {formatDate(inquiry.created_at)}
+                    </span>
+                  </div>
+                </div>
+                <p style={{ fontSize: 13, color: '#4b5563', margin: '0 0 10px', lineHeight: 1.5 }}>
+                  {inquiry.message}
+                </p>
+                {inquiry.status === 'pending' && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => updateInquiryStatus(inquiry.id, 'responded')}
+                      style={{
+                        padding: '5px 14px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: 'white',
+                        backgroundColor: '#021048',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Mark responded
+                    </button>
+                    <button
+                      onClick={() => updateInquiryStatus(inquiry.id, 'declined')}
+                      style={{
+                        padding: '5px 14px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#6b7280',
+                        backgroundColor: '#f3f4f6',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 

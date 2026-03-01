@@ -86,12 +86,18 @@ export async function POST(req) {
   }
 
   // Only existing consultants can add new clients
-  const { count: existingCount } = await supabaseAdmin
-    .from('consultant_clients')
-    .select('id', { count: 'exact', head: true })
-    .eq('consultant_user_id', user.id);
+  const [{ count: clientCount }, { count: profileCount }] = await Promise.all([
+    supabaseAdmin
+      .from('consultant_clients')
+      .select('id', { count: 'exact', head: true })
+      .eq('consultant_user_id', user.id),
+    supabaseAdmin
+      .from('consultant_profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+  ]);
 
-  if (!existingCount || existingCount === 0) {
+  if ((clientCount || 0) === 0 && (profileCount || 0) === 0) {
     return NextResponse.json({ error: 'Not authorized as a consultant' }, { status: 403 });
   }
 

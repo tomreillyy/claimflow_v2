@@ -13,19 +13,25 @@ export function AppHeader() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const pathname = usePathname();
 
-  const tabs = isConsultant
-    ? [
-        { name: 'Clients', href: '/consultant' },
-        { name: 'Team', href: '/settings/team' },
-        { name: 'Timesheets', href: '/timesheets' },
-        { name: 'Settings', href: '/consultant/settings' },
-      ]
-    : [
-        { name: 'Dashboard', href: '/dashboard' },
-        { name: 'Projects', href: '/projects' },
-        { name: 'Team', href: '/settings/team' },
-        { name: 'Timesheets', href: '/timesheets' },
-      ];
+  const tabs = [
+    ...(isConsultant
+      ? [
+          { name: 'Clients', href: '/consultant' },
+        ]
+      : [
+          { name: 'Dashboard', href: '/dashboard' },
+          { name: 'Projects', href: '/projects' },
+        ]),
+    { name: 'Team', href: '/settings/team' },
+    { name: 'Timesheets', href: '/timesheets' },
+    { name: 'Find Advisor', href: '/marketplace' },
+    ...(isConsultant
+      ? [
+          { name: 'Profile', href: '/consultant/profile' },
+          { name: 'Settings', href: '/consultant/settings' },
+        ]
+      : []),
+  ];
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -56,6 +62,8 @@ export function AppHeader() {
   // Determine active tab based on pathname
   const getActiveTab = () => {
     if (pathname === '/dashboard') return 'Dashboard';
+    if (pathname.startsWith('/marketplace')) return 'Find Advisor';
+    if (pathname === '/consultant/profile') return 'Profile';
     if (pathname === '/consultant/settings') return 'Settings';
     if (pathname.startsWith('/consultant')) return 'Clients';
     if (isConsultant && pathname.startsWith('/p/')) return 'Clients';

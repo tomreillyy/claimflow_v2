@@ -4,6 +4,7 @@ import { Hero } from '@/components/Hero';
 import { ScrollTimeline } from '@/components/ScrollTimeline';
 import { ParallaxRoles } from '@/components/ParallaxRoles';
 import { ProjectsDashboard } from '@/components/ProjectsDashboard';
+import { MarketplaceTeaser } from '@/components/MarketplaceTeaser';
 import { Footer } from '@/components/Footer';
 import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/components/AuthProvider';
@@ -125,6 +126,9 @@ export default function Home() {
                 <ParallaxRoles />
               </div>
             </section>
+
+            {/* Marketplace teaser */}
+            <MarketplaceTeaser />
 
             {/* Sign up CTA */}
             <section style={{
