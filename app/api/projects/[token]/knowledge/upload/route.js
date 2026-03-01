@@ -106,31 +106,31 @@ export async function POST(req, { params }) {
     return NextResponse.json({ error: dbError.message }, { status: 500 });
   }
 
-  // Dual-write: create evidence record so document flows into timeline + claim pack
-  if (extraction.status === 'completed' && extraction.text) {
-    const evidenceContent = `[Document: ${file.name}]\n\n${extraction.text.substring(0, 2000).trim()}`;
+  // Dual-write: create evidence record so document appears on timeline + feeds claim pack
+  const evidenceContent = extraction.text
+    ? `[Document: ${file.name}]\n\n${extraction.text.substring(0, 2000).trim()}`
+    : `[Document: ${file.name}]`;
 
-    const { error: evidenceError } = await supabaseAdmin
-      .from('evidence')
-      .insert({
-        project_id: project.id,
-        author_email: userEmail,
-        content: evidenceContent,
-        file_url: uploaded.path,
-        source: 'document',
+  const { error: evidenceError } = await supabaseAdmin
+    .from('evidence')
+    .insert({
+      project_id: project.id,
+      author_email: userEmail,
+      content: evidenceContent,
+      file_url: uploaded.path,
+      source: 'document',
+      document_id: doc.id,
+      meta: {
         document_id: doc.id,
-        meta: {
-          document_id: doc.id,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          storage_bucket: 'knowledge'
-        }
-      });
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        storage_bucket: 'knowledge'
+      }
+    });
 
-    if (evidenceError) {
-      console.error('[Knowledge/Upload] Evidence dual-write error:', evidenceError);
-    }
+  if (evidenceError) {
+    console.error('[Knowledge/Upload] Evidence dual-write error:', evidenceError);
   }
 
   return NextResponse.json({ ok: true, document: doc });
