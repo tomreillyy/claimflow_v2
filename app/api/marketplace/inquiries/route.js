@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import sgMail from '@sendgrid/mail';
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+import { sendEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,9 +65,8 @@ export async function POST(req) {
   if (consultantUser?.email) {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_BASE || process.env.NEXT_PUBLIC_APP_URL || 'https://app.claimflow.ai';
-      await sgMail.send({
+      await sendEmail({
         to: consultantUser.email,
-        from: process.env.FROM_EMAIL,
         subject: 'New marketplace inquiry on ClaimFlow',
         text: [
           `Hi ${profile.display_name},`,

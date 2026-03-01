@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import sgMail from '@sendgrid/mail';
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+import { sendEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -137,9 +135,8 @@ export async function POST(req) {
   // Send notification email to the client
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE || process.env.NEXT_PUBLIC_APP_URL || 'https://app.claimflow.ai';
-    await sgMail.send({
+    await sendEmail({
       to: email,
-      from: process.env.FROM_EMAIL,
       subject: 'An R&D advisor has linked to your ClaimFlow account',
       text: [
         `Hi,`,

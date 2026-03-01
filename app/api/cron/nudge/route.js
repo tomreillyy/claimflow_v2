@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { verifyCronSecret } from '@/lib/serverAuth';
-import sgMail from '@sendgrid/mail';
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+import { sendEmail } from '@/lib/email';
 
 export async function GET(req) {
   // Verify cron secret to prevent unauthorized triggering
@@ -24,8 +22,6 @@ export async function GET(req) {
     for (const to of (p.participants || [])) {
       messages.push({
         to,
-        from: process.env.FROM_EMAIL,
-        replyTo: `${p.inbound_email_local}@${process.env.PUBLIC_INBOUND_DOMAIN}`,
         subject: `[${p.name}] Quick R&D check-in`,
         text: [
           `What experiment or technical hurdle did you touch since last prompt?`,
@@ -37,7 +33,7 @@ export async function GET(req) {
   }
 
   for (const msg of messages) {
-    try { await sgMail.send(msg); } catch (e) { console.error(e?.response?.body || e.message); }
+    try { await sendEmail(msg); } catch (e) { console.error(e.message); }
   }
 
   // Trigger auto-linking for all projects (periodic maintenance)

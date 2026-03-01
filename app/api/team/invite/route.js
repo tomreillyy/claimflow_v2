@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import sgMail from '@sendgrid/mail';
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+import { sendEmail } from '@/lib/email';
 
 export async function POST(req) {
   try {
@@ -33,9 +31,8 @@ export async function POST(req) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE || process.env.NEXT_PUBLIC_APP_URL || 'https://app.claimflow.ai';
 
     try {
-      await sgMail.send({
+      await sendEmail({
         to: member.email,
-        from: process.env.FROM_EMAIL,
         subject: "You've been invited to ClaimFlow",
         text: [
           `Hi ${member.full_name},`,
@@ -50,7 +47,7 @@ export async function POST(req) {
         ].join('\n'),
       });
     } catch (emailError) {
-      console.error('[Team Invite] Failed to send invitation:', emailError?.response?.body || emailError.message);
+      console.error('[Team Invite] Failed to send invitation:', emailError.message);
       return NextResponse.json({ error: 'Failed to send invitation email' }, { status: 500 });
     }
 
