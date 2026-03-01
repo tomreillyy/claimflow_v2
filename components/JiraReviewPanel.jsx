@@ -147,6 +147,11 @@ export default function JiraReviewPanel({ token, projectId, activities }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
+      // Check for server-side errors in the response
+      if (data.errors && data.errors.length > 0) {
+        throw new Error(data.errors[0].error || 'Review failed');
+      }
+
       // Remove from list and update counts
       setMatches(prev => prev.filter(m => m.id !== matchId));
       setCounts(prev => ({
@@ -169,7 +174,12 @@ export default function JiraReviewPanel({ token, projectId, activities }) {
       return false;
     });
 
-    if (targetMatches.length === 0) return;
+    if (targetMatches.length === 0) {
+      setError(action === 'approve'
+        ? 'No high-confidence matches to approve. Try approving individually.'
+        : 'No low-confidence matches to reject.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -181,7 +191,14 @@ export default function JiraReviewPanel({ token, projectId, activities }) {
           reviews: targetMatches.map(m => ({ match_id: m.id, action }))
         })
       });
-      if (!res.ok) throw new Error('Batch action failed');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Batch action failed');
+
+      // Check for partial failures
+      if (data.errors && data.errors.length > 0) {
+        setError(`${data.errors.length} item(s) failed: ${data.errors[0].error}`);
+      }
+
       await fetchMatches();
       await fetchGaps();
     } catch (err) {

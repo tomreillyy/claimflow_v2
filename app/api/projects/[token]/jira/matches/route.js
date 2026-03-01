@@ -145,14 +145,15 @@ export async function PATCH(req, { params }) {
     try {
       if (action === 'approve') {
         // Fetch match with issue data
-        const { data: match } = await supabaseAdmin
+        const { data: match, error: matchErr } = await supabaseAdmin
           .from('jira_issue_matches')
           .select('*')
           .eq('id', match_id)
           .eq('project_id', project.id)
           .single();
 
-        if (!match) {
+        if (matchErr || !match) {
+          console.error(`[Jira Review] Match not found: ${match_id}, project: ${project.id}`, matchErr);
           errors.push({ match_id, error: 'Match not found' });
           continue;
         }
@@ -164,13 +165,14 @@ export async function PATCH(req, { params }) {
         }
 
         // Fetch the issue
-        const { data: issue } = await supabaseAdmin
+        const { data: issue, error: issueErr } = await supabaseAdmin
           .from('jira_issues')
           .select('*')
           .eq('id', match.jira_issue_id)
           .single();
 
-        if (!issue) {
+        if (issueErr || !issue) {
+          console.error(`[Jira Review] Issue not found: ${match.jira_issue_id}`, issueErr);
           errors.push({ match_id, error: 'Issue not found' });
           continue;
         }
@@ -178,8 +180,8 @@ export async function PATCH(req, { params }) {
         // Create evidence record
         const { id: evidenceId } = await createEvidenceFromMatch(match, issue, siteUrl);
 
-        // Update match
-        await supabaseAdmin
+        // Update match status
+        const { error: updateErr } = await supabaseAdmin
           .from('jira_issue_matches')
           .update({
             review_status: 'approved',
@@ -190,11 +192,17 @@ export async function PATCH(req, { params }) {
           })
           .eq('id', match_id);
 
+        if (updateErr) {
+          console.error(`[Jira Review] Match update error: ${match_id}`, updateErr);
+          errors.push({ match_id, error: 'Failed to update match status' });
+          continue;
+        }
+
         approved++;
 
       } else {
         // Reject or skip
-        await supabaseAdmin
+        const { error: updateErr } = await supabaseAdmin
           .from('jira_issue_matches')
           .update({
             review_status: action === 'reject' ? 'rejected' : 'skipped',
@@ -204,6 +212,12 @@ export async function PATCH(req, { params }) {
           })
           .eq('id', match_id)
           .eq('project_id', project.id);
+
+        if (updateErr) {
+          console.error(`[Jira Review] Update error for ${match_id}:`, updateErr);
+          errors.push({ match_id, error: updateErr.message });
+          continue;
+        }
 
         if (action === 'reject') rejected++;
         else skipped++;
