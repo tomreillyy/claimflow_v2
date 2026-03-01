@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,9 +7,15 @@ export const dynamic = 'force-dynamic';
 export async function DELETE(req, { params }) {
   const { token, docId } = await params;
 
-  const { user, project, error: accessError } = await verifyUserAndProjectAccess(req, token);
-  if (accessError || !project) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  const { data: project } = await supabaseAdmin
+    .from('projects')
+    .select('id')
+    .eq('project_token', token)
+    .is('deleted_at', null)
+    .single();
+
+  if (!project) {
+    return NextResponse.json({ error: 'Project not found' }, { status: 404 });
   }
 
   // Verify document belongs to this project

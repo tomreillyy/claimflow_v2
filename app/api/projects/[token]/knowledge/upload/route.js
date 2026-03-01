@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { validateFileUpload, sanitizeFilename, verifyUserAndProjectAccess } from '@/lib/serverAuth';
+import { validateFileUpload, sanitizeFilename, getAuthenticatedUser } from '@/lib/serverAuth';
 import { rateLimitMiddleware, getClientIp, RATE_LIMITS } from '@/lib/rateLimit';
 import { extractText } from '@/lib/textExtractor';
 
@@ -26,12 +26,29 @@ export async function POST(req, { params }) {
   ]);
   if (rateLimitResponse) return rateLimitResponse;
 
-  // Auth
-  const { user, project, error: accessError } = await verifyUserAndProjectAccess(req, token);
-  if (accessError || !project) {
-    return NextResponse.json({
-      error: 'Unauthorized - you must be a project participant to upload documents'
-    }, { status: 403 });
+  // Get project by token
+  const { data: project } = await supabaseAdmin
+    .from('projects')
+    .select('id, owner_id')
+    .eq('project_token', token)
+    .is('deleted_at', null)
+    .single();
+
+  if (!project) {
+    return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+  }
+
+  // Try to get authenticated user (optional — fall back to project owner)
+  let userId = project.owner_id;
+  let userEmail = 'unknown';
+  try {
+    const { user } = await getAuthenticatedUser(req);
+    if (user) {
+      userId = user.id;
+      userEmail = user.email;
+    }
+  } catch (e) {
+    // No auth, use project owner
   }
 
   const form = await req.formData();
@@ -72,7 +89,7 @@ export async function POST(req, { params }) {
     .from('project_documents')
     .insert({
       project_id: project.id,
-      uploaded_by: user.id,
+      uploaded_by: userId,
       file_name: file.name,
       file_type: file.type,
       file_size: file.size,
@@ -97,7 +114,7 @@ export async function POST(req, { params }) {
       .from('evidence')
       .insert({
         project_id: project.id,
-        author_email: user.email,
+        author_email: userEmail,
         content: evidenceContent,
         file_url: uploaded.path,
         source: 'document',

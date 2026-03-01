@@ -63,18 +63,10 @@ export default function KnowledgeBase({ projectToken, projectId }) {
   const fileInputRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
-  // Get auth headers for API calls (needed for consultant access)
-  const getAuthHeaders = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return {};
-    return { Authorization: `Bearer ${session.access_token}` };
-  }, []);
-
   // Fetch documents on mount
   const fetchDocuments = useCallback(async () => {
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`/api/projects/${projectToken}/knowledge`, { headers });
+      const res = await fetch(`/api/projects/${projectToken}/knowledge`);
       if (res.ok) {
         const data = await res.json();
         setDocuments(data.documents || []);
@@ -84,7 +76,7 @@ export default function KnowledgeBase({ projectToken, projectId }) {
     } finally {
       setLoading(false);
     }
-  }, [projectToken, getAuthHeaders]);
+  }, [projectToken]);
 
   useEffect(() => {
     fetchDocuments();
@@ -103,10 +95,8 @@ export default function KnowledgeBase({ projectToken, projectId }) {
     setSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const headers = await getAuthHeaders();
         const res = await fetch(
-          `/api/projects/${projectToken}/knowledge/search?q=${encodeURIComponent(searchQuery.trim())}`,
-          { headers }
+          `/api/projects/${projectToken}/knowledge/search?q=${encodeURIComponent(searchQuery.trim())}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -122,7 +112,7 @@ export default function KnowledgeBase({ projectToken, projectId }) {
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
-  }, [searchQuery, projectToken, getAuthHeaders]);
+  }, [searchQuery, projectToken]);
 
   // Get signed URL for download
   const handleDownload = async (docId) => {
@@ -132,10 +122,9 @@ export default function KnowledgeBase({ projectToken, projectId }) {
     }
 
     try {
-      const authHeaders = await getAuthHeaders();
       const res = await fetch(`/api/projects/${projectToken}/knowledge/signed-url`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ document_ids: [docId] })
       });
       if (res.ok) {
@@ -156,10 +145,8 @@ export default function KnowledgeBase({ projectToken, projectId }) {
     setDeletingId(docId);
 
     try {
-      const headers = await getAuthHeaders();
       const res = await fetch(`/api/projects/${projectToken}/knowledge/${docId}`, {
-        method: 'DELETE',
-        headers
+        method: 'DELETE'
       });
       if (res.ok) {
         setDocuments(prev => prev.filter(d => d.id !== docId));
@@ -204,7 +191,12 @@ export default function KnowledgeBase({ projectToken, projectId }) {
     setUploading(true);
 
     try {
-      const authHeaders = await getAuthHeaders();
+      // Get auth header so the server can attribute the upload to the user
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeaders = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
