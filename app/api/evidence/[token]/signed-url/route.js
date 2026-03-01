@@ -52,7 +52,7 @@ export async function POST(req, { params }) {
       // Fetch evidence records for this project
       const { data: evidenceList, error: evidenceError } = await supabaseAdmin
         .from('evidence')
-        .select('id, file_url')
+        .select('id, file_url, source')
         .eq('project_id', project.id)
         .in('id', evidence_ids)
         .not('file_url', 'is', null);
@@ -66,7 +66,8 @@ export async function POST(req, { params }) {
       const signedUrls = {};
 
       for (const evidence of evidenceList) {
-        const { signedUrl, error } = await getSignedStorageUrl(evidence.file_url, 'evidence', 3600);
+        const bucket = evidence.source === 'document' ? 'knowledge' : 'evidence';
+        const { signedUrl, error } = await getSignedStorageUrl(evidence.file_url, bucket, 3600);
 
         if (!error && signedUrl) {
           signedUrls[evidence.id] = signedUrl;

@@ -86,7 +86,8 @@ export async function POST(req, { params }) {
       { data: evidence },
       { data: narratives },
       { data: costLedger },
-      { data: existingSections }
+      { data: existingSections },
+      { data: knowledgeDocs }
     ] = await Promise.all([
       supabaseAdmin
         .from('evidence')
@@ -111,7 +112,17 @@ export async function POST(req, { params }) {
       supabaseAdmin
         .from('claim_pack_sections')
         .select('*')
+        .eq('project_id', project.id),
+
+      supabaseAdmin
+        .from('project_documents')
+        .select('id, file_name, file_type, extracted_text, created_at')
         .eq('project_id', project.id)
+        .eq('soft_deleted', false)
+        .eq('extraction_status', 'completed')
+        .not('extracted_text', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(10)
     ]);
 
     // Build project data object
@@ -120,7 +131,8 @@ export async function POST(req, { params }) {
       activities: activities || [],
       evidence: evidence || [],
       narratives: narratives || [],
-      costLedger: costLedger || []
+      costLedger: costLedger || [],
+      knowledgeDocs: knowledgeDocs || []
     };
 
     // Check which sections can be generated (skip manually edited unless force=true)

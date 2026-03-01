@@ -2037,6 +2037,41 @@ export function AuthenticatedTimeline({ project, items, token }) {
                         )}
                       </div>
                     )}
+
+                    {/* Knowledge document metadata */}
+                    {ev.source === 'document' && ev.meta && (
+                      <div style={{
+                        marginTop: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8
+                      }}>
+                        <span style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: '3px 8px',
+                          borderRadius: 4,
+                          backgroundColor: '#f0f4ff',
+                          color: '#021048'
+                        }}>
+                          {ev.meta.file_type === 'application/pdf' ? 'PDF'
+                            : ev.meta.file_type?.includes('word') ? 'DOCX'
+                            : ev.meta.file_type === 'text/plain' ? 'TXT'
+                            : ev.meta.file_type === 'text/csv' ? 'CSV'
+                            : 'FILE'}
+                        </span>
+                        <span style={{ fontSize: 13, color: '#444', fontWeight: 500 }}>
+                          {ev.meta.file_name}
+                        </span>
+                        {ev.meta.file_size && (
+                          <span style={{ fontSize: 12, color: '#888' }}>
+                            {ev.meta.file_size < 1024 * 1024
+                              ? `${(ev.meta.file_size / 1024).toFixed(1)} KB`
+                              : `${(ev.meta.file_size / (1024 * 1024)).toFixed(1)} MB`}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

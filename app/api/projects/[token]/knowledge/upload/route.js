@@ -16,7 +16,7 @@ const ALLOWED_FILE_TYPES = [
 ];
 
 export async function POST(req, { params }) {
-  const token = params.token;
+  const { token } = await params;
 
   // Rate limit
   const clientIp = getClientIp(req);
@@ -87,6 +87,33 @@ export async function POST(req, { params }) {
   if (dbError) {
     console.error('[Knowledge/Upload] DB error:', dbError);
     return NextResponse.json({ error: dbError.message }, { status: 500 });
+  }
+
+  // Dual-write: create evidence record so document flows into timeline + claim pack
+  if (extraction.status === 'completed' && extraction.text) {
+    const evidenceContent = `[Document: ${file.name}]\n\n${extraction.text.substring(0, 2000).trim()}`;
+
+    const { error: evidenceError } = await supabaseAdmin
+      .from('evidence')
+      .insert({
+        project_id: project.id,
+        author_email: user.email,
+        content: evidenceContent,
+        file_url: uploaded.path,
+        source: 'document',
+        document_id: doc.id,
+        meta: {
+          document_id: doc.id,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          storage_bucket: 'knowledge'
+        }
+      });
+
+    if (evidenceError) {
+      console.error('[Knowledge/Upload] Evidence dual-write error:', evidenceError);
+    }
   }
 
   return NextResponse.json({ ok: true, document: doc });

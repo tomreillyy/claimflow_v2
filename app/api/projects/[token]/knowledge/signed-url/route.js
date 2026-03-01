@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req, { params }) {
-  const token = params.token;
+  const { token } = await params;
 
   const { user, project, error: accessError } = await verifyUserAndProjectAccess(req, token);
   if (accessError || !project) {
