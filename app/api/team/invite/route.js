@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { sendEmail, getAppUrl } from '@/lib/email';
+import { sendEmail, getAppUrl, generateMagicLink } from '@/lib/email';
 
 export async function POST(req) {
   try {
@@ -27,23 +27,24 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Team member not found' }, { status: 404 });
     }
 
-    // Send invitation email
-    const loginUrl = `${getAppUrl()}/auth/login`;
+    // Send invitation email with magic link
+    const magicLink = await generateMagicLink(member.email, '/dashboard');
+    const ctaUrl = magicLink || `${getAppUrl()}/auth/login`;
 
     try {
       await sendEmail({
         to: member.email,
         subject: "You've been invited to ClaimFlow",
-        ctaUrl: loginUrl,
+        ctaUrl,
         ctaLabel: 'Sign in to ClaimFlow',
         text: [
           `Hi ${member.full_name},`,
           ``,
           `${user.email} has invited you to join ClaimFlow to help track R&D activities.`,
           ``,
-          `Just enter your email address (${member.email}) and we'll send you a secure magic link — no password needed.`,
+          `Click the button above to sign in — no password needed.`,
           ``,
-          `Sign in here: ${loginUrl}`,
+          `Sign in here: ${ctaUrl}`,
         ].join('\n'),
       });
     } catch (emailError) {

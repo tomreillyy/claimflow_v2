@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { sendEmail, getAppUrl } from '@/lib/email';
+import { sendEmail, getAppUrl, generateMagicLink } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -64,11 +64,12 @@ export async function POST(req) {
 
   if (consultantUser?.email) {
     try {
-      const dashboardUrl = `${getAppUrl()}/consultant`;
+      const magicLink = await generateMagicLink(consultantUser.email, '/consultant');
+      const ctaUrl = magicLink || `${getAppUrl()}/consultant`;
       await sendEmail({
         to: consultantUser.email,
         subject: 'New marketplace inquiry on ClaimFlow',
-        ctaUrl: dashboardUrl,
+        ctaUrl,
         ctaLabel: 'View your inquiries',
         text: [
           `Hi ${profile.display_name},`,
@@ -81,7 +82,7 @@ export async function POST(req) {
           `Message:`,
           `${message.trim()}`,
           ``,
-          `View your inquiries: ${dashboardUrl}`,
+          `View your inquiries: ${ctaUrl}`,
         ].join('\n'),
       });
     } catch (emailError) {

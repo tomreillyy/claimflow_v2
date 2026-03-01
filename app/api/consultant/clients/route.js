@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { sendEmail, getAppUrl } from '@/lib/email';
+import { sendEmail, getAppUrl, generateMagicLink } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -132,13 +132,14 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Send notification email to the client
+  // Send notification email to the client with magic link
   try {
-    const loginUrl = `${getAppUrl()}/auth/login`;
+    const magicLink = await generateMagicLink(email, '/dashboard');
+    const ctaUrl = magicLink || `${getAppUrl()}/auth/login`;
     await sendEmail({
       to: email,
       subject: 'An R&D advisor has linked to your ClaimFlow account',
-      ctaUrl: loginUrl,
+      ctaUrl,
       ctaLabel: 'Log in to ClaimFlow',
       text: [
         `Hi,`,
@@ -147,7 +148,7 @@ export async function POST(req) {
         ``,
         `They can now view your projects and evidence to help with your R&D Tax Incentive claim.`,
         ``,
-        `Log in to get started: ${loginUrl}`,
+        `Log in to get started: ${ctaUrl}`,
       ].join('\n'),
     });
   } catch (emailError) {

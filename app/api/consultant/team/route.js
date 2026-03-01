@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { sendEmail, getAppUrl } from '@/lib/email';
+import { sendEmail, getAppUrl, generateMagicLink } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -167,13 +167,14 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Send notification email
+  // Send notification email with magic link
   try {
-    const loginUrl = `${getAppUrl()}/auth/login`;
+    const magicLink = await generateMagicLink(normalizedEmail, '/consultant');
+    const ctaUrl = magicLink || `${getAppUrl()}/auth/login`;
     await sendEmail({
       to: normalizedEmail,
       subject: 'You\'ve been invited to an R&D advisory team on ClaimFlow',
-      ctaUrl: loginUrl,
+      ctaUrl,
       ctaLabel: 'Log in to ClaimFlow',
       text: [
         `Hi${name ? ` ${name.trim()}` : ''},`,
@@ -182,7 +183,7 @@ export async function POST(req) {
         ``,
         `As a team member, you'll be able to assist with their clients' R&D Tax Incentive claims.`,
         ``,
-        `Log in to get started: ${loginUrl}`,
+        `Log in to get started: ${ctaUrl}`,
       ].join('\n'),
     });
   } catch (emailError) {
