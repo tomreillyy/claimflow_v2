@@ -11,6 +11,8 @@ import QuickNoteForm from './quick-note-form';
 import CoreActivitiesList from '@/components/CoreActivitiesList';
 import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
 import KnowledgeBase from '@/components/KnowledgeBase';
+import JiraReviewPanel from '@/components/JiraReviewPanel';
+import JiraProjectPicker from '@/components/JiraProjectPicker';
 import ProjectDashboard from '@/components/ProjectDashboard';
 
 // Hook to fetch step counts and compute gap hint
@@ -515,6 +517,11 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const [loadingRepos, setLoadingRepos] = useState(false);
   const [githubError, setGithubError] = useState('');
 
+  // Jira integration state
+  const [jiraConnection, setJiraConnection] = useState(null);
+  const [jiraHasAuth, setJiraHasAuth] = useState(false);
+  const [showJiraPicker, setShowJiraPicker] = useState(false);
+
   // Consultant breadcrumb context + view state (controlled by sidebar)
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -589,6 +596,32 @@ export function AuthenticatedTimeline({ project, items, token }) {
       }
     };
     fetchGithubStatus();
+  }, [token]);
+
+  // Fetch Jira connection status
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchJiraStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers = session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {};
+        const res = await fetch(`/api/projects/${token}/jira/connect`, { headers });
+        if (!res.ok) return;
+        const data = await res.json();
+        setJiraHasAuth(data.hasAuth);
+        setJiraConnection(data.connection);
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('jira_connected') === 'true' && data.hasAuth && !data.connection) {
+          setShowJiraPicker(true);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Jira status:', err);
+      }
+    };
+    fetchJiraStatus();
   }, [token]);
 
   // Fetch available GitHub repositories
@@ -1117,6 +1150,47 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const missingSteps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion']
     .filter(step => !stepCounts || stepCounts[step.toLowerCase()] === 0);
 
+  // Compute guided stepper data
+  const stepperData = [
+    {
+      number: 1,
+      title: 'Write your R&D hypothesis',
+      complete: !!(project.current_hypothesis?.trim()),
+      navigateTo: { view: 'timeline' },
+    },
+    {
+      number: 2,
+      title: 'Capture your first evidence',
+      complete: totalEvidence >= 1,
+      navigateTo: { view: 'timeline' },
+    },
+    {
+      number: 3,
+      title: 'Invite your team',
+      complete: (project.participants?.length || 0) > 1,
+      navigateTo: { view: 'team' },
+    },
+    {
+      number: 4,
+      title: `Document all 5 R&D steps`,
+      subtitle: missingSteps.length > 0 ? `Missing: ${missingSteps.join(', ')}` : null,
+      complete: coveredSteps === 5,
+      navigateTo: { view: 'dashboard' },
+    },
+    {
+      number: 5,
+      title: 'Record your R&D costs',
+      complete: (ledger || []).length > 0,
+      navigateTo: { view: 'costs' },
+    },
+    {
+      number: 6,
+      title: 'Build your claim pack',
+      complete: false,
+      navigateTo: { href: `/p/${token}/pack` },
+    },
+  ];
+
   // Show the authenticated timeline
   return (
     <div style={{
@@ -1127,7 +1201,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
       <Header projectName={project.name} projectToken={token} />
 
       <div style={{ display: 'flex' }}>
-        <ProjectSidebar token={token} projectName={project.name} />
+        <ProjectSidebar token={token} projectName={project.name} stepperData={stepperData} />
 
         <main style={{
           flex: 1,
@@ -2045,6 +2119,74 @@ export function AuthenticatedTimeline({ project, items, token }) {
                       </div>
                     )}
 
+                    {/* Jira issue metadata */}
+                    {ev.meta?.type === 'jira' && (
+                      <div style={{
+                        marginTop: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap'
+                      }}>
+                        <a
+                          href={ev.meta.jira_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: '#2684FF',
+                            textDecoration: 'none',
+                            padding: '4px 8px',
+                            backgroundColor: '#e9f2ff',
+                            borderRadius: 3,
+                            border: '1px solid #b3d4ff'
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="#2684FF">
+                            <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
+                          </svg>
+                          {ev.meta.jira_key}
+                        </a>
+                        {ev.meta.issue_type && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 500,
+                            padding: '2px 8px',
+                            borderRadius: 12,
+                            backgroundColor: '#e0e7ff',
+                            color: '#3730a3'
+                          }}>
+                            {ev.meta.issue_type}
+                          </span>
+                        )}
+                        {ev.meta.status && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 500,
+                            padding: '2px 8px',
+                            borderRadius: 12,
+                            backgroundColor: '#f3f4f6',
+                            color: '#374151'
+                          }}>
+                            {ev.meta.status}
+                          </span>
+                        )}
+                        {ev.meta.story_points && (
+                          <span style={{
+                            fontSize: 11,
+                            color: '#9ca3af',
+                            fontFamily: 'ui-monospace, Monaco, monospace'
+                          }}>
+                            {ev.meta.story_points} pts
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {/* Knowledge document metadata */}
                     {ev.source === 'document' && ev.meta && (
                       <div style={{
@@ -2170,6 +2312,117 @@ export function AuthenticatedTimeline({ project, items, token }) {
         {activeTab === 'knowledge' && (
           <div style={{ padding: '20px 0' }}>
             <KnowledgeBase projectToken={token} projectId={project.id} />
+          </div>
+        )}
+
+        {/* Jira Records Tab Content */}
+        {activeTab === 'jira' && (
+          <div style={{ padding: '20px 0' }}>
+            {!jiraHasAuth ? (
+              <div style={{
+                textAlign: 'center',
+                padding: 40,
+                border: '1px dashed #d1d5db',
+                borderRadius: 8,
+                color: '#6b7280'
+              }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="#2684FF" style={{ margin: '0 auto 12px', display: 'block' }}>
+                  <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
+                </svg>
+                <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#021048' }}>
+                  Connect Jira
+                </h3>
+                <p style={{ fontSize: 14, marginBottom: 16 }}>
+                  Connect your Jira Cloud instance to scan issues and match them to R&D activities.
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data: { session: s } } = await supabase.auth.getSession();
+                      const res = await fetch('/api/jira/auth/start', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${s.access_token}`
+                        },
+                        body: JSON.stringify({ project_token: token })
+                      });
+                      const data = await res.json();
+                      if (data.url) window.location.href = data.url;
+                    } catch (err) {
+                      console.error('Jira auth error:', err);
+                    }
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: 6,
+                    border: 'none',
+                    backgroundColor: '#021048',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff">
+                    <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
+                  </svg>
+                  Connect to Jira
+                </button>
+              </div>
+            ) : !jiraConnection ? (
+              <>
+                {showJiraPicker ? (
+                  <JiraProjectPicker
+                    token={token}
+                    onConnect={(connection) => {
+                      setJiraConnection(connection);
+                      setShowJiraPicker(false);
+                    }}
+                    onCancel={() => setShowJiraPicker(false)}
+                  />
+                ) : (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: 40,
+                    border: '1px dashed #d1d5db',
+                    borderRadius: 8,
+                    color: '#6b7280'
+                  }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#021048' }}>
+                      Jira Connected
+                    </h3>
+                    <p style={{ fontSize: 14, marginBottom: 16 }}>
+                      Select which Jira projects to scan for R&D evidence.
+                    </p>
+                    <button
+                      onClick={() => setShowJiraPicker(true)}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: 6,
+                        border: 'none',
+                        backgroundColor: '#021048',
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Select Jira Projects
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <JiraReviewPanel
+                token={token}
+                projectId={project.id}
+                activities={coreActivities}
+              />
+            )}
           </div>
         )}
 

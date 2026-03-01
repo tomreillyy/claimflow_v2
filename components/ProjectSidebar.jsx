@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, BarChart3, DollarSign, BookOpen, Users, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, BarChart3, DollarSign, BookOpen, Users, FileText, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import ClaimStepper from './ClaimStepper';
 
 const SIDEBAR_WIDTH = 220;
 
@@ -10,10 +11,11 @@ const NAV_ITEMS = [
   { key: 'timeline', label: 'Evidence Timeline', icon: BarChart3 },
   { key: 'costs', label: 'Costs', icon: DollarSign },
   { key: 'knowledge', label: 'Knowledge', icon: BookOpen },
+  { key: 'jira', label: 'Jira Records', icon: Search },
   { key: 'team', label: 'Team', icon: Users },
 ];
 
-export default function ProjectSidebar({ token, projectName }) {
+export default function ProjectSidebar({ token, projectName, stepperData }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -102,6 +104,23 @@ export default function ProjectSidebar({ token, projectName }) {
               whiteSpace: 'nowrap',
             }}>
               {projectName}
+            </div>
+          )}
+
+          {/* Claim Progress Stepper */}
+          {stepperData && stepperData.length > 0 && (
+            <div style={{ borderBottom: '1px solid #e5e5e5', marginBottom: 8 }}>
+              <ClaimStepper
+                steps={stepperData}
+                token={token}
+                onNavigate={(nav) => {
+                  if (nav.href) {
+                    router.push(nav.href);
+                  } else if (nav.view) {
+                    handleNavClick(nav.view);
+                  }
+                }}
+              />
             </div>
           )}
 
