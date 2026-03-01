@@ -925,8 +925,8 @@ export function AuthenticatedTimeline({ project, items, token }) {
 
   const handleSaveHypothesis = async () => {
     const trimmed = hypothesis.trim();
-    if (trimmed.length > 280) {
-      alert('Hypothesis must be 280 characters or less');
+    if (trimmed.length > 500) {
+      alert('Hypothesis must be 500 characters or less');
       return;
     }
 
@@ -1156,7 +1156,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
       number: 1,
       title: 'Write your R&D hypothesis',
       complete: !!(project.current_hypothesis?.trim()),
-      navigateTo: { view: 'timeline' },
+      navigateTo: { view: 'timeline', scrollTo: 'hypothesis-section' },
     },
     {
       number: 2,
@@ -1730,99 +1730,135 @@ export function AuthenticatedTimeline({ project, items, token }) {
             </div>
           </div>
 
-          {/* Hypothesis Section - Under Timeline Header */}
-          <details style={{
-            margin: '12px 16px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: 4
+          {/* Hypothesis Section */}
+          <div id="hypothesis-section" style={{
+            margin: '16px 16px',
+            backgroundColor: hypothesis && !isEditingHypothesis ? '#f0f9ff' : '#fff',
+            border: hypothesis && !isEditingHypothesis ? '1px solid #bfdbfe' : '2px solid #021048',
+            borderRadius: 8,
+            padding: 16,
           }}>
-            <summary style={{
-              padding: 10,
-              fontSize: 12,
-              fontWeight: 500,
-              color: '#666',
-              cursor: 'pointer',
-              userSelect: 'none'
-            }}>
-              Optional project hypothesis
-            </summary>
-            <div style={{ padding: '0 10px 10px 10px' }}>
-              {!isEditingHypothesis ? (
-                <>
-                  {hypothesis ? (
-                    <div style={{
-                      padding: 8,
-                      backgroundColor: '#f0f9ff',
-                      border: '1px solid #bfdbfe',
-                      borderRadius: 3,
-                      marginBottom: 6
-                    }}>
-                      <p style={{
-                        fontSize: 12,
-                        color: '#333',
-                        margin: 0
-                      }}>
+            {!isEditingHypothesis ? (
+              hypothesis ? (
+                /* Compact display when hypothesis exists */
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                        R&D Hypothesis
+                      </div>
+                      <p style={{ fontSize: 14, color: '#1a1a1a', margin: 0, lineHeight: 1.5 }}>
                         {hypothesis}
                       </p>
                     </div>
-                  ) : (
-                    <p style={{
-                      fontSize: 11,
-                      color: '#999',
-                      margin: '0 0 6px 0',
-                      fontStyle: 'italic'
-                    }}>
-                      e.g., "If we cache API responses, latency will drop below 100ms"
-                    </p>
-                  )}
+                    <button
+                      onClick={() => setIsEditingHypothesis(true)}
+                      style={{
+                        padding: '5px 12px',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        color: '#021048',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Guidance card when hypothesis is empty */
+                <div>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: '#021048', margin: '0 0 6px 0' }}>
+                    What&apos;s your R&D hypothesis?
+                  </h3>
+                  <p style={{ fontSize: 13, color: '#4b5563', margin: '0 0 12px 0', lineHeight: 1.5 }}>
+                    Describe the technical uncertainty you&apos;re investigating. What don&apos;t you know yet, and what are you trying to find out?
+                  </p>
+                  <div style={{
+                    backgroundColor: '#f8fafc',
+                    borderRadius: 6,
+                    padding: 12,
+                    marginBottom: 14,
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                      Examples
+                    </div>
+                    {[
+                      '"Can we reduce API response times below 100ms by implementing edge caching, without stale data issues?"',
+                      '"Is it feasible to train a model on sparse medical imaging data and still achieve diagnostic-grade accuracy?"',
+                      '"Can we build a real-time collaboration engine that maintains consistency across 1000+ concurrent users?"',
+                    ].map((ex, i) => (
+                      <p key={i} style={{ fontSize: 12, color: '#6b7280', margin: i < 2 ? '0 0 6px 0' : 0, fontStyle: 'italic', lineHeight: 1.4 }}>
+                        {ex}
+                      </p>
+                    ))}
+                  </div>
                   <button
                     onClick={() => setIsEditingHypothesis(true)}
                     style={{
-                      padding: '5px 10px',
-                      fontSize: 11,
-                      fontWeight: 500,
-                      color: '#021048',
-                      backgroundColor: 'white',
-                      border: '1px solid #ddd',
-                      borderRadius: 3,
-                      cursor: 'pointer'
+                      padding: '8px 16px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: 'white',
+                      backgroundColor: '#021048',
+                      border: 'none',
+                      borderRadius: 6,
+                      cursor: 'pointer',
                     }}
                   >
-                    {hypothesis ? 'Edit' : 'Add hypothesis'}
+                    Write your hypothesis
                   </button>
-                </>
-              ) : (
-                <div>
-                  <input
-                    value={hypothesis}
-                    onChange={(e) => setHypothesis(e.target.value)}
-                    placeholder='e.g., "If we cache API responses, latency will drop below 100ms"'
-                    maxLength={280}
-                    style={{
-                      width: '100%',
-                      padding: '6px 10px',
-                      fontSize: 12,
-                      border: '1px solid #ddd',
-                      borderRadius: 3,
-                      outline: 'none',
-                      color: '#1a1a1a',
-                      marginBottom: 6,
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: 4 }}>
+                </div>
+              )
+            ) : (
+              /* Edit mode */
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+                  R&D Hypothesis
+                </div>
+                <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 8px 0', lineHeight: 1.4 }}>
+                  What technical question are you trying to answer? What&apos;s uncertain about your approach?
+                </p>
+                <textarea
+                  value={hypothesis}
+                  onChange={(e) => setHypothesis(e.target.value)}
+                  placeholder='e.g., "Can we reduce API response times below 100ms by implementing edge caching, without stale data issues?"'
+                  maxLength={500}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    fontSize: 13,
+                    border: '1px solid #d1d5db',
+                    borderRadius: 6,
+                    outline: 'none',
+                    color: '#1a1a1a',
+                    marginBottom: 8,
+                    boxSizing: 'border-box',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    lineHeight: 1.5,
+                  }}
+                  autoFocus
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
                     <button
                       onClick={handleSaveHypothesis}
                       disabled={hypothesisSaving}
                       style={{
-                        padding: '5px 10px',
-                        fontSize: 11,
-                        fontWeight: 500,
+                        padding: '7px 14px',
+                        fontSize: 13,
+                        fontWeight: 600,
                         color: 'white',
                         backgroundColor: hypothesisSaving ? '#ccc' : '#021048',
                         border: 'none',
-                        borderRadius: 3,
+                        borderRadius: 6,
                         cursor: hypothesisSaving ? 'not-allowed' : 'pointer'
                       }}
                     >
@@ -1834,23 +1870,26 @@ export function AuthenticatedTimeline({ project, items, token }) {
                         setIsEditingHypothesis(false);
                       }}
                       style={{
-                        padding: '5px 10px',
-                        fontSize: 11,
+                        padding: '7px 14px',
+                        fontSize: 13,
                         fontWeight: 500,
-                        color: '#666',
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: 3,
+                        color: '#6b7280',
+                        backgroundColor: 'transparent',
+                        border: '1px solid #d1d5db',
+                        borderRadius: 6,
                         cursor: 'pointer'
                       }}
                     >
                       Cancel
                     </button>
                   </div>
+                  <span style={{ fontSize: 11, color: '#9ca3af' }}>
+                    {hypothesis.length}/500
+                  </span>
                 </div>
-              )}
-            </div>
-          </details>
+              </div>
+            )}
+          </div>
 
           {items && items.length > 0 ? (
             <div>

@@ -8,8 +8,8 @@ export async function PATCH(req, { params }) {
 
     // Validate hypothesis
     const trimmedHypothesis = current_hypothesis?.trim() || '';
-    if (trimmedHypothesis.length > 280) {
-      return NextResponse.json({ error: 'Hypothesis must be 280 characters or less' }, { status: 400 });
+    if (trimmedHypothesis.length > 500) {
+      return NextResponse.json({ error: 'Hypothesis must be 500 characters or less' }, { status: 400 });
     }
 
     // Look up project by token

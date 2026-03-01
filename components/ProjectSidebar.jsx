@@ -118,6 +118,11 @@ export default function ProjectSidebar({ token, projectName, stepperData }) {
                     router.push(nav.href);
                   } else if (nav.view) {
                     handleNavClick(nav.view);
+                    if (nav.scrollTo) {
+                      setTimeout(() => {
+                        document.getElementById(nav.scrollTo)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 150);
+                    }
                   }
                 }}
               />
