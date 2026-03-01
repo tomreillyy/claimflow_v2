@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { BarChart3, DollarSign, BookOpen, Users, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, BarChart3, DollarSign, BookOpen, Users, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const SIDEBAR_WIDTH = 220;
 
 const NAV_ITEMS = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'timeline', label: 'Evidence Timeline', icon: BarChart3 },
   { key: 'costs', label: 'Costs', icon: DollarSign },
   { key: 'knowledge', label: 'Knowledge', icon: BookOpen },
@@ -19,7 +20,7 @@ export default function ProjectSidebar({ token, projectName }) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  const currentView = searchParams.get('view') || 'timeline';
+  const currentView = searchParams.get('view') || 'dashboard';
   const isMainPage = pathname === `/p/${token}`;
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function ProjectSidebar({ token, projectName }) {
 
   const handleNavClick = (key) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (key === 'timeline') {
+    if (key === 'dashboard') {
       params.delete('view');
     } else {
       params.set('view', key);

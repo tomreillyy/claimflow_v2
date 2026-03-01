@@ -12,6 +12,7 @@ import CoreActivitiesList from '@/components/CoreActivitiesList';
 import ActionsRow from '@/components/ActionsRow';
 import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
 import KnowledgeBase from '@/components/KnowledgeBase';
+import ProjectDashboard from '@/components/ProjectDashboard';
 
 // Hook to fetch step counts and compute gap hint
 function useStepGapHint(token) {
@@ -507,7 +508,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
   // Consultant breadcrumb context + view state (controlled by sidebar)
   const searchParams = useSearchParams();
   const router = useRouter();
-  const activeTab = searchParams.get('view') || 'timeline';
+  const activeTab = searchParams.get('view') || 'dashboard';
   const [consultantBreadcrumb, setConsultantBreadcrumb] = useState(() => {
     if (typeof window === 'undefined') return null;
     const cid = searchParams.get('cid');
@@ -612,7 +613,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
 
   // Fetch costs data when Costs tab is active
   useEffect(() => {
-    if (!token || activeTab !== 'costs') return;
+    if (!token || (activeTab !== 'costs' && activeTab !== 'dashboard')) return;
     fetchCostsData();
   }, [token, activeTab]);
 
@@ -1473,35 +1474,59 @@ export function AuthenticatedTimeline({ project, items, token }) {
               </div>
             )}
 
-        <ActionsRow
-          evidenceCount={totalEvidence}
-          weeklyCount={weeklyEvidence}
-          githubConnected={!!githubRepo}
-          coverageData={{
-            covered: coveredSteps,
-            total: 5,
-            missing: missingSteps
-          }}
-          token={token}
-          onConnectGitHub={githubRepo ? handleSyncGitHub : handleConnectGitHub}
-          onAddNote={() => {
-            // Navigate to timeline view and focus on add note
-            if (activeTab !== 'timeline') {
+        {/* Dashboard Tab Content */}
+        {activeTab === 'dashboard' && (
+          <ProjectDashboard
+            project={project}
+            items={items?.filter(ev => !deletedIds.has(ev.id))}
+            token={token}
+            stepCounts={stepCounts}
+            coveredSteps={coveredSteps}
+            missingSteps={missingSteps}
+            weeklyEvidence={weeklyEvidence}
+            totalEvidence={totalEvidence}
+            githubConnected={!!githubRepo}
+            ledger={ledger}
+            coreActivities={coreActivities}
+            onConnectGitHub={githubRepo ? handleSyncGitHub : handleConnectGitHub}
+            onAddNote={() => {
               const params = new URLSearchParams(searchParams.toString());
-              params.delete('view');
-              const qs = params.toString();
-              router.push(`/p/${token}${qs ? '?' + qs : ''}`, { scroll: false });
-            }
-            setTimeout(() => {
-              const addNoteBtn = document.querySelector('button[data-action="add-note"]');
-              if (addNoteBtn) {
-                addNoteBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            }, 100);
-          }}
-        />
+              params.set('view', 'timeline');
+              router.push(`/p/${token}?${params.toString()}`, { scroll: false });
+              setTimeout(() => {
+                const addNoteBtn = document.querySelector('button[data-action="add-note"]');
+                if (addNoteBtn) addNoteBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 300);
+            }}
+          />
+        )}
 
         {/* Timeline Tab Content */}
+        {activeTab === 'timeline' && (
+          <div style={{ marginBottom: 24 }}>
+            <ActionsRow
+              evidenceCount={totalEvidence}
+              weeklyCount={weeklyEvidence}
+              githubConnected={!!githubRepo}
+              coverageData={{
+                covered: coveredSteps,
+                total: 5,
+                missing: missingSteps
+              }}
+              token={token}
+              onConnectGitHub={githubRepo ? handleSyncGitHub : handleConnectGitHub}
+              onAddNote={() => {
+                setTimeout(() => {
+                  const addNoteBtn = document.querySelector('button[data-action="add-note"]');
+                  if (addNoteBtn) {
+                    addNoteBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }, 100);
+              }}
+            />
+          </div>
+        )}
+
         {activeTab === 'timeline' && (
           <div>
         {/* Step Distribution Pills */}
