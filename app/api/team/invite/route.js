@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, getAppUrl } from '@/lib/email';
 
 export async function POST(req) {
   try {
@@ -28,22 +28,22 @@ export async function POST(req) {
     }
 
     // Send invitation email
-    const baseUrl = process.env.NEXT_PUBLIC_BASE || process.env.NEXT_PUBLIC_APP_URL || 'https://app.claimflow.ai';
+    const loginUrl = `${getAppUrl()}/auth/login`;
 
     try {
       await sendEmail({
         to: member.email,
         subject: "You've been invited to ClaimFlow",
+        ctaUrl: loginUrl,
+        ctaLabel: 'Sign in to ClaimFlow',
         text: [
           `Hi ${member.full_name},`,
           ``,
           `${user.email} has invited you to join ClaimFlow to help track R&D activities.`,
           ``,
-          `Sign in here: ${baseUrl}/auth/login`,
+          `Just enter your email address (${member.email}) and we'll send you a secure magic link — no password needed.`,
           ``,
-          `Just enter your email address (${member.email}) and we'll send you a secure sign-in link.`,
-          ``,
-          `No password needed — we use magic links for secure, passwordless authentication.`,
+          `Sign in here: ${loginUrl}`,
         ].join('\n'),
       });
     } catch (emailError) {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, getAppUrl } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -169,10 +169,12 @@ export async function POST(req) {
 
   // Send notification email
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE || process.env.NEXT_PUBLIC_APP_URL || 'https://app.claimflow.ai';
+    const loginUrl = `${getAppUrl()}/auth/login`;
     await sendEmail({
       to: normalizedEmail,
       subject: 'You\'ve been invited to an R&D advisory team on ClaimFlow',
+      ctaUrl: loginUrl,
+      ctaLabel: 'Log in to ClaimFlow',
       text: [
         `Hi${name ? ` ${name.trim()}` : ''},`,
         ``,
@@ -180,9 +182,7 @@ export async function POST(req) {
         ``,
         `As a team member, you'll be able to assist with their clients' R&D Tax Incentive claims.`,
         ``,
-        `Log in to ClaimFlow: ${baseUrl}/auth/login`,
-        ``,
-        `If you weren't expecting this, you can ignore this email.`,
+        `Log in to get started: ${loginUrl}`,
       ].join('\n'),
     });
   } catch (emailError) {

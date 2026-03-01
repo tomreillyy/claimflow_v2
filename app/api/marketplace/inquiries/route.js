@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, getAppUrl } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -64,10 +64,12 @@ export async function POST(req) {
 
   if (consultantUser?.email) {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE || process.env.NEXT_PUBLIC_APP_URL || 'https://app.claimflow.ai';
+      const dashboardUrl = `${getAppUrl()}/consultant`;
       await sendEmail({
         to: consultantUser.email,
         subject: 'New marketplace inquiry on ClaimFlow',
+        ctaUrl: dashboardUrl,
+        ctaLabel: 'View your inquiries',
         text: [
           `Hi ${profile.display_name},`,
           ``,
@@ -79,9 +81,7 @@ export async function POST(req) {
           `Message:`,
           `${message.trim()}`,
           ``,
-          `View your inquiries: ${baseUrl}/consultant`,
-          ``,
-          `— ClaimFlow`,
+          `View your inquiries: ${dashboardUrl}`,
         ].join('\n'),
       });
     } catch (emailError) {

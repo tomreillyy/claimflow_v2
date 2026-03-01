@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { verifyCronSecret } from '@/lib/serverAuth';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, getAppUrl } from '@/lib/email';
 
 export async function GET(req) {
   // Verify cron secret to prevent unauthorized triggering
@@ -20,13 +20,16 @@ export async function GET(req) {
   const messages = [];
   for (const p of (projects || [])) {
     for (const to of (p.participants || [])) {
+      const projectUrl = `${getAppUrl()}/p/${p.project_token}`;
       messages.push({
         to,
         subject: `[${p.name}] Quick R&D check-in`,
+        ctaUrl: projectUrl,
+        ctaLabel: 'Post a quick note',
         text: [
           `What experiment or technical hurdle did you touch since last prompt?`,
           `Reply to this email with 1–3 lines and any screenshots/logs.`,
-          `Or post a quick note: ${process.env.NEXT_PUBLIC_BASE}/p/${p.project_token}`
+          `Or post a quick note: ${projectUrl}`
         ].join('\n\n'),
       });
     }
