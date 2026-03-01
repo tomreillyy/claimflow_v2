@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -33,15 +32,15 @@ function LoginContent() {
     setMessage('');
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const res = await fetch('/api/auth/send-magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) {
-        setError(error.message);
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || 'Failed to send sign-in link');
       } else {
         setMessage('Check your email for the magic link!');
       }
