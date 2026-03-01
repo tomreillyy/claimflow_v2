@@ -17,6 +17,56 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [isConsultant, setIsConsultant] = useState(false);
+  const [consultantStatusLoaded, setConsultantStatusLoaded] = useState(false);
+  const [consultantBranding, setConsultantBranding] = useState(null);
+
+  const fetchConsultantBranding = useCallback(async (session) => {
+    if (!session?.access_token) {
+      setConsultantBranding(null);
+      return;
+    }
+    try {
+      const res = await fetch('/api/consultant/my-branding', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.company_name || data.logo_url) {
+          setConsultantBranding(data);
+        } else {
+          setConsultantBranding(null);
+        }
+      } else {
+        setConsultantBranding(null);
+      }
+    } catch {
+      setConsultantBranding(null);
+    }
+  }, []);
+
+  const fetchConsultantStatus = useCallback(async (session) => {
+    if (!session?.access_token) {
+      setIsConsultant(false);
+      setConsultantStatusLoaded(true);
+      return;
+    }
+    try {
+      const res = await fetch('/api/consultant/status', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsConsultant(data.isConsultant === true);
+      } else {
+        setIsConsultant(false);
+      }
+    } catch {
+      setIsConsultant(false);
+    } finally {
+      setConsultantStatusLoaded(true);
+    }
+  }, []);
 
   const fetchSubscriptionStatus = useCallback(async (session) => {
     if (!session?.access_token) {
@@ -57,9 +107,11 @@ export function AuthProvider({ children }) {
       setUser(session?.user || null);
       setLoading(false);
 
-      // Fetch subscription status if user is logged in
+      // Fetch subscription and consultant status if user is logged in
       if (session?.user) {
         fetchSubscriptionStatus(session);
+        fetchConsultantStatus(session);
+        fetchConsultantBranding(session);
       }
     };
 
@@ -71,21 +123,34 @@ export function AuthProvider({ children }) {
         setUser(session?.user || null);
         setLoading(false);
 
-        // Fetch subscription status when auth state changes
+        // Fetch subscription and consultant status when auth state changes
         if (session?.user) {
           fetchSubscriptionStatus(session);
+          fetchConsultantStatus(session);
+          fetchConsultantBranding(session);
         } else {
           setSubscription(null);
+          setIsConsultant(false);
+          setConsultantStatusLoaded(true);
+          setConsultantBranding(null);
         }
       }
     );
 
     return () => authSubscription.unsubscribe();
-  }, [fetchSubscriptionStatus]);
+  }, [fetchSubscriptionStatus, fetchConsultantStatus, fetchConsultantBranding]);
+
+  const refreshConsultantStatus = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    await fetchConsultantStatus(session);
+  }, [fetchConsultantStatus]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setSubscription(null);
+    setIsConsultant(false);
+    setConsultantBranding(null);
+    window.location.href = '/auth/login';
   };
 
   const isSubscribed = subscription?.isSubscribed === true;
@@ -98,6 +163,10 @@ export function AuthProvider({ children }) {
     subscriptionLoading,
     isSubscribed,
     refreshSubscription,
+    isConsultant,
+    consultantStatusLoaded,
+    refreshConsultantStatus,
+    consultantBranding,
   };
 
   return (

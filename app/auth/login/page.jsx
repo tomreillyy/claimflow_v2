@@ -1,12 +1,30 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-export default function Login() {
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const ref = searchParams.get('ref');
+
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [branding, setBranding] = useState(null);
+
+  // Fetch consultant branding if ref param is present
+  useEffect(() => {
+    if (!ref) return;
+    fetch(`/api/consultant/branding/${ref}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.company_name || data.logo_url) {
+          setBranding(data);
+        }
+      })
+      .catch(() => {});
+  }, [ref]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -34,6 +52,66 @@ export default function Login() {
     }
   };
 
+  const renderLogo = () => {
+    if (branding?.logo_url) {
+      return (
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <img
+            src={branding.logo_url}
+            alt={branding.company_name || 'Logo'}
+            style={{ maxHeight: 80, width: 'auto', objectFit: 'contain' }}
+          />
+          {branding.company_name && (
+            <h2 style={{
+              fontSize: 20,
+              fontWeight: 600,
+              color: '#1a1a1a',
+              margin: '12px 0 0',
+            }}>
+              {branding.company_name}
+            </h2>
+          )}
+        </div>
+      );
+    }
+
+    if (branding?.company_name) {
+      return (
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <h2 style={{
+            fontSize: 24,
+            fontWeight: 600,
+            color: '#1a1a1a',
+            margin: '0 0 8px',
+          }}>
+            {branding.company_name}
+          </h2>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          <img
+            src="/claimflow-logo-full.png"
+            alt="ClaimFlow"
+            style={{ maxWidth: 260, height: 'auto', width: '100%' }}
+          />
+        </a>
+        <p style={{
+          color: '#6b7280',
+          fontSize: 15,
+          lineHeight: 1.5,
+          maxWidth: 320,
+          margin: '16px auto 0'
+        }}>
+          ClaimFlow automatically captures and structures your R&D evidence as you build.
+        </p>
+      </div>
+    );
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -47,25 +125,7 @@ export default function Login() {
       }}>
         {!message ? (
           <>
-            {/* Logo */}
-            <div style={{ textAlign: 'center', marginBottom: 32 }}>
-              <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
-                <img
-                  src="/claimflow-icon-and-text.png"
-                  alt="ClaimFlow"
-                  style={{ height: 120, width: 'auto' }}
-                />
-              </a>
-              <p style={{
-                color: '#6b7280',
-                fontSize: 15,
-                lineHeight: 1.5,
-                maxWidth: 320,
-                margin: '16px auto 0'
-              }}>
-                ClaimFlow automatically captures and structures your R&D evidence as you build.
-              </p>
-            </div>
+            {renderLogo()}
 
             {/* Card */}
             <div style={{
@@ -176,39 +236,70 @@ export default function Login() {
             </div>
 
             {/* Outside card */}
-            <p style={{
-              textAlign: 'center',
-              marginTop: 24,
-              fontSize: 14,
-              color: '#6b7280'
-            }}>
-              Not a member?{' '}
-              <a
-                href="/admin/new-project"
-                style={{
-                  color: '#021048',
-                  textDecoration: 'none',
-                  fontWeight: 500
-                }}
-                onMouseOver={e => e.target.style.textDecoration = 'underline'}
-                onMouseOut={e => e.target.style.textDecoration = 'none'}
-              >
-                Start a 14 day free trial
-              </a>
-            </p>
+            {branding ? (
+              <p style={{
+                textAlign: 'center',
+                marginTop: 24,
+                fontSize: 12,
+                color: '#9ca3af'
+              }}>
+                Powered by{' '}
+                <a
+                  href="/"
+                  style={{
+                    color: '#9ca3af',
+                    textDecoration: 'underline',
+                    fontWeight: 500
+                  }}
+                >
+                  ClaimFlow
+                </a>
+              </p>
+            ) : (
+              <p style={{
+                textAlign: 'center',
+                marginTop: 24,
+                fontSize: 14,
+                color: '#6b7280'
+              }}>
+                Not a member?{' '}
+                <a
+                  href="/admin/new-project"
+                  style={{
+                    color: '#021048',
+                    textDecoration: 'none',
+                    fontWeight: 500
+                  }}
+                  onMouseOver={e => e.target.style.textDecoration = 'underline'}
+                  onMouseOut={e => e.target.style.textDecoration = 'none'}
+                >
+                  Start a 14 day free trial
+                </a>
+              </p>
+            )}
           </>
         ) : (
           <>
-            {/* Logo */}
-            <div style={{ textAlign: 'center', marginBottom: 32 }}>
-              <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+            {/* Logo on success screen */}
+            {branding?.logo_url ? (
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
                 <img
-                  src="/claimflow-icon-and-text.png"
-                  alt="ClaimFlow"
-                  style={{ height: 120, width: 'auto' }}
+                  src={branding.logo_url}
+                  alt={branding.company_name || 'Logo'}
+                  style={{ maxHeight: 80, width: 'auto', objectFit: 'contain' }}
                 />
-              </a>
-            </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <a href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+                  <img
+                    src="/claimflow-logo-full.png"
+                    alt="ClaimFlow"
+                    style={{ maxWidth: 260, height: 'auto', width: '100%' }}
+                  />
+                </a>
+              </div>
+            )}
 
             {/* Success Card */}
             <div style={{
@@ -268,28 +359,67 @@ export default function Login() {
             </div>
 
             {/* Outside card */}
-            <p style={{
-              textAlign: 'center',
-              marginTop: 24,
-              fontSize: 14,
-              color: '#6b7280'
-            }}>
-              <a
-                href="/"
-                style={{
-                  color: '#021048',
-                  textDecoration: 'none',
-                  fontWeight: 500
-                }}
-                onMouseOver={e => e.target.style.textDecoration = 'underline'}
-                onMouseOut={e => e.target.style.textDecoration = 'none'}
-              >
-                ← Back to home
-              </a>
-            </p>
+            {branding ? (
+              <p style={{
+                textAlign: 'center',
+                marginTop: 24,
+                fontSize: 12,
+                color: '#9ca3af'
+              }}>
+                Powered by{' '}
+                <a
+                  href="/"
+                  style={{
+                    color: '#9ca3af',
+                    textDecoration: 'underline',
+                    fontWeight: 500
+                  }}
+                >
+                  ClaimFlow
+                </a>
+              </p>
+            ) : (
+              <p style={{
+                textAlign: 'center',
+                marginTop: 24,
+                fontSize: 14,
+                color: '#6b7280'
+              }}>
+                <a
+                  href="/"
+                  style={{
+                    color: '#021048',
+                    textDecoration: 'none',
+                    fontWeight: 500
+                  }}
+                  onMouseOver={e => e.target.style.textDecoration = 'underline'}
+                  onMouseOut={e => e.target.style.textDecoration = 'none'}
+                >
+                  ← Back to home
+                </a>
+              </p>
+            )}
           </>
         )}
       </main>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        background: '#fff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <p style={{ color: '#6b7280' }}>Loading...</p>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

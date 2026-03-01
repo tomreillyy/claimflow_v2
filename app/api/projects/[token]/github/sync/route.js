@@ -3,12 +3,16 @@
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { syncCommits } from '@/lib/githubSync';
+import { getAuthenticatedUser, getGitHubToken } from '@/lib/serverAuth';
+import { syncGitHubData } from '@/lib/githubSync';
 
 export async function POST(req, { params }) {
   const token = params.token;
 
   try {
+    // Authenticate user
+    const { user, error: authError } = await getAuthenticatedUser(req);
+
     // Fetch project
     const { data: project, error: projectError } = await supabaseAdmin
       .from('projects')
@@ -21,24 +25,23 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    // Fetch GitHub token
-    const { data: tokenRecord } = await supabaseAdmin
-      .from('project_github_tokens')
-      .select('access_token')
-      .eq('project_id', project.id)
-      .single();
+    // Get GitHub token (user-level first, then project-level fallback)
+    const { accessToken, error: tokenError } = await getGitHubToken(
+      user?.id || null,
+      project.id
+    );
 
-    if (!tokenRecord) {
+    if (!accessToken) {
       return NextResponse.json(
-        { error: 'GitHub not connected. Please connect GitHub first.' },
+        { error: tokenError || 'GitHub not connected. Please connect GitHub first.' },
         { status: 401 }
       );
     }
 
-    // Fetch repository connection
+    // Fetch repository connection (includes filters)
     const { data: repo } = await supabaseAdmin
       .from('github_repos')
-      .select('repo_owner, repo_name')
+      .select('repo_owner, repo_name, filter_branches, filter_keywords')
       .eq('project_id', project.id)
       .single();
 
@@ -51,14 +54,18 @@ export async function POST(req, { params }) {
 
     console.log(`[GitHub Sync API] Starting sync for ${repo.repo_owner}/${repo.repo_name}`);
     console.log(`[GitHub Sync API] Project ID: ${project.id}`);
-    console.log(`[GitHub Sync API] Has token: ${!!tokenRecord.access_token}`);
+    console.log(`[GitHub Sync API] Filters — branches: ${(repo.filter_branches || []).join(', ') || 'none'}, keywords: ${(repo.filter_keywords || []).join(', ') || 'none'}`);
 
-    // Perform sync
-    const result = await syncCommits(
+    // Perform sync with filters
+    const result = await syncGitHubData(
       project.id,
       repo.repo_owner,
       repo.repo_name,
-      tokenRecord.access_token
+      accessToken,
+      {
+        filterBranches: repo.filter_branches || [],
+        filterKeywords: repo.filter_keywords || []
+      }
     );
 
     console.log(`[GitHub Sync API] Sync complete:`, result);
@@ -74,6 +81,9 @@ export async function POST(req, { params }) {
       }
       if (result.reasons?.duplicate > 0) {
         reasons.push(`${result.reasons.duplicate} duplicates`);
+      }
+      if (result.reasons?.keyword_filtered > 0) {
+        reasons.push(`${result.reasons.keyword_filtered} didn't match keywords`);
       }
       const patternCount = Object.values(result.reasons?.pattern_matched || {}).reduce((a, b) => a + b, 0);
       if (patternCount > 0) {

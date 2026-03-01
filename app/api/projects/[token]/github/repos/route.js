@@ -3,11 +3,15 @@
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getAuthenticatedUser, getGitHubToken } from '@/lib/serverAuth';
 
 export async function GET(req, { params }) {
   const token = params.token;
 
   try {
+    // Authenticate the user
+    const { user, error: authError } = await getAuthenticatedUser(req);
+
     // Fetch project
     const { data: project } = await supabaseAdmin
       .from('projects')
@@ -20,16 +24,15 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    // Fetch GitHub access token
-    const { data: tokenRecord } = await supabaseAdmin
-      .from('project_github_tokens')
-      .select('access_token')
-      .eq('project_id', project.id)
-      .single();
+    // Get GitHub token (user-level first, then project-level fallback)
+    const { accessToken, error: tokenError } = await getGitHubToken(
+      user?.id || null,
+      project.id
+    );
 
-    if (!tokenRecord) {
+    if (tokenError || !accessToken) {
       return NextResponse.json(
-        { error: 'GitHub not connected' },
+        { error: tokenError || 'GitHub not connected' },
         { status: 401 }
       );
     }
@@ -37,7 +40,7 @@ export async function GET(req, { params }) {
     // Fetch repositories from GitHub API
     const response = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
       headers: {
-        'Authorization': `Bearer ${tokenRecord.access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28'
       }

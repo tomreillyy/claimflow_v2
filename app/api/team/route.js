@@ -21,7 +21,7 @@ export async function GET(req) {
     // Fetch team members for this user
     const { data: members, error } = await supabaseAdmin
       .from('team_members')
-      .select('id, email, full_name, created_at')
+      .select('id, email, full_name, role, department, invited_at, created_at')
       .eq('user_id', user.id)
       .order('full_name', { ascending: true });
 
@@ -60,7 +60,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { email, full_name } = await req.json();
+    const { email, full_name, role, department } = await req.json();
 
     // Validation
     if (!email || !full_name) {
@@ -83,7 +83,9 @@ export async function POST(req) {
       .insert({
         user_id: user.id,
         email: email.trim().toLowerCase(),
-        full_name: full_name.trim()
+        full_name: full_name.trim(),
+        role: role?.trim() || null,
+        department: department?.trim() || null
       })
       .select()
       .single();
@@ -131,7 +133,7 @@ export async function PATCH(req) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, email, full_name } = await req.json();
+    const { id, email, full_name, role, department } = await req.json();
 
     if (!id) {
       return NextResponse.json({ error: 'Member ID is required' }, { status: 400 });
@@ -148,6 +150,12 @@ export async function PATCH(req) {
     }
     if (full_name) {
       updates.full_name = full_name.trim();
+    }
+    if (role !== undefined) {
+      updates.role = role?.trim() || null;
+    }
+    if (department !== undefined) {
+      updates.department = department?.trim() || null;
     }
 
     // Update team member (verify ownership via user_id)

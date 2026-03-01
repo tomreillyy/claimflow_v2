@@ -48,7 +48,22 @@ function AuthCallbackContent() {
           if (redirectTo) {
             router.push(redirectTo);
           } else {
-            router.push('/');
+            // Check if user is a consultant and redirect accordingly
+            try {
+              const consultantRes = await fetch('/api/consultant/status', {
+                headers: { Authorization: `Bearer ${data.session.access_token}` },
+              });
+              if (consultantRes.ok) {
+                const consultantData = await consultantRes.json();
+                if (consultantData.isConsultant) {
+                  router.push('/consultant');
+                  return;
+                }
+              }
+            } catch (e) {
+              // Fall through to default redirect
+            }
+            router.push('/dashboard');
           }
         } else {
           router.push('/auth/login');

@@ -6,15 +6,24 @@ import { User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { usePathname } from 'next/navigation';
 
-const tabs = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Projects', href: '/projects' },
-  { name: 'Team', href: '/settings/team' },
-];
-
 export function AppHeader() {
-  const { signOut } = useAuth();
+  const { signOut, isConsultant, consultantBranding } = useAuth();
   const pathname = usePathname();
+
+  const tabs = isConsultant
+    ? [
+        { name: 'Clients', href: '/consultant' },
+        { name: 'Team', href: '/settings/team' },
+        { name: 'Timesheets', href: '/timesheets' },
+        { name: 'Settings', href: '/consultant/settings' },
+      ]
+    : [
+        { name: 'Dashboard', href: '/dashboard' },
+        { name: 'Projects', href: '/projects' },
+        { name: 'Team', href: '/settings/team' },
+        { name: 'Timesheets', href: '/timesheets' },
+      ];
+
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
@@ -44,8 +53,12 @@ export function AppHeader() {
   // Determine active tab based on pathname
   const getActiveTab = () => {
     if (pathname === '/dashboard') return 'Dashboard';
+    if (pathname === '/consultant/settings') return 'Settings';
+    if (pathname.startsWith('/consultant')) return 'Clients';
+    if (isConsultant && pathname.startsWith('/p/')) return 'Clients';
     if (pathname === '/' || pathname === '/projects' || pathname.startsWith('/p/')) return 'Projects';
     if (pathname === '/settings/team') return 'Team';
+    if (pathname.startsWith('/timesheets')) return 'Timesheets';
     return 'Projects';
   };
 
@@ -69,27 +82,53 @@ export function AppHeader() {
             justifyContent: 'space-between',
             padding: '0 24px',
             height: 56,
-            maxWidth: '1400px',
-            margin: '0 auto',
             width: '100%',
           }}
         >
-          {/* Left: Logo */}
-          <Link href="/" style={{
+          {/* Left: Logo (fixed width to align with project sidebar) */}
+          <Link href={isConsultant ? '/consultant' : '/dashboard'} style={{
             display: 'flex',
             alignItems: 'center',
             textDecoration: 'none',
             flexShrink: 0,
+            width: 196,
             height: '100%',
+            gap: 10,
           }}>
-            <img
-              src="/claimflow-icon-and-text.png"
-              alt="ClaimFlow"
-              style={{
-                height: 38,
-                width: 'auto',
-              }}
-            />
+            {consultantBranding?.logo_url ? (
+              <img
+                src={consultantBranding.logo_url}
+                alt={consultantBranding.company_name || 'Logo'}
+                style={{
+                  height: 32,
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
+            ) : (
+              <img
+                src="/claimflow-logo-full.png"
+                alt="ClaimFlow"
+                style={{
+                  height: 38,
+                  width: 'auto',
+                }}
+              />
+            )}
+            {consultantBranding?.company_name && !consultantBranding?.logo_url && (
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a' }}>
+                {consultantBranding.company_name}
+              </span>
+            )}
+            {consultantBranding && (
+              <span style={{
+                fontSize: 10,
+                color: '#9ca3af',
+                whiteSpace: 'nowrap',
+              }}>
+                Powered by ClaimFlow
+              </span>
+            )}
           </Link>
 
           {/* Center: Tab Navigation (desktop) */}
@@ -99,7 +138,6 @@ export function AppHeader() {
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              marginLeft: 40,
               marginRight: 'auto',
               height: '100%',
             }}

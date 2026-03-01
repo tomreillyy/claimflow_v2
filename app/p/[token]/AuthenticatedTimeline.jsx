@@ -1,12 +1,17 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/Header';
+import { ConsultantBreadcrumb } from '@/components/ConsultantBreadcrumb';
+import ProjectSidebar from '@/components/ProjectSidebar';
+import ProjectTeam from '@/components/ProjectTeam';
 import QuickNoteForm from './quick-note-form';
 import CoreActivitiesList from '@/components/CoreActivitiesList';
 import ActionsRow from '@/components/ActionsRow';
 import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
+import KnowledgeBase from '@/components/KnowledgeBase';
 
 // Hook to fetch step counts and compute gap hint
 function useStepGapHint(token) {
@@ -438,7 +443,7 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentActivityType
 }
 
 export function AuthenticatedTimeline({ project, items, token }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isConsultant } = useAuth();
   const stepHint = useStepGapHint(token);
   const { signedUrls, loading: signedUrlsLoading } = useSignedUrls(token, items);
   const [stepCounts, setStepCounts] = useState({});
@@ -475,7 +480,6 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const [activitiesFetched, setActivitiesFetched] = useState(false);
   const [filterSteps, setFilterSteps] = useState(new Set());
   const [showRdOnly, setShowRdOnly] = useState(false);
-  const [activeTab, setActiveTab] = useState('timeline');
 
   // Costs tab state
   const [uploadData, setUploadData] = useState(null);
@@ -494,8 +498,44 @@ export function AuthenticatedTimeline({ project, items, token }) {
   const [showRepoPicker, setShowRepoPicker] = useState(false);
   const [availableRepos, setAvailableRepos] = useState([]);
   const [selectedRepo, setSelectedRepo] = useState('');
+  const [filterBranches, setFilterBranches] = useState('');
+  const [filterKeywords, setFilterKeywords] = useState('');
+  const [editingFilters, setEditingFilters] = useState(false);
   const [loadingRepos, setLoadingRepos] = useState(false);
   const [githubError, setGithubError] = useState('');
+
+  // Consultant breadcrumb context + view state (controlled by sidebar)
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const activeTab = searchParams.get('view') || 'timeline';
+  const [consultantBreadcrumb, setConsultantBreadcrumb] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const cid = searchParams.get('cid');
+    const cn = searchParams.get('cn');
+    if (cid && cn) return { clientId: cid, clientName: decodeURIComponent(cn) };
+    return null;
+  });
+
+  useEffect(() => {
+    if (!isConsultant || !token || consultantBreadcrumb) return;
+
+    const fetchContext = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const res = await fetch(`/api/consultant/project-context/${token}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setConsultantBreadcrumb(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch consultant context:', err);
+      }
+    };
+    fetchContext();
+  }, [isConsultant, token, consultantBreadcrumb]);
 
   // Fetch core activities and step counts
   useEffect(() => {
@@ -519,21 +559,28 @@ export function AuthenticatedTimeline({ project, items, token }) {
   useEffect(() => {
     if (!token) return;
 
-    fetch(`/api/projects/${token}/github/connect`)
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (data) {
-          setGithubHasAuth(data.has_auth);
-          setGithubRepo(data.repo);
-          // Check for connection callback - fetch repos if just connected
-          const params = new URLSearchParams(window.location.search);
-          if (params.get('github_connected') === 'true' && data.has_auth && !data.repo) {
-            setShowRepoPicker(true);
-            fetchAvailableRepos();
-          }
+    const fetchGithubStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers = session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {};
+        const res = await fetch(`/api/projects/${token}/github/connect`, { headers });
+        if (!res.ok) return;
+        const data = await res.json();
+        setGithubHasAuth(data.has_auth);
+        setGithubRepo(data.repo);
+        // Check for connection callback - fetch repos if just connected
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('github_connected') === 'true' && data.has_auth && !data.repo) {
+          setShowRepoPicker(true);
+          fetchAvailableRepos();
         }
-      })
-      .catch(err => console.error('Failed to fetch GitHub status:', err));
+      } catch (err) {
+        console.error('Failed to fetch GitHub status:', err);
+      }
+    };
+    fetchGithubStatus();
   }, [token]);
 
   // Fetch available GitHub repositories
@@ -542,7 +589,11 @@ export function AuthenticatedTimeline({ project, items, token }) {
     setGithubError('');
 
     try {
-      const response = await fetch(`/api/projects/${token}/github/repos`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+      const response = await fetch(`/api/projects/${token}/github/repos`, { headers });
       const data = await response.json();
 
       if (!response.ok) {
@@ -589,8 +640,31 @@ export function AuthenticatedTimeline({ project, items, token }) {
   };
 
   // GitHub handlers
-  const handleConnectGitHub = () => {
-    window.location.href = `/api/github/auth/start?project_token=${token}`;
+  const handleConnectGitHub = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setGithubError('Please sign in to connect GitHub');
+        return;
+      }
+      const res = await fetch('/api/github/auth/start', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ project_token: token })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGithubError(data.error || 'Failed to start GitHub auth');
+        return;
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      console.error('Failed to start GitHub auth:', err);
+      setGithubError('Failed to connect GitHub');
+    }
   };
 
   const handleConnectRepo = async (e) => {
@@ -601,12 +675,29 @@ export function AuthenticatedTimeline({ project, items, token }) {
     setGithubError('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const [repo_owner, repo_name] = selectedRepo.split('/');
+
+      // Parse comma-separated filter inputs into arrays
+      const branches = filterBranches
+        ? filterBranches.split(',').map(b => b.trim()).filter(Boolean)
+        : [];
+      const keywords = filterKeywords
+        ? filterKeywords.split(',').map(k => k.trim()).filter(Boolean)
+        : [];
 
       const response = await fetch(`/api/projects/${token}/github/connect`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ repo_owner, repo_name })
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({
+          repo_owner,
+          repo_name,
+          filter_branches: branches,
+          filter_keywords: keywords
+        })
       });
 
       const data = await response.json();
@@ -619,6 +710,8 @@ export function AuthenticatedTimeline({ project, items, token }) {
       setGithubRepo(data.repo);
       setShowRepoPicker(false);
       setSelectedRepo('');
+      setFilterBranches('');
+      setFilterKeywords('');
       showToast('Repository connected!');
 
       // Clean up URL
@@ -636,8 +729,12 @@ export function AuthenticatedTimeline({ project, items, token }) {
     setGithubError('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/projects/${token}/github/sync`, {
-        method: 'POST'
+        method: 'POST',
+        headers: session?.access_token
+          ? { 'Authorization': `Bearer ${session.access_token}` }
+          : {}
       });
 
       const data = await response.json();
@@ -666,6 +763,44 @@ export function AuthenticatedTimeline({ project, items, token }) {
       showToast('Sync failed');
     } finally {
       setGithubSyncing(false);
+    }
+  };
+
+  const handleUpdateFilters = async () => {
+    setGithubError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const branches = filterBranches
+        ? filterBranches.split(',').map(b => b.trim()).filter(Boolean)
+        : [];
+      const keywords = filterKeywords
+        ? filterKeywords.split(',').map(k => k.trim()).filter(Boolean)
+        : [];
+
+      const response = await fetch(`/api/projects/${token}/github/connect`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({
+          filter_branches: branches,
+          filter_keywords: keywords
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setGithubError(data.error || 'Failed to update filters');
+        return;
+      }
+
+      setGithubRepo(data.repo);
+      setEditingFilters(false);
+      showToast('Filters updated!');
+    } catch (error) {
+      console.error('Failed to update filters:', error);
+      setGithubError('Failed to update filters');
     }
   };
 
@@ -983,11 +1118,25 @@ export function AuthenticatedTimeline({ project, items, token }) {
     }}>
       <Header projectName={project.name} projectToken={token} />
 
-      <main style={{
-        maxWidth: 1600,
-        margin: '0 auto',
-        padding: '40px 48px'
-      }}>
+      <div style={{ display: 'flex' }}>
+        <ProjectSidebar token={token} projectName={project.name} />
+
+        <main style={{
+          flex: 1,
+          minWidth: 0,
+          padding: '40px 48px'
+        }}>
+        {/* Consultant breadcrumb */}
+        {isConsultant && consultantBreadcrumb && (
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <ConsultantBreadcrumb items={[
+              { label: 'Clients', href: '/consultant' },
+              { label: consultantBreadcrumb.clientName, href: `/consultant/clients/${consultantBreadcrumb.clientId}` },
+              { label: project.name },
+            ]} />
+          </div>
+        )}
+
         {/* Project title and action buttons */}
         <div style={{
           maxWidth: 1200,
@@ -1075,6 +1224,54 @@ export function AuthenticatedTimeline({ project, items, token }) {
                       ))}
                     </select>
                   )}
+
+                  {/* Optional filters */}
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#444', marginBottom: 4 }}>
+                      Branch filter <span style={{ fontWeight: 400, color: '#888' }}>(optional, comma-separated)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={filterBranches}
+                      onChange={(e) => setFilterBranches(e.target.value)}
+                      placeholder="e.g. main, feature/ml-pipeline"
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        fontSize: 14,
+                        border: '1px solid #ddd',
+                        borderRadius: 6,
+                        outline: 'none',
+                        backgroundColor: 'white',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#444', marginBottom: 4 }}>
+                      Keyword filter <span style={{ fontWeight: 400, color: '#888' }}>(optional, comma-separated)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={filterKeywords}
+                      onChange={(e) => setFilterKeywords(e.target.value)}
+                      placeholder="e.g. ML, pipeline, model training"
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        fontSize: 14,
+                        border: '1px solid #ddd',
+                        borderRadius: 6,
+                        outline: 'none',
+                        backgroundColor: 'white',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <p style={{ fontSize: 12, color: '#888', margin: '4px 0 0 0' }}>
+                      Only commits/PRs matching these keywords will sync to this project. Leave blank to sync all.
+                    </p>
+                  </div>
+
                   {githubError && (
                     <div style={{
                       padding: 10,
@@ -1130,6 +1327,152 @@ export function AuthenticatedTimeline({ project, items, token }) {
               </div>
             )}
 
+            {/* GitHub filter display/edit for connected repos */}
+            {githubRepo && !showRepoPicker && (
+              <div style={{
+                padding: 16,
+                background: '#f6f8fa',
+                borderRadius: 8,
+                marginBottom: 20,
+                border: '1px solid #e5e5e5',
+                fontSize: 13
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingFilters ? 12 : 0 }}>
+                  <div style={{ color: '#444' }}>
+                    <strong>{githubRepo.repo_owner}/{githubRepo.repo_name}</strong>
+                    {((githubRepo.filter_branches?.length > 0) || (githubRepo.filter_keywords?.length > 0)) && !editingFilters && (
+                      <span style={{ marginLeft: 12, color: '#666' }}>
+                        {githubRepo.filter_branches?.length > 0 && (
+                          <span>Branches: {githubRepo.filter_branches.join(', ')}</span>
+                        )}
+                        {githubRepo.filter_branches?.length > 0 && githubRepo.filter_keywords?.length > 0 && ' · '}
+                        {githubRepo.filter_keywords?.length > 0 && (
+                          <span>Keywords: {githubRepo.filter_keywords.join(', ')}</span>
+                        )}
+                      </span>
+                    )}
+                    {!githubRepo.filter_branches?.length && !githubRepo.filter_keywords?.length && !editingFilters && (
+                      <span style={{ marginLeft: 12, color: '#888' }}>Syncing all commits</span>
+                    )}
+                  </div>
+                  {!editingFilters && (
+                    <button
+                      onClick={() => {
+                        setFilterBranches((githubRepo.filter_branches || []).join(', '));
+                        setFilterKeywords((githubRepo.filter_keywords || []).join(', '));
+                        setEditingFilters(true);
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: 12,
+                        color: '#555',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: 4,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Edit filters
+                    </button>
+                  )}
+                </div>
+
+                {editingFilters && (
+                  <div>
+                    <div style={{ marginBottom: 8 }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#444', marginBottom: 3 }}>
+                        Branch filter <span style={{ fontWeight: 400, color: '#888' }}>(comma-separated)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={filterBranches}
+                        onChange={(e) => setFilterBranches(e.target.value)}
+                        placeholder="e.g. main, feature/ml-pipeline"
+                        style={{
+                          width: '100%',
+                          padding: '7px 10px',
+                          fontSize: 13,
+                          border: '1px solid #ddd',
+                          borderRadius: 5,
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#444', marginBottom: 3 }}>
+                        Keyword filter <span style={{ fontWeight: 400, color: '#888' }}>(comma-separated)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={filterKeywords}
+                        onChange={(e) => setFilterKeywords(e.target.value)}
+                        placeholder="e.g. ML, pipeline, model training"
+                        style={{
+                          width: '100%',
+                          padding: '7px 10px',
+                          fontSize: 13,
+                          border: '1px solid #ddd',
+                          borderRadius: 5,
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={handleUpdateFilters}
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: 'white',
+                          backgroundColor: '#24292f',
+                          border: 'none',
+                          borderRadius: 5,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Save filters
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingFilters(false);
+                          setGithubError('');
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: 13,
+                          color: '#666',
+                          backgroundColor: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: 5,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {githubError && (
+                      <div style={{
+                        padding: 8,
+                        backgroundColor: '#fef2f2',
+                        border: '1px solid #fecaca',
+                        borderRadius: 5,
+                        fontSize: 12,
+                        color: '#dc2626',
+                        marginTop: 8
+                      }}>
+                        {githubError}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
         <ActionsRow
           evidenceCount={totalEvidence}
           weeklyCount={weeklyEvidence}
@@ -1142,8 +1485,13 @@ export function AuthenticatedTimeline({ project, items, token }) {
           token={token}
           onConnectGitHub={githubRepo ? handleSyncGitHub : handleConnectGitHub}
           onAddNote={() => {
-            // Scroll to timeline tab and focus on add note
-            setActiveTab('timeline');
+            // Navigate to timeline view and focus on add note
+            if (activeTab !== 'timeline') {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete('view');
+              const qs = params.toString();
+              router.push(`/p/${token}${qs ? '?' + qs : ''}`, { scroll: false });
+            }
             setTimeout(() => {
               const addNoteBtn = document.querySelector('button[data-action="add-note"]');
               if (addNoteBtn) {
@@ -1152,47 +1500,6 @@ export function AuthenticatedTimeline({ project, items, token }) {
             }, 100);
           }}
         />
-
-        {/* Tabs */}
-        <div style={{
-          marginBottom: 20,
-          borderBottom: '1px solid #e5e5e5',
-          display: 'flex',
-          gap: 0
-        }}>
-          <button
-            onClick={() => setActiveTab('timeline')}
-            style={{
-              padding: '10px 20px',
-              fontSize: 14,
-              fontWeight: 500,
-              color: activeTab === 'timeline' ? '#021048' : '#666',
-              backgroundColor: 'transparent',
-              border: 'none',
-              borderBottom: activeTab === 'timeline' ? '2px solid #021048' : '2px solid transparent',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            Evidence Timeline
-          </button>
-          <button
-            onClick={() => setActiveTab('costs')}
-            style={{
-              padding: '10px 20px',
-              fontSize: 14,
-              fontWeight: 500,
-              color: activeTab === 'costs' ? '#021048' : '#666',
-              backgroundColor: 'transparent',
-              border: 'none',
-              borderBottom: activeTab === 'costs' ? '2px solid #021048' : '2px solid transparent',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-          >
-            Costs
-          </button>
-        </div>
 
         {/* Timeline Tab Content */}
         {activeTab === 'timeline' && (
@@ -1817,6 +2124,20 @@ export function AuthenticatedTimeline({ project, items, token }) {
           </div>
         )}
 
+        {/* Knowledge Tab Content */}
+        {activeTab === 'knowledge' && (
+          <div style={{ padding: '20px 0' }}>
+            <KnowledgeBase projectToken={token} projectId={project.id} />
+          </div>
+        )}
+
+        {/* Team Tab Content */}
+        {activeTab === 'team' && (
+          <div style={{ padding: '20px 0' }}>
+            <ProjectTeam projectToken={token} />
+          </div>
+        )}
+
         </div>
         {/* End main content */}
 
@@ -1839,6 +2160,7 @@ export function AuthenticatedTimeline({ project, items, token }) {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 // app/api/projects/[token]/github/disconnect/route.js
-// Removes GitHub repository connection and access token
+// Removes GitHub repository connection for a project
+// Does NOT remove the user-level GitHub token (other projects may use it)
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
@@ -20,17 +21,7 @@ export async function POST(req, { params }) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    // Delete GitHub token
-    const { error: tokenError } = await supabaseAdmin
-      .from('project_github_tokens')
-      .delete()
-      .eq('project_id', project.id);
-
-    if (tokenError) {
-      console.error('[GitHub Disconnect] Token delete error:', tokenError);
-    }
-
-    // Delete repository connections (CASCADE will handle this, but explicit is clearer)
+    // Delete repository connection only (user token stays for other projects)
     const { error: repoError } = await supabaseAdmin
       .from('github_repos')
       .delete()
@@ -39,6 +30,12 @@ export async function POST(req, { params }) {
     if (repoError) {
       console.error('[GitHub Disconnect] Repo delete error:', repoError);
     }
+
+    // Also clean up any legacy per-project token
+    await supabaseAdmin
+      .from('project_github_tokens')
+      .delete()
+      .eq('project_id', project.id);
 
     return NextResponse.json({
       ok: true,

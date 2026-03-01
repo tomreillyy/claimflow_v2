@@ -4,7 +4,12 @@
       "Bash(find:*)",
       "Bash(powershell -Command:*)",
       "Bash(cat:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx next build:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "WebFetch(domain:www.synnch.com.au)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

@@ -4,6 +4,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/Header';
+import { Spinner } from '@/components/Spinner';
+
+const emptyForm = { email: '', full_name: '', role: '', department: '' };
 
 export default function TeamPage() {
   const { user, loading: authLoading } = useAuth();
@@ -12,9 +15,10 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAutoPopulate, setShowAutoPopulate] = useState(false);
-  const [formData, setFormData] = useState({ email: '', full_name: '' });
+  const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [invitingId, setInvitingId] = useState(null);
   const [error, setError] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
 
@@ -89,13 +93,12 @@ export default function TeamPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const endpoint = editingId ? '/api/team' : '/api/team';
       const method = editingId ? 'PATCH' : 'POST';
       const body = editingId
         ? { id: editingId, ...formData }
         : formData;
 
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/team', {
         method,
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -110,7 +113,7 @@ export default function TeamPage() {
         throw new Error(data.error || 'Failed to save');
       }
 
-      setFormData({ email: '', full_name: '' });
+      setFormData(emptyForm);
       setShowAddForm(false);
       setEditingId(null);
       fetchMembers();
@@ -122,7 +125,12 @@ export default function TeamPage() {
   };
 
   const handleEdit = (member) => {
-    setFormData({ email: member.email, full_name: member.full_name });
+    setFormData({
+      email: member.email,
+      full_name: member.full_name,
+      role: member.role || '',
+      department: member.department || ''
+    });
     setEditingId(member.id);
     setShowAddForm(true);
     setOpenMenuId(null);
@@ -149,20 +157,48 @@ export default function TeamPage() {
     }
   };
 
-  if (authLoading || loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: 'white',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <p>Loading...</p>
-      </div>
-    );
-  }
+  const handleInvite = async (member) => {
+    setInvitingId(member.id);
+    setOpenMenuId(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/team/invite', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ teamMemberId: member.id })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send invite');
+      }
+
+      alert('Invitation sent!');
+      fetchMembers();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setInvitingId(null);
+    }
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '8px 12px',
+    fontSize: 14,
+    border: '1px solid #ddd',
+    borderRadius: 4,
+    outline: 'none',
+    boxSizing: 'border-box',
+    color: '#1a1a1a'
+  };
+
+  const labelStyle = { display: 'block', fontSize: 13, fontWeight: 500, color: '#333', marginBottom: 4 };
 
   return (
     <div style={{
@@ -172,8 +208,13 @@ export default function TeamPage() {
     }}>
       <Header />
 
+      {(authLoading || loading) ? (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <Spinner />
+        </div>
+      ) : (
       <main style={{
-        maxWidth: 800,
+        maxWidth: 900,
         margin: '0 auto',
         padding: '60px 24px'
       }}>
@@ -189,7 +230,7 @@ export default function TeamPage() {
             color: '#666',
             margin: 0
           }}>
-            Manage your team roster for evidence attribution.
+            Manage your team roster. Invite members so they can sign in and enter timesheets.
           </p>
         </div>
 
@@ -255,7 +296,7 @@ export default function TeamPage() {
               onClick={() => {
                 setShowAddForm(true);
                 setEditingId(null);
-                setFormData({ email: '', full_name: '' });
+                setFormData(emptyForm);
                 setError('');
               }}
               style={{
@@ -289,51 +330,72 @@ export default function TeamPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#333', marginBottom: 4 }}>
-                  Full name
-                </label>
+                <label style={labelStyle}>Full name</label>
                 <input
                   type="text"
                   required
                   value={formData.full_name}
                   onChange={e => setFormData({ ...formData, full_name: e.target.value })}
                   placeholder="Alice Chen"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    fontSize: 14,
-                    border: '1px solid #ddd',
-                    borderRadius: 4,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    color: '#1a1a1a'
-                  }}
+                  style={inputStyle}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#333', marginBottom: 4 }}>
-                  Email
-                </label>
+                <label style={labelStyle}>Email</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
                   placeholder="alice@company.com"
-                  disabled={editingId} // Can't change email when editing
+                  disabled={editingId}
                   style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    fontSize: 14,
-                    border: '1px solid #ddd',
-                    borderRadius: 4,
-                    outline: 'none',
-                    boxSizing: 'border-box',
+                    ...inputStyle,
                     backgroundColor: editingId ? '#f5f5f5' : 'white',
-                    cursor: editingId ? 'not-allowed' : 'text',
-                    color: '#1a1a1a'
+                    cursor: editingId ? 'not-allowed' : 'text'
                   }}
                 />
+              </div>
+              <div>
+                <label style={labelStyle}>Role</label>
+                <input
+                  type="text"
+                  value={formData.role}
+                  onChange={e => setFormData({ ...formData, role: e.target.value })}
+                  placeholder="e.g. Developer, Project Manager"
+                  list="role-suggestions"
+                  style={inputStyle}
+                />
+                <datalist id="role-suggestions">
+                  <option value="Developer" />
+                  <option value="Senior Developer" />
+                  <option value="Project Manager" />
+                  <option value="Designer" />
+                  <option value="QA Engineer" />
+                  <option value="Data Scientist" />
+                  <option value="Technical Lead" />
+                  <option value="CTO" />
+                </datalist>
+              </div>
+              <div>
+                <label style={labelStyle}>Department</label>
+                <input
+                  type="text"
+                  value={formData.department}
+                  onChange={e => setFormData({ ...formData, department: e.target.value })}
+                  placeholder="e.g. Engineering, Product"
+                  list="dept-suggestions"
+                  style={inputStyle}
+                />
+                <datalist id="dept-suggestions">
+                  <option value="Engineering" />
+                  <option value="Product" />
+                  <option value="Design" />
+                  <option value="Data" />
+                  <option value="Operations" />
+                  <option value="Finance" />
+                  <option value="Marketing" />
+                </datalist>
               </div>
             </div>
 
@@ -373,7 +435,7 @@ export default function TeamPage() {
                 onClick={() => {
                   setShowAddForm(false);
                   setEditingId(null);
-                  setFormData({ email: '', full_name: '' });
+                  setFormData(emptyForm);
                   setError('');
                 }}
                 style={{
@@ -417,6 +479,8 @@ export default function TeamPage() {
                 <tr style={{ backgroundColor: '#fafafa', borderBottom: '1px solid #e5e5e5' }}>
                   <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#333' }}>Name</th>
                   <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#333' }}>Email</th>
+                  <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#333' }}>Role</th>
+                  <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#333' }}>Department</th>
                   <th style={{ padding: 12, textAlign: 'center', fontWeight: 600, color: '#333', width: 50 }}></th>
                 </tr>
               </thead>
@@ -424,7 +488,21 @@ export default function TeamPage() {
                 {members.map((member) => (
                   <tr key={member.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <td style={{ padding: 12, color: '#1a1a1a' }}>{member.full_name}</td>
-                    <td style={{ padding: 12, color: '#666' }}>{member.email}</td>
+                    <td style={{ padding: 12, color: '#666' }}>
+                      {member.email}
+                      {member.invited_at && (
+                        <span style={{
+                          fontSize: 11,
+                          color: '#059669',
+                          marginLeft: 8,
+                          backgroundColor: '#ecfdf5',
+                          padding: '2px 6px',
+                          borderRadius: 3
+                        }}>Invited</span>
+                      )}
+                    </td>
+                    <td style={{ padding: 12, color: '#666' }}>{member.role || '-'}</td>
+                    <td style={{ padding: 12, color: '#666' }}>{member.department || '-'}</td>
                     <td style={{ padding: 12, textAlign: 'center' }}>
                       <div style={{ position: 'relative' }}>
                         <button
@@ -460,9 +538,30 @@ export default function TeamPage() {
                               border: '1px solid #e5e5e5',
                               borderRadius: 4,
                               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                              minWidth: 100,
+                              minWidth: 140,
                               zIndex: 20
                             }}>
+                              <button
+                                onClick={() => handleInvite(member)}
+                                disabled={invitingId === member.id}
+                                style={{
+                                  width: '100%',
+                                  padding: '8px 12px',
+                                  border: 'none',
+                                  background: 'none',
+                                  textAlign: 'left',
+                                  cursor: invitingId === member.id ? 'not-allowed' : 'pointer',
+                                  fontSize: 13,
+                                  color: '#021048'
+                                }}
+                                onMouseEnter={e => e.target.style.backgroundColor = '#f0f9ff'}
+                                onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}
+                              >
+                                {invitingId === member.id
+                                  ? 'Sending...'
+                                  : member.invited_at ? 'Resend invite' : 'Send invite'}
+                              </button>
+                              <div style={{ height: 1, backgroundColor: '#e5e5e5', margin: '4px 0' }} />
                               <button
                                 onClick={() => handleEdit(member)}
                                 style={{
@@ -510,6 +609,7 @@ export default function TeamPage() {
           </div>
         )}
       </main>
+      )}
     </div>
   );
 }

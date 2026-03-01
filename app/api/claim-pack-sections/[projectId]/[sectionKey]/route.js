@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getAuthenticatedUser } from '@/lib/serverAuth';
+import { getAuthenticatedUser, isConsultantForOwner } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,8 +42,12 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const hasAccess = project.owner_id === user.id ||
+    let hasAccess = project.owner_id === user.id ||
       (project.participants && project.participants.includes(user.email));
+
+    if (!hasAccess && user.id) {
+      hasAccess = await isConsultantForOwner(user.id, project.owner_id);
+    }
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -129,8 +133,12 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const hasAccess = project.owner_id === user.id ||
+    let hasAccess = project.owner_id === user.id ||
       (project.participants && project.participants.includes(user.email));
+
+    if (!hasAccess && user.id) {
+      hasAccess = await isConsultantForOwner(user.id, project.owner_id);
+    }
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -221,8 +229,12 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const hasAccess = project.owner_id === user.id ||
+    let hasAccess = project.owner_id === user.id ||
       (project.participants && project.participants.includes(user.email));
+
+    if (!hasAccess && user.id) {
+      hasAccess = await isConsultantForOwner(user.id, project.owner_id);
+    }
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
