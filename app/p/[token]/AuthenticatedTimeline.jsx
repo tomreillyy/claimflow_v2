@@ -15,6 +15,7 @@ import JiraReviewPanel from '@/components/JiraReviewPanel';
 import JiraProjectPicker from '@/components/JiraProjectPicker';
 import RecordsPage from '@/components/RecordsPage';
 import ProjectDashboard from '@/components/ProjectDashboard';
+import ProjectDetails from '@/components/ProjectDetails';
 
 // Hook to fetch step counts and compute gap hint
 function useStepGapHint(token) {
@@ -445,7 +446,8 @@ function EvidenceKebabMenu({ evidenceId, token, currentStep, currentActivityType
   );
 }
 
-export function AuthenticatedTimeline({ project, items, token }) {
+export function AuthenticatedTimeline({ project: initialProject, items, token }) {
+  const [project, setProject] = useState(initialProject);
   const { user, loading, isConsultant } = useAuth();
   const stepHint = useStepGapHint(token);
   const { signedUrls, loading: signedUrlsLoading } = useSignedUrls(token, items);
@@ -1270,6 +1272,23 @@ export function AuthenticatedTimeline({ project, items, token }) {
                 const addNoteBtn = document.querySelector('button[data-action="add-note"]');
                 if (addNoteBtn) addNoteBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }, 300);
+            }}
+            onNavigateDetails={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('view', 'details');
+              router.push(`/p/${token}?${params.toString()}`, { scroll: false });
+            }}
+          />
+        )}
+
+        {/* Project Details Tab Content */}
+        {activeTab === 'details' && (
+          <ProjectDetails
+            project={project}
+            token={token}
+            onProjectUpdate={(updated) => {
+              setProject(prev => ({ ...prev, ...updated }));
+              setHypothesis(updated.current_hypothesis || '');
             }}
           />
         )}

@@ -4,16 +4,24 @@ import { useAuth } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/Header';
+import { ArrowLeft, ArrowRight, SkipForward, Check } from 'lucide-react';
 
 export default function NewProject() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [step, setStep] = useState(1);
+
+  // Step 1 fields
   const [name, setName] = useState('');
-  const [hypothesis, setHypothesis] = useState('');
-  const [projectOverview, setProjectOverview] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
-  const [participants, setParticipants] = useState('');
-  const [result, setResult] = useState(null);
+
+  // Step 2 fields (technical framing — all optional)
+  const [technicalUncertainty, setTechnicalUncertainty] = useState('');
+  const [knowledgeGap, setKnowledgeGap] = useState('');
+  const [testingMethod, setTestingMethod] = useState('');
+  const [successCriteria, setSuccessCriteria] = useState('');
+
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -22,52 +30,64 @@ export default function NewProject() {
     }
   }, [user, loading, router]);
 
-  async function onSubmit(e) {
+  function handleNext(e) {
     e.preventDefault();
+    if (!name.trim()) {
+      setError('Project name is required');
+      return;
+    }
     setError('');
-    setResult(null);
+    setStep(2);
+  }
 
-    if (!user) {
-      setError('You must be signed in to create a project');
-      return;
-    }
+  async function createProject(includeTechnicalFraming) {
+    setError('');
+    setSubmitting(true);
 
-    // Validate hypothesis length
-    const trimmedHypothesis = hypothesis.trim();
-    if (trimmedHypothesis.length > 280) {
-      setError('Hypothesis must be 280 characters or less');
-      return;
-    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('You must be signed in to create a project');
+        setSubmitting(false);
+        return;
+      }
 
-    // Get the current session to access the access token
-    const { data: { session } } = await supabase.auth.getSession();
-
-    const resp = await fetch('/api/admin/projects', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token}`
-      },
-      body: JSON.stringify({
-        name,
-        current_hypothesis: trimmedHypothesis || null,
-        project_overview: projectOverview.trim() || null,
+      const body = {
+        name: name.trim(),
         year: Number(year),
-        participants: participants
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean),
+        participants: [],
         owner_email: user.email,
-      }),
-    });
-    const json = await resp.json();
-    if (!resp.ok) { setError(json.error || 'Failed'); return; }
-    setResult(json);
+      };
 
-    // Redirect to dashboard after a brief delay to show success
-    setTimeout(() => {
-      router.push('/');
-    }, 2000);
+      if (includeTechnicalFraming) {
+        if (technicalUncertainty.trim()) body.technical_uncertainty = technicalUncertainty.trim();
+        if (knowledgeGap.trim()) body.knowledge_gap = knowledgeGap.trim();
+        if (testingMethod.trim()) body.testing_method = testingMethod.trim();
+        if (successCriteria.trim()) body.success_criteria = successCriteria.trim();
+      }
+
+      const resp = await fetch('/api/admin/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(body),
+      });
+
+      const json = await resp.json();
+      if (!resp.ok) {
+        setError(json.error || 'Failed to create project');
+        setSubmitting(false);
+        return;
+      }
+
+      // Redirect to the new project
+      router.push(`/p/${json.project.project_token}`);
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+      setSubmitting(false);
+    }
   }
 
   if (loading) {
@@ -85,6 +105,26 @@ export default function NewProject() {
     );
   }
 
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 12px',
+    fontSize: 16,
+    border: '1px solid #ddd',
+    borderRadius: 6,
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    boxSizing: 'border-box',
+    color: '#1a1a1a',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: 14,
+    fontWeight: 500,
+    color: '#333',
+    marginBottom: 6,
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -93,287 +133,324 @@ export default function NewProject() {
     }}>
       <Header />
       <main style={{
-        maxWidth: 480,
+        maxWidth: 520,
         margin: '0 auto',
-        padding: '60px 24px',
+        padding: '48px 24px',
         lineHeight: 1.5
       }}>
-      <header style={{textAlign: 'center', marginBottom: 40}}>
-        <h1 style={{
-          fontSize: 28,
-          fontWeight: 500,
-          color: '#1a1a1a',
-          margin: 0,
-          marginBottom: 8
-        }}>Start a new project</h1>
-        <p style={{
-          fontSize: 16,
-          color: '#333',
-          margin: 0
-        }}>Track your R&D work and build evidence as you go</p>
-      </header>
-
-      <form onSubmit={onSubmit} style={{display: 'grid', gap: 20}}>
-        <div>
-          <label style={{
-            display: 'block',
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#333',
-            marginBottom: 6
-          }}>Project name</label>
-          <input
-            value={name}
-            onChange={e=>setName(e.target.value)}
-            required
-            placeholder="e.g. Vision model v2"
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: 16,
-              border: '1px solid #ddd',
-              borderRadius: 6,
-              outline: 'none',
-              transition: 'border-color 0.2s',
-              boxSizing: 'border-box',
-              color: '#1a1a1a'
-            }}
-            onFocus={e => e.target.style.borderColor = '#021048'}
-            onBlur={e => e.target.style.borderColor = '#ddd'}
-          />
-        </div>
-
-        <div>
-          <label style={{
-            display: 'block',
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#333',
-            marginBottom: 6
-          }}>Project hypothesis (one sentence)</label>
-          <input
-            value={hypothesis}
-            onChange={e=>setHypothesis(e.target.value)}
-            placeholder="If we <approach> under <conditions>, we expect <measurable outcome> because <technical reason>."
-            maxLength={280}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: 16,
-              border: '1px solid #ddd',
-              borderRadius: 6,
-              outline: 'none',
-              transition: 'border-color 0.2s',
-              boxSizing: 'border-box',
-              color: '#1a1a1a'
-            }}
-            onFocus={e => e.target.style.borderColor = '#021048'}
-            onBlur={e => e.target.style.borderColor = '#ddd'}
-          />
-          <p style={{
-            fontSize: 13,
-            color: '#555',
-            margin: '4px 0 0 0'
-          }}>Technical and testable (not a business goal). 35 words max.</p>
-        </div>
-
-        <div>
-          <label style={{
-            display: 'block',
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#333',
-            marginBottom: 6
-          }}>Project overview</label>
-          <textarea
-            value={projectOverview}
-            onChange={e=>setProjectOverview(e.target.value)}
-            placeholder="Describe the project context, technical challenges, and what you're trying to achieve. This will be used in the claim pack generation."
-            rows={4}
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: 16,
-              border: '1px solid #ddd',
-              borderRadius: 6,
-              outline: 'none',
-              transition: 'border-color 0.2s',
-              boxSizing: 'border-box',
-              color: '#1a1a1a',
-              fontFamily: 'inherit',
-              resize: 'vertical'
-            }}
-            onFocus={e => e.target.style.borderColor = '#021048'}
-            onBlur={e => e.target.style.borderColor = '#ddd'}
-          />
-          <p style={{
-            fontSize: 13,
-            color: '#555',
-            margin: '4px 0 0 0'
-          }}>Provide context about the project for better claim pack generation.</p>
-        </div>
-
-        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: 14,
-              fontWeight: 500,
-              color: '#333',
-              marginBottom: 6
-            }}>Year</label>
-            <select
-              value={year}
-              onChange={e=>setYear(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                fontSize: 16,
-                border: '1px solid #ddd',
-                borderRadius: 6,
-                outline: 'none',
-                transition: 'border-color 0.2s',
-                boxSizing: 'border-box',
-                color: '#1a1a1a',
-                backgroundColor: 'white'
-              }}
-              onFocus={e => e.target.style.borderColor = '#021048'}
-              onBlur={e => e.target.style.borderColor = '#ddd'}
-            >
-              {Array.from({length: 10}, (_, i) => {
-                const yearOption = new Date().getFullYear() - i;
-                return <option key={yearOption} value={yearOption}>{yearOption}</option>
-              })}
-            </select>
-          </div>
-          <div></div>
-        </div>
-
-        <div>
-          <label style={{
-            display: 'block',
-            fontSize: 14,
-            fontWeight: 500,
-            color: '#333',
-            marginBottom: 6
-          }}>Team emails</label>
-          <input
-            value={participants}
-            onChange={e=>setParticipants(e.target.value)}
-            placeholder="tom@company.com, sara@company.com"
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: 16,
-              border: '1px solid #ddd',
-              borderRadius: 6,
-              outline: 'none',
-              transition: 'border-color 0.2s',
-              boxSizing: 'border-box',
-              color: '#1a1a1a',
-              backgroundColor: 'white'
-            }}
-            onFocus={e => e.target.style.borderColor = '#021048'}
-            onBlur={e => e.target.style.borderColor = '#ddd'}
-          />
-          <p style={{
-            fontSize: 13,
-            color: '#555',
-            margin: '4px 0 0 0'
-          }}>Separate multiple emails with commas</p>
-        </div>
-
-        <button
-          type="submit"
-          style={{
-            padding: '12px 24px',
-            fontSize: 16,
-            fontWeight: 500,
-            color: 'white',
-            backgroundColor: '#021048',
-            border: 'none',
-            borderRadius: 6,
-            cursor: 'pointer',
-            marginTop: 8,
-            transition: 'background-color 0.2s'
-          }}
-          onMouseOver={e => e.target.style.backgroundColor = '#010a2e'}
-          onMouseOut={e => e.target.style.backgroundColor = '#021048'}
-        >
-          Create project
-        </button>
-      </form>
-
-      {error && (
+        {/* Step indicator */}
         <div style={{
-          marginTop: 20,
-          padding: 12,
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          borderRadius: 6,
-          fontSize: 14,
-          color: '#dc2626'
-        }}>{error}</div>
-      )}
-
-      {result && (
-        <div style={{
-          marginTop: 32,
-          padding: 20,
-          backgroundColor: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          borderRadius: 8
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12,
+          marginBottom: 40,
         }}>
-          <h3 style={{
-            fontSize: 18,
-            fontWeight: 500,
-            color: '#1a1a1a',
-            margin: '0 0 16px 0'
-          }}>Your project is ready</h3>
-
-          <div style={{fontSize: 14, lineHeight: 1.6}}>
-            <p style={{margin: '0 0 8px 0'}}>
-              <strong>Timeline:</strong>{' '}
-              <a href={result.timelineUrl} style={{color: '#021048', textDecoration: 'none', fontWeight: 500}}>
-                {result.timelineUrl}
-              </a>
-            </p>
-
-            <p style={{margin: '0 0 8px 0'}}>
-              <strong>Quick upload:</strong>{' '}
-              <a href={result.uploadUrl} style={{color: '#021048', textDecoration: 'none', fontWeight: 500}}>
-                {result.uploadUrl}
-              </a>
-            </p>
-
-            <p style={{margin: '0 0 0 0'}}>
-              <strong>Email for updates:</strong>{' '}
-              <code style={{
-                padding: '2px 6px',
-                backgroundColor: '#e2e8f0',
-                borderRadius: 4,
-                fontSize: 13,
-                fontFamily: 'Monaco, monospace',
-                color: '#1a1a1a'
-              }}>{result.inboundEmail}</code>
-            </p>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            backgroundColor: '#021048',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 14,
+            fontWeight: 600,
+          }}>
+            {step > 1 ? <Check size={16} /> : '1'}
+          </div>
+          <div style={{
+            width: 48,
+            height: 2,
+            backgroundColor: step > 1 ? '#021048' : '#e5e5e5',
+            borderRadius: 1,
+            transition: 'background-color 0.3s',
+          }} />
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            backgroundColor: step === 2 ? '#021048' : '#e5e5e5',
+            color: step === 2 ? 'white' : '#999',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 14,
+            fontWeight: 600,
+            transition: 'all 0.3s',
+          }}>
+            2
           </div>
         </div>
-      )}
+
+        {/* STEP 1 — Project Basics */}
+        {step === 1 && (
+          <>
+            <header style={{ textAlign: 'center', marginBottom: 36 }}>
+              <h1 style={{
+                fontSize: 26,
+                fontWeight: 600,
+                color: '#1a1a1a',
+                margin: 0,
+                marginBottom: 8,
+              }}>New project</h1>
+              <p style={{
+                fontSize: 15,
+                color: '#666',
+                margin: 0,
+              }}>Give your R&D project a name and year</p>
+            </header>
+
+            <form onSubmit={handleNext} style={{ display: 'grid', gap: 20 }}>
+              <div>
+                <label style={labelStyle}>Project name</label>
+                <input
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                  autoFocus
+                  placeholder="e.g. Vision model v2"
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = '#021048'}
+                  onBlur={e => e.target.style.borderColor = '#ddd'}
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Financial year</label>
+                <select
+                  value={year}
+                  onChange={e => setYear(e.target.value)}
+                  required
+                  style={{
+                    ...inputStyle,
+                    backgroundColor: 'white',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#021048'}
+                  onBlur={e => e.target.style.borderColor = '#ddd'}
+                >
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const yearOption = new Date().getFullYear() - i;
+                    return <option key={yearOption} value={yearOption}>{yearOption}</option>;
+                  })}
+                </select>
+              </div>
+
+              {error && (
+                <div style={{
+                  padding: 12,
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  color: '#dc2626',
+                }}>{error}</div>
+              )}
+
+              <button
+                type="submit"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  padding: '12px 24px',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  color: 'white',
+                  backgroundColor: '#021048',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  marginTop: 8,
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseOver={e => e.currentTarget.style.backgroundColor = '#010a2e'}
+                onMouseOut={e => e.currentTarget.style.backgroundColor = '#021048'}
+              >
+                Next
+                <ArrowRight size={18} />
+              </button>
+            </form>
+          </>
+        )}
+
+        {/* STEP 2 — Technical Framing */}
+        {step === 2 && (
+          <>
+            <header style={{ textAlign: 'center', marginBottom: 36 }}>
+              <h1 style={{
+                fontSize: 26,
+                fontWeight: 600,
+                color: '#1a1a1a',
+                margin: 0,
+                marginBottom: 8,
+              }}>Define the technical problem</h1>
+              <p style={{
+                fontSize: 15,
+                color: '#666',
+                margin: 0,
+              }}>Optional — you can fill this in later from Project Details</p>
+            </header>
+
+            <div style={{ display: 'grid', gap: 24 }}>
+              {[
+                {
+                  label: 'Technical uncertainty',
+                  prompt: 'What outcome cannot be determined in advance?',
+                  value: technicalUncertainty,
+                  setter: setTechnicalUncertainty,
+                  placeholder: 'e.g. Whether a transformer-based model can achieve >95% accuracy on our domain-specific OCR task with limited training data',
+                },
+                {
+                  label: 'Knowledge gap',
+                  prompt: "Why can't this be answered using existing knowledge?",
+                  value: knowledgeGap,
+                  setter: setKnowledgeGap,
+                  placeholder: 'e.g. No published research addresses this specific combination of document types and resolution constraints',
+                },
+                {
+                  label: 'How you\'re testing it',
+                  prompt: 'What experiments or testing are you performing?',
+                  value: testingMethod,
+                  setter: setTestingMethod,
+                  placeholder: 'e.g. Systematic evaluation of fine-tuned models across varying dataset sizes and augmentation strategies',
+                },
+                {
+                  label: 'Success criteria',
+                  prompt: 'How will you know if it worked?',
+                  value: successCriteria,
+                  setter: setSuccessCriteria,
+                  placeholder: 'e.g. Model achieves >95% character-level accuracy on our held-out test set with <200ms inference time',
+                },
+              ].map((field) => (
+                <div key={field.label}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: '#1a1a1a',
+                    marginBottom: 4,
+                  }}>{field.label}</label>
+                  <p style={{
+                    fontSize: 13,
+                    color: '#666',
+                    margin: '0 0 8px 0',
+                  }}>{field.prompt}</p>
+                  <textarea
+                    value={field.value}
+                    onChange={e => field.setter(e.target.value)}
+                    placeholder={field.placeholder}
+                    rows={3}
+                    style={{
+                      ...inputStyle,
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#021048'}
+                    onBlur={e => e.target.style.borderColor = '#ddd'}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {error && (
+              <div style={{
+                marginTop: 16,
+                padding: 12,
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: 6,
+                fontSize: 14,
+                color: '#dc2626',
+              }}>{error}</div>
+            )}
+
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              marginTop: 32,
+            }}>
+              <button
+                type="button"
+                onClick={() => { setStep(1); setError(''); }}
+                disabled={submitting}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '12px 16px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#666',
+                  backgroundColor: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: 6,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <ArrowLeft size={16} />
+                Back
+              </button>
+
+              <button
+                type="button"
+                onClick={() => createProject(false)}
+                disabled={submitting}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  padding: '12px 16px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#666',
+                  backgroundColor: 'white',
+                  border: '1px solid #ddd',
+                  borderRadius: 6,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <SkipForward size={16} />
+                {submitting ? 'Creating...' : 'Skip for now'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => createProject(true)}
+                disabled={submitting}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  padding: '12px 24px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'white',
+                  backgroundColor: submitting ? '#ccc' : '#021048',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseOver={e => { if (!submitting) e.currentTarget.style.backgroundColor = '#010a2e'; }}
+                onMouseOut={e => { if (!submitting) e.currentTarget.style.backgroundColor = '#021048'; }}
+              >
+                {submitting ? 'Creating...' : 'Save & Continue'}
+              </button>
+            </div>
+          </>
+        )}
       </main>
 
-      {/* Better placeholder contrast */}
       <style jsx>{`
         input::placeholder, textarea::placeholder {
-          color: #666 !important;
-          opacity: 1;
-        }
-        input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {
-          color: #666;
-        }
-        input::-moz-placeholder, textarea::-moz-placeholder {
-          color: #666;
+          color: #999 !important;
           opacity: 1;
         }
       `}</style>

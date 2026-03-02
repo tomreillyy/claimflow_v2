@@ -53,6 +53,7 @@ export default function ProjectDashboard({
   coreActivities,
   onConnectGitHub,
   onAddNote,
+  onNavigateDetails,
 }) {
   const { isSubscribed, user } = useAuth();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -88,8 +89,47 @@ export default function ProjectDashboard({
     }
   };
 
+  const technicalFramingMissing = !project.technical_uncertainty || !project.knowledge_gap || !project.testing_method || !project.success_criteria;
+
   return (
     <div style={{ padding: '20px 0' }}>
+
+      {/* Technical framing incomplete banner */}
+      {technicalFramingMissing && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 20px',
+          backgroundColor: '#fffbeb',
+          border: '1px solid #fde68a',
+          borderRadius: 8,
+          marginBottom: 24,
+        }}>
+          <div style={{ fontSize: 14, color: '#92400e' }}>
+            <strong>Structure incomplete</strong> — Define your core technical uncertainty before generating a claim pack.
+          </div>
+          {onNavigateDetails && (
+            <button
+              onClick={onNavigateDetails}
+              style={{
+                padding: '6px 14px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#021048',
+                backgroundColor: 'white',
+                border: '1px solid #021048',
+                borderRadius: 6,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                marginLeft: 16,
+              }}
+            >
+              Complete details
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Stat Cards */}
       <div style={{
