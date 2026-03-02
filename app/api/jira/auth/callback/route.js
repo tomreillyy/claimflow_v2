@@ -157,7 +157,7 @@ export async function GET(req) {
     }
 
     // Redirect to project Jira tab with success (preserve consultant context)
-    let redirectUrl = `${baseUrl}/p/${projectToken}?view=jira&jira_connected=true`;
+    let redirectUrl = `${baseUrl}/p/${projectToken}?view=records&jira_connected=true`;
     if (consultantId) redirectUrl += `&cid=${encodeURIComponent(consultantId)}`;
     if (consultantName) redirectUrl += `&cn=${encodeURIComponent(consultantName)}`;
     return NextResponse.redirect(redirectUrl);

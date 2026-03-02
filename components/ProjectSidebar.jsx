@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, BarChart3, DollarSign, BookOpen, Users, FileText, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { LayoutDashboard, BarChart3, DollarSign, BookOpen, Users, FileText, ChevronLeft, ChevronRight, Database } from 'lucide-react';
 import ClaimStepper from './ClaimStepper';
 
 const SIDEBAR_WIDTH = 220;
@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { key: 'timeline', label: 'Evidence Timeline', icon: BarChart3 },
   { key: 'costs', label: 'Costs', icon: DollarSign },
   { key: 'knowledge', label: 'Knowledge', icon: BookOpen },
-  { key: 'jira', label: 'Jira Records', icon: Search },
+  { key: 'records', label: 'Records', icon: Database },
   { key: 'team', label: 'Team', icon: Users },
 ];
 
