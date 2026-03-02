@@ -80,8 +80,10 @@ export function AppHeader() {
   return (
     <>
       <header style={{
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
+        left: 0,
+        right: 0,
         zIndex: 50,
         width: '100%',
         backgroundColor: '#FAFAFA',
@@ -396,6 +398,9 @@ export function AppHeader() {
         )}
       </header>
 
+      {/* Spacer to offset fixed header */}
+      <div className="app-header-spacer" style={{ height: 56 }} />
+
       {/* Responsive Styles */}
       <style jsx global>{`
         @media (max-width: 768px) {
@@ -410,6 +415,9 @@ export function AppHeader() {
           }
           .app-header-row {
             padding: 0 16px !important;
+            height: 52px !important;
+          }
+          .app-header-spacer {
             height: 52px !important;
           }
         }
