@@ -10,7 +10,7 @@ export async function PATCH(req) {
       return NextResponse.json({ error: authError }, { status: 403 });
     }
 
-    const { projectId, name, year, project_overview, current_hypothesis, technical_uncertainty, knowledge_gap, testing_method, success_criteria } = await req.json();
+    const { projectId, name, year, year_end, project_overview, current_hypothesis, technical_uncertainty, knowledge_gap, testing_method, success_criteria } = await req.json();
 
     if (!projectId) {
       return NextResponse.json({ error: 'projectId required' }, { status: 400 });
@@ -39,6 +39,7 @@ export async function PATCH(req) {
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (year !== undefined) updates.year = year;
+    if (year_end !== undefined) updates.year_end = year_end;
     if (project_overview !== undefined) updates.project_overview = project_overview;
     if (current_hypothesis !== undefined) updates.current_hypothesis = current_hypothesis;
     if (technical_uncertainty !== undefined) updates.technical_uncertainty = technical_uncertainty;

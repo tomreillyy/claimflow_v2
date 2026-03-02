@@ -308,7 +308,7 @@ export default function TimesheetsPage() {
               {projects.length === 0 && <option value="">No projects</option>}
               {projects.map(p => (
                 <option key={p.project_token} value={p.project_token}>
-                  {p.name} ({p.year})
+                  {p.name} ({p.year_end && p.year_end !== p.year ? `${p.year}–${p.year_end}` : p.year})
                 </option>
               ))}
             </select>

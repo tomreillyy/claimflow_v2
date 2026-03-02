@@ -41,6 +41,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
   const [form, setForm] = useState({
     name: project.name || '',
     year: project.year || new Date().getFullYear(),
+    year_end: project.year_end || project.year || new Date().getFullYear(),
     current_hypothesis: project.current_hypothesis || '',
     project_overview: project.project_overview || '',
     technical_uncertainty: project.technical_uncertainty || '',
@@ -83,6 +84,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
           projectId: project.id,
           name: form.name.trim(),
           year: Number(form.year),
+          year_end: Number(form.year_end),
           current_hypothesis: form.current_hypothesis.trim() || null,
           project_overview: form.project_overview.trim() || null,
           technical_uncertainty: form.technical_uncertainty.trim() || null,
@@ -199,7 +201,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
               <label style={{
                 display: 'block',
@@ -207,10 +209,14 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
                 fontWeight: 500,
                 color: '#555',
                 marginBottom: 6,
-              }}>Financial year</label>
+              }}>Start year</label>
               <select
                 value={form.year}
-                onChange={e => updateField('year', e.target.value)}
+                onChange={e => {
+                  const v = Number(e.target.value);
+                  updateField('year', v);
+                  if (v > Number(form.year_end)) updateField('year_end', v);
+                }}
                 style={{ ...inputStyle, backgroundColor: 'white' }}
                 onFocus={e => e.target.style.borderColor = '#021048'}
                 onBlur={e => e.target.style.borderColor = '#ddd'}
@@ -219,6 +225,27 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
                   const yearOption = new Date().getFullYear() - i;
                   return <option key={yearOption} value={yearOption}>{yearOption}</option>;
                 })}
+              </select>
+            </div>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#555',
+                marginBottom: 6,
+              }}>End year</label>
+              <select
+                value={form.year_end}
+                onChange={e => updateField('year_end', Number(e.target.value))}
+                style={{ ...inputStyle, backgroundColor: 'white' }}
+                onFocus={e => e.target.style.borderColor = '#021048'}
+                onBlur={e => e.target.style.borderColor = '#ddd'}
+              >
+                {Array.from({ length: 10 }, (_, i) => {
+                  const yearOption = new Date().getFullYear() - i;
+                  return <option key={yearOption} value={yearOption}>{yearOption}</option>;
+                }).filter(opt => Number(opt.props.value) >= Number(form.year))}
               </select>
             </div>
             <div>

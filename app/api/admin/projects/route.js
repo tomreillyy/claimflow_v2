@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req) {
   try {
-    const { name, year, participants = [], owner_email, current_hypothesis, project_overview, technical_uncertainty, knowledge_gap, testing_method, success_criteria } = await req.json();
+    const { name, year, year_end, participants = [], owner_email, current_hypothesis, project_overview, technical_uncertainty, knowledge_gap, testing_method, success_criteria } = await req.json();
 
     if (!name || !year) {
       return NextResponse.json({ error: 'name and year required' }, { status: 400 });
@@ -39,6 +39,7 @@ export async function POST(req) {
         inbound_email_local,
         participants,
         owner_id,
+        year_end: year_end || null,
         current_hypothesis: current_hypothesis || null,
         project_overview: project_overview || null,
         technical_uncertainty: technical_uncertainty || null,

@@ -14,6 +14,7 @@ export default function NewProject() {
   // Step 1 fields
   const [name, setName] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
+  const [yearEnd, setYearEnd] = useState(new Date().getFullYear());
 
   // Step 2 fields (technical framing — all optional)
   const [technicalUncertainty, setTechnicalUncertainty] = useState('');
@@ -55,6 +56,7 @@ export default function NewProject() {
       const body = {
         name: name.trim(),
         year: Number(year),
+        year_end: Number(yearEnd),
         participants: [],
         owner_email: user.email,
       };
@@ -217,24 +219,43 @@ export default function NewProject() {
                 />
               </div>
 
-              <div>
-                <label style={labelStyle}>Financial year</label>
-                <select
-                  value={year}
-                  onChange={e => setYear(e.target.value)}
-                  required
-                  style={{
-                    ...inputStyle,
-                    backgroundColor: 'white',
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#021048'}
-                  onBlur={e => e.target.style.borderColor = '#ddd'}
-                >
-                  {Array.from({ length: 10 }, (_, i) => {
-                    const yearOption = new Date().getFullYear() - i;
-                    return <option key={yearOption} value={yearOption}>{yearOption}</option>;
-                  })}
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Start year</label>
+                  <select
+                    value={year}
+                    onChange={e => {
+                      const v = Number(e.target.value);
+                      setYear(v);
+                      if (v > Number(yearEnd)) setYearEnd(v);
+                    }}
+                    required
+                    style={{ ...inputStyle, backgroundColor: 'white' }}
+                    onFocus={e => e.target.style.borderColor = '#021048'}
+                    onBlur={e => e.target.style.borderColor = '#ddd'}
+                  >
+                    {Array.from({ length: 10 }, (_, i) => {
+                      const yearOption = new Date().getFullYear() - i;
+                      return <option key={yearOption} value={yearOption}>{yearOption}</option>;
+                    })}
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>End year</label>
+                  <select
+                    value={yearEnd}
+                    onChange={e => setYearEnd(Number(e.target.value))}
+                    required
+                    style={{ ...inputStyle, backgroundColor: 'white' }}
+                    onFocus={e => e.target.style.borderColor = '#021048'}
+                    onBlur={e => e.target.style.borderColor = '#ddd'}
+                  >
+                    {Array.from({ length: 10 }, (_, i) => {
+                      const yearOption = new Date().getFullYear() - i;
+                      return <option key={yearOption} value={yearOption}>{yearOption}</option>;
+                    }).filter(opt => Number(opt.props.value) >= Number(year))}
+                  </select>
+                </div>
               </div>
 
               {error && (

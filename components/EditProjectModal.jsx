@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 export function EditProjectModal({ project, onClose, onUpdate }) {
   const [name, setName] = useState(project?.name || '');
   const [year, setYear] = useState(project?.year || new Date().getFullYear());
+  const [yearEnd, setYearEnd] = useState(project?.year_end || project?.year || new Date().getFullYear());
   const [projectOverview, setProjectOverview] = useState(project?.project_overview || '');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -13,6 +14,7 @@ export function EditProjectModal({ project, onClose, onUpdate }) {
     if (project) {
       setName(project.name);
       setYear(project.year);
+      setYearEnd(project.year_end || project.year);
       setProjectOverview(project.project_overview || '');
     }
   }, [project]);
@@ -40,6 +42,7 @@ export function EditProjectModal({ project, onClose, onUpdate }) {
           projectId: project.id,
           name,
           year: Number(year),
+          year_end: Number(yearEnd),
           project_overview: projectOverview.trim() || null
         })
       });
@@ -129,37 +132,75 @@ export function EditProjectModal({ project, onClose, onUpdate }) {
             />
           </div>
 
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: 14,
-              fontWeight: 500,
-              color: '#333',
-              marginBottom: 6
-            }}>
-              Year
-            </label>
-            <select
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                fontSize: 16,
-                border: '1px solid #ddd',
-                borderRadius: 6,
-                outline: 'none',
-                boxSizing: 'border-box',
-                color: '#1a1a1a',
-                backgroundColor: 'white'
-              }}
-            >
-              {Array.from({ length: 10 }, (_, i) => {
-                const yearOption = new Date().getFullYear() - i;
-                return <option key={yearOption} value={yearOption}>{yearOption}</option>;
-              })}
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#333',
+                marginBottom: 6
+              }}>
+                Start year
+              </label>
+              <select
+                value={year}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setYear(v);
+                  if (v > Number(yearEnd)) setYearEnd(v);
+                }}
+                required
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 16,
+                  border: '1px solid #ddd',
+                  borderRadius: 6,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  color: '#1a1a1a',
+                  backgroundColor: 'white'
+                }}
+              >
+                {Array.from({ length: 10 }, (_, i) => {
+                  const yearOption = new Date().getFullYear() - i;
+                  return <option key={yearOption} value={yearOption}>{yearOption}</option>;
+                })}
+              </select>
+            </div>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#333',
+                marginBottom: 6
+              }}>
+                End year
+              </label>
+              <select
+                value={yearEnd}
+                onChange={(e) => setYearEnd(Number(e.target.value))}
+                required
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: 16,
+                  border: '1px solid #ddd',
+                  borderRadius: 6,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  color: '#1a1a1a',
+                  backgroundColor: 'white'
+                }}
+              >
+                {Array.from({ length: 10 }, (_, i) => {
+                  const yearOption = new Date().getFullYear() - i;
+                  return <option key={yearOption} value={yearOption}>{yearOption}</option>;
+                }).filter(opt => Number(opt.props.value) >= Number(year))}
+              </select>
+            </div>
           </div>
 
           <div>

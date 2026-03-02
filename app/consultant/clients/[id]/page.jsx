@@ -323,7 +323,7 @@ export default function ClientProjectsPage() {
                     backgroundColor: 'rgba(0,0,0,0.04)',
                     color: '#64748b',
                   }}>
-                    {project.year || '\u2014'}
+                    {project.year_end && project.year_end !== project.year ? `${project.year}–${project.year_end}` : (project.year || '\u2014')}
                   </span>
                 </div>
                 <div style={{ fontSize: 14, color: '#0f172a', fontWeight: 500 }}>
