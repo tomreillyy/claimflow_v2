@@ -9,6 +9,7 @@ import ProjectSidebar from '@/components/ProjectSidebar';
 import ProjectTeam from '@/components/ProjectTeam';
 import QuickNoteForm from './quick-note-form';
 import CoreActivitiesList from '@/components/CoreActivitiesList';
+import ActivitiesView from '@/components/ActivitiesView';
 import SimplifiedCostsPage from '@/components/SimplifiedCostsPage';
 import KnowledgeBase from '@/components/KnowledgeBase';
 import JiraReviewPanel from '@/components/JiraReviewPanel';
@@ -1175,10 +1176,14 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
     },
     {
       number: 4,
-      title: `Document all 5 R&D steps`,
-      subtitle: missingSteps.length > 0 ? `Missing: ${missingSteps.join(', ')}` : null,
-      complete: coveredSteps === 5,
-      navigateTo: { view: 'dashboard' },
+      title: 'Review & adopt activities',
+      subtitle: (() => {
+        const adopted = coreActivities.filter(a => a.status === 'adopted').length;
+        const total = coreActivities.length;
+        return total > 0 ? `${adopted}/${total} adopted` : 'No activities yet';
+      })(),
+      complete: coreActivities.length > 0 && coreActivities.every(a => a.status === 'adopted'),
+      navigateTo: { view: 'activities' },
     },
     {
       number: 5,
@@ -1290,6 +1295,16 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
               setProject(prev => ({ ...prev, ...updated }));
               setHypothesis(updated.current_hypothesis || '');
             }}
+          />
+        )}
+
+        {/* Activities Tab Content */}
+        {activeTab === 'activities' && (
+          <ActivitiesView
+            token={token}
+            activities={coreActivities}
+            allEvidence={items?.filter(ev => !deletedIds.has(ev.id))}
+            onActivitiesChange={(updated) => setCoreActivities(updated)}
           />
         )}
 
@@ -1993,41 +2008,6 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
           )}
         </div>
 
-        {/* Core Activities Section */}
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: 4,
-          border: '1px solid #e5e5e5',
-          overflow: 'hidden',
-          marginTop: 20
-        }}>
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid #e5e5e5'
-          }}>
-            <h2 style={{
-              fontSize: 16,
-              fontWeight: 600,
-              color: '#1a1a1a',
-              margin: '0 0 4px 0'
-            }}>Core Activities</h2>
-            <p style={{
-              fontSize: 12,
-              color: '#999',
-              margin: 0,
-              lineHeight: 1.4
-            }}>
-              Auto-generated from your evidence. Add manually if needed.
-            </p>
-          </div>
-          <div style={{ padding: 16 }}>
-            <CoreActivitiesList
-              activities={coreActivities}
-              onUpdate={handleUpdateActivity}
-              onCreate={handleSaveCoreActivity}
-            />
-          </div>
-        </div>
           </div>
         )}
 

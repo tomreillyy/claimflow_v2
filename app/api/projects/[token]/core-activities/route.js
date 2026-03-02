@@ -38,22 +38,27 @@ ${evidenceSummary}
 Return 1–3 items. Each item:
 - **name**: 3–6 words, concrete and technical (e.g., "Isolation Forest Thresholding").
 - **uncertainty**: 1–2 sentences; measurable and testable (e.g., "Can we reach recall ≥60% at FPR ≤2% on expert-labeled anomalies with Isolation Forest vs LOF given noisy line items?").
+- **hypothesis_text**: 1–2 sentences starting with "We hypothesized that..." — the testable technical proposition for this activity.
 - **success_criteria**: A single concise line with explicit metrics (e.g., "Recall ≥60% @ FPR ≤2% on holdout; PR-AUC ≥0.45").
-- **evidence_links**: array of integer ids from the Evidence section that most support this activity (1–5 ids).
+- **conclusion_text**: 1–2 sentences starting with "This activity will determine whether..." — what we expect to learn.
+- **evidence_assignments**: array of objects assigning each evidence ID to a systematic step. Each: {"evidence_id": "uuid", "step": "Hypothesis|Experiment|Observation|Evaluation|Conclusion"}.
 - **category**: one of ["Anomaly Detection","Classification","Model Calibration","Feature Learning","Other"].
 
 ## Quality rules
 - Use metrics appropriate to the problem (e.g., anomaly detection: recall/FPR/PR-AUC; classification: macro-F1/calibration).
 - Names must be unique (ignore case/stems).
 - If the evidence is incoherent or <5 useful items, return [].
+- Assign each evidence item to the most appropriate systematic step.
 
 ## JSON shape (no extra keys):
 [
   {
     "name": "Short activity name",
     "uncertainty": "1–2 sentence measurable unknown",
+    "hypothesis_text": "We hypothesized that...",
     "success_criteria": "single line with concrete thresholds",
-    "evidence_links": [123, 456],
+    "conclusion_text": "This activity will determine whether...",
+    "evidence_assignments": [{"evidence_id": "abc", "step": "Hypothesis"}],
     "category": "Classification"
   }
 ]
@@ -108,10 +113,13 @@ Return 1–3 items. Each item:
         project_id: project.id,
         name: String(a.name).slice(0, 60),
         uncertainty: String(a.uncertainty).slice(0, 800),
-        // Store metadata as JSONB for future features
+        hypothesis_text: a.hypothesis_text ? String(a.hypothesis_text).slice(0, 1000) : null,
+        conclusion_text: a.conclusion_text ? String(a.conclusion_text).slice(0, 1000) : null,
+        status: 'draft',
         meta: {
           success_criteria: a.success_criteria,
           evidence_links: a.evidence_links,
+          evidence_assignments: a.evidence_assignments,
           category: a.category
         },
         source: 'ai'
@@ -173,17 +181,38 @@ export async function GET(req, { params }) {
         const aiActivities = await generateActivitiesWithAI(project, evidence);
 
         if (aiActivities.length > 0) {
-          // Auto-insert AI-generated activities (sanitized data already includes meta)
-          const inserts = aiActivities;
-
           const { data: inserted } = await supabaseAdmin
             .from('core_activities')
-            .insert(inserts)
+            .insert(aiActivities)
             .select();
 
           console.log(`[Core Activities] Auto-generated ${inserted?.length || 0} activities`);
 
-          // Return the newly generated activities
+          // Insert activity_evidence rows from AI evidence_assignments
+          if (inserted && inserted.length > 0) {
+            const aeInserts = [];
+            inserted.forEach((act, i) => {
+              const assignments = aiActivities[i]?.meta?.evidence_assignments || [];
+              const validSteps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
+              assignments.forEach(a => {
+                if (a.evidence_id && validSteps.includes(a.step)) {
+                  aeInserts.push({
+                    activity_id: act.id,
+                    evidence_id: a.evidence_id,
+                    systematic_step: a.step,
+                    link_source: 'auto'
+                  });
+                }
+              });
+            });
+            if (aeInserts.length > 0) {
+              await supabaseAdmin
+                .from('activity_evidence')
+                .upsert(aeInserts, { onConflict: 'activity_id,evidence_id,systematic_step' });
+              console.log(`[Core Activities] Linked ${aeInserts.length} evidence items to activities`);
+            }
+          }
+
           return NextResponse.json({
             activities: inserted || []
           });
@@ -206,7 +235,7 @@ export async function GET(req, { params }) {
 export async function POST(req, { params }) {
   try {
     const token = params.token;
-    const { name, uncertainty } = await req.json();
+    const { name, uncertainty, hypothesis_text, conclusion_text } = await req.json();
 
     if (!name || !uncertainty) {
       return NextResponse.json({ error: 'Name and uncertainty required' }, { status: 400 });
@@ -231,7 +260,10 @@ export async function POST(req, { params }) {
         project_id: project.id,
         name,
         uncertainty,
-        source: 'human' // Mark as human-created
+        hypothesis_text: hypothesis_text || null,
+        conclusion_text: conclusion_text || null,
+        status: 'draft',
+        source: 'human'
       })
       .select()
       .single();
