@@ -37,7 +37,7 @@ export const metadata = {
     description: 'Track your R&D work and build evidence as you go. Capture innovation as it unfolds — no archaeology required.',
   },
   icons: {
-    icon: "/claimflow-white-icon.png",
+    icon: "/claimflow-favicon.png",
   },
   verification: {
     // Add Google Search Console verification when available
