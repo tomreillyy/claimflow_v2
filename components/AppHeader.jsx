@@ -24,6 +24,7 @@ export function AppHeader() {
           { name: 'Projects', href: '/projects' },
           { name: 'Team', href: '/settings/team' },
           { name: 'Timesheets', href: '/timesheets' },
+          { name: 'Settings', href: '/settings/company' },
         ]),
     { name: 'Find Advisor', href: '/marketplace' },
     ...(isConsultant
@@ -71,6 +72,7 @@ export function AppHeader() {
     if (isConsultant && pathname.startsWith('/p/')) return 'Clients';
     if (pathname === '/' || pathname === '/projects' || pathname.startsWith('/p/')) return 'Projects';
     if (pathname === '/settings/team') return 'Team';
+    if (pathname === '/settings/company') return 'Settings';
     if (pathname.startsWith('/timesheets')) return 'Timesheets';
     return 'Projects';
   };

@@ -30,6 +30,17 @@ export async function POST(req) {
       }
     }
 
+    // Look up the user's company to auto-link the project
+    let company_id = null;
+    if (owner_id) {
+      const { data: company } = await supabaseAdmin
+        .from('companies')
+        .select('id')
+        .eq('owner_id', owner_id)
+        .maybeSingle();
+      if (company) company_id = company.id;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('projects')
       .insert({
@@ -39,6 +50,7 @@ export async function POST(req) {
         inbound_email_local,
         participants,
         owner_id,
+        company_id,
         year_end: year_end || null,
         current_hypothesis: current_hypothesis || null,
         project_overview: project_overview || null,
