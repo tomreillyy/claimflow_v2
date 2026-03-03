@@ -69,6 +69,7 @@ export default function ActivityDetailView({
   onUpdate,
   onCoverageChange,
   onMovedToActivity,     // callback(activityId) when evidence is moved to a different activity
+  onUnAdopt,             // callback(activityId) to revert adopted → draft
 }) {
   const [stepData, setStepData] = useState({
     Hypothesis: [], Experiment: [], Observation: [], Evaluation: [], Conclusion: [],
@@ -331,6 +332,18 @@ export default function ActivityDetailView({
                 ) : (
                   <div style={{ paddingLeft: 12, borderLeft: '2px solid #f0f0f0', fontSize: 12, color: '#d1d5db' }}>No evidence</div>
                 )}
+                {/* Link more evidence — available even on adopted activities */}
+                <button
+                  onClick={() => setPickerStep(s.key)}
+                  style={{
+                    marginTop: 7, marginLeft: 12, fontSize: 11, fontWeight: 500,
+                    color: '#9ca3af', background: 'none',
+                    border: '1px dashed #e5e7eb', borderRadius: 4,
+                    cursor: 'pointer', padding: '4px 10px', fontFamily: 'inherit',
+                  }}
+                >
+                  + Link more to {s.key}
+                </button>
               </div>
             );
           })}
@@ -449,6 +462,23 @@ export default function ActivityDetailView({
             }}
           >
             {adopting ? 'Adopting...' : 'Adopt activity'}
+          </button>
+        </div>
+      )}
+
+      {/* Un-adopt footer — adopted only */}
+      {isAdopted && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderTop: '1px solid #f3f4f6', background: '#f0fdf4' }}>
+          <span style={{ fontSize: 12, color: '#166534' }}>Adopted · included in your claim pack</span>
+          <button
+            onClick={() => {
+              if (confirm('Un-adopt this activity? It will move back to draft and be excluded from your claim pack until re-adopted.')) {
+                onUnAdopt?.(activity.id);
+              }
+            }}
+            style={{ padding: '5px 14px', fontSize: 12, fontWeight: 500, color: '#6b7280', background: 'white', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Un-adopt
           </button>
         </div>
       )}

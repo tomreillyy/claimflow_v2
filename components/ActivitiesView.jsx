@@ -273,6 +273,22 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
     }
   };
 
+  const handleUnAdopt = async (activityId) => {
+    try {
+      const res = await fetch(`/api/projects/${token}/core-activities/${activityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'draft' }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        onActivitiesChange(activities.map(a => a.id === activityId ? updated : a));
+      }
+    } catch (err) {
+      console.error('Failed to un-adopt:', err);
+    }
+  };
+
   // Internal: re-link evidence to activities (used after regenerate)
   const linkEvidence = async (currentActivities) => {
     await fetch(`/api/projects/${token}/core-activities/link-evidence`, { method: 'POST' });
@@ -332,6 +348,8 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
         setShowAddEvidence(false);
         setNoteAdded(true);
         setTimeout(() => setNoteAdded(false), 4000);
+        // Auto-link the new evidence into existing activities
+        if (activities.length > 0) linkEvidence(activities);
       }
     } catch (err) {
       console.error('Failed to add note:', err);
@@ -524,6 +542,7 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
                       onUpdate={handleUpdate}
                       onCoverageChange={() => refreshCoverage(activity.id)}
                       onMovedToActivity={(targetId) => refreshCoverage(targetId)}
+                      onUnAdopt={handleUnAdopt}
                     />
                   </div>
                 )}
