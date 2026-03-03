@@ -1,80 +1,83 @@
 'use client';
-import { useEffect, Suspense } from 'react';
+import { useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const handled = useRef(false);
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
+    const redirectTo = searchParams.get('redirect_to');
+    const projectToken = searchParams.get('project_token');
 
-        if (error) {
-          console.error('Auth callback error:', error);
-          router.push('/auth/error?message=' + encodeURIComponent(error.message));
-          return;
-        }
+    const handleSession = async (session) => {
+      if (handled.current) return;
+      handled.current = true;
 
-        if (data.session) {
-          // Check if there's a redirect URL (for invite flows)
-          const redirectTo = searchParams.get('redirect_to');
-          const projectToken = searchParams.get('project_token');
-
-          if (projectToken) {
-            // User is joining a project via invite
-            try {
-              const { data: user } = await supabase.auth.getUser();
-              const response = await fetch('/api/projects/join', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  project_token: projectToken,
-                  user_email: user.user.email
-                })
-              });
-
-              if (response.ok) {
-                router.push(`/p/${projectToken}`);
-                return;
-              }
-            } catch (error) {
-              console.error('Error joining project:', error);
-            }
-          }
-
-          if (redirectTo) {
-            router.push(redirectTo);
-          } else {
-            // Check if user is a consultant and redirect accordingly
-            try {
-              const consultantRes = await fetch('/api/consultant/status', {
-                headers: { Authorization: `Bearer ${data.session.access_token}` },
-              });
-              if (consultantRes.ok) {
-                const consultantData = await consultantRes.json();
-                if (consultantData.isConsultant) {
-                  router.push('/consultant');
-                  return;
-                }
-              }
-            } catch (e) {
-              // Fall through to default redirect
-            }
-            router.push('/dashboard');
-          }
-        } else {
-          router.push('/auth/login');
-        }
-      } catch (error) {
-        console.error('Unexpected error in auth callback:', error);
-        router.push('/auth/error?message=' + encodeURIComponent('Authentication failed'));
+      if (!session) {
+        router.push('/auth/login');
+        return;
       }
+
+      if (projectToken) {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          const response = await fetch('/api/projects/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              project_token: projectToken,
+              user_email: userData.user.email,
+            }),
+          });
+          if (response.ok) {
+            router.push(`/p/${projectToken}`);
+            return;
+          }
+        } catch (err) {
+          console.error('Error joining project:', err);
+        }
+      }
+
+      if (redirectTo) {
+        router.push(redirectTo);
+        return;
+      }
+
+      try {
+        const consultantRes = await fetch('/api/consultant/status', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (consultantRes.ok) {
+          const consultantData = await consultantRes.json();
+          if (consultantData.isConsultant) {
+            router.push('/consultant');
+            return;
+          }
+        }
+      } catch (e) {
+        // Fall through to default redirect
+      }
+
+      router.push('/dashboard');
     };
 
-    handleAuthCallback();
+    // With createBrowserClient, the magic link token is processed asynchronously.
+    // Listen for SIGNED_IN so we catch it whether it fires before or after this effect runs.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        handleSession(session);
+      }
+    });
+
+    // Also check immediately in case the session is already established.
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) handleSession(data.session);
+    });
+
+    return () => subscription.unsubscribe();
   }, [router, searchParams]);
 
   return (
