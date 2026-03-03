@@ -115,12 +115,13 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
     }
   };
 
-  const linkEvidence = async () => {
+  const linkEvidence = async (currentActivities) => {
     await fetch(`/api/projects/${token}/core-activities/link-evidence`, { method: 'POST' });
-    // Refresh coverage for all activities
-    if (activities && activities.length > 0) {
+    // Refresh coverage — use passed-in list to avoid stale closure
+    const acts = currentActivities || activities;
+    if (acts && acts.length > 0) {
       const coverageMap = {};
-      await Promise.all(activities.map(async (act) => {
+      await Promise.all(acts.map(async (act) => {
         try {
           const res = await fetch(`/api/projects/${token}/core-activities/${act.id}/evidence`);
           if (res.ok) coverageMap[act.id] = (await res.json()).steps;
@@ -143,9 +144,10 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       const res = await fetch(`/api/projects/${token}/core-activities`);
       if (res.ok) {
         const data = await res.json();
-        onActivitiesChange(data.activities || []);
-        // Explicitly link evidence to new activities
-        await linkEvidence();
+        const newActivities = data.activities || [];
+        onActivitiesChange(newActivities);
+        // Pass new activities directly to avoid stale closure
+        await linkEvidence(newActivities);
       }
     } catch (err) {
       console.error('Regenerate failed:', err);
