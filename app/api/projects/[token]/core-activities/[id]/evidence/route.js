@@ -5,7 +5,7 @@ import { getAuthenticatedUser } from '@/lib/serverAuth';
 // GET: Fetch evidence grouped by systematic step for an activity
 export async function GET(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { data: rows, error } = await supabaseAdmin
       .from('activity_evidence')
@@ -59,7 +59,7 @@ export async function POST(req, { params }) {
     const { user, error: authError } = await getAuthenticatedUser(req);
     if (authError) return NextResponse.json({ error: authError }, { status: 401 });
 
-    const { id } = params;
+    const { id } = await params;
     const { evidence_ids, step } = await req.json();
 
     const validSteps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
@@ -109,7 +109,7 @@ export async function DELETE(req, { params }) {
     const { user, error: authError } = await getAuthenticatedUser(req);
     if (authError) return NextResponse.json({ error: authError }, { status: 401 });
 
-    const { id } = params;
+    const { id } = await params;
     const { evidence_ids, step } = await req.json();
 
     if (!evidence_ids || !Array.isArray(evidence_ids)) {

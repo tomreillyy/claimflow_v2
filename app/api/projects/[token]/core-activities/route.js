@@ -135,7 +135,7 @@ Return 1–3 items. Each item:
 
 export async function GET(req, { params }) {
   try {
-    const token = params.token;
+    const { token } = await params;
 
     // Get project with full details
     const { data: project } = await supabaseAdmin
@@ -234,7 +234,7 @@ export async function GET(req, { params }) {
 
 export async function POST(req, { params }) {
   try {
-    const token = params.token;
+    const { token } = await params;
     const { name, uncertainty, hypothesis_text, conclusion_text } = await req.json();
 
     if (!name || !uncertainty) {

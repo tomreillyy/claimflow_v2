@@ -7,7 +7,7 @@ export async function PATCH(req, { params }) {
     const { user, error: authError } = await getAuthenticatedUser(req);
     if (authError) return NextResponse.json({ error: authError }, { status: 401 });
 
-    const { id } = params;
+    const { id } = await params;
     const { field, value } = await req.json();
 
     const allowedFields = ['hypothesis_text', 'conclusion_text'];

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  * Body: { evidence_ids: string[] } or { storage_path: string }
  */
 export async function POST(req, { params }) {
-  const token = params.token;
+  const { token } = await params;
 
   try {
     const body = await req.json();
