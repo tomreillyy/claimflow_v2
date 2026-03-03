@@ -20,6 +20,7 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
   const [newName, setNewName] = useState('');
   const [newUncertainty, setNewUncertainty] = useState('');
   const [creating, setCreating] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   // Fetch step coverage for all activities
   useEffect(() => {
@@ -114,6 +115,28 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!confirm('This will delete all draft activities and re-generate them from your evidence. Adopted activities are kept. Continue?')) return;
+    setRegenerating(true);
+    try {
+      const { data: { session } } = await (await import('@/lib/supabaseClient')).supabase.auth.getSession();
+      await fetch(`/api/projects/${token}/core-activities/regenerate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      // Re-fetch activities (GET will auto-generate new ones)
+      const res = await fetch(`/api/projects/${token}/core-activities`);
+      if (res.ok) {
+        const data = await res.json();
+        onActivitiesChange(data.activities || []);
+      }
+    } catch (err) {
+      console.error('Regenerate failed:', err);
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const refreshCoverage = async (activityId) => {
     try {
       const res = await fetch(`/api/projects/${token}/core-activities/${activityId}/evidence`);
@@ -194,10 +217,35 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
           marginBottom: 20,
           fontSize: 14,
           color: '#3730a3',
-          lineHeight: 1.5
+          lineHeight: 1.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 16,
         }}>
-          We identified <strong>{draftCount} potential R&D {draftCount === 1 ? 'activity' : 'activities'}</strong> based on your evidence.
-          Review each one and adopt when ready.
+          <span>
+            We identified <strong>{draftCount} potential R&D {draftCount === 1 ? 'activity' : 'activities'}</strong> based on your evidence.
+            Review each one and adopt when ready.
+          </span>
+          <button
+            onClick={handleRegenerate}
+            disabled={regenerating}
+            style={{
+              flexShrink: 0,
+              padding: '6px 14px',
+              backgroundColor: 'white',
+              color: '#3730a3',
+              border: '1px solid #a5b4fc',
+              borderRadius: 6,
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: regenerating ? 'default' : 'pointer',
+              opacity: regenerating ? 0.6 : 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {regenerating ? 'Regenerating...' : 'Regenerate'}
+          </button>
         </div>
       )}
 

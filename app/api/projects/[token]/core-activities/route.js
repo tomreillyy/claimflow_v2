@@ -78,9 +78,9 @@ Return 1–3 items. Each item:
           { role: 'user', content: prompt }
         ],
         temperature: 0.2,
-        max_tokens: 800
+        max_tokens: 2000
       }),
-      signal: AbortSignal.timeout(15000)
+      signal: AbortSignal.timeout(25000)
     });
 
     if (!response.ok) {
@@ -191,8 +191,10 @@ export async function GET(req, { params }) {
           // Insert activity_evidence rows from AI evidence_assignments
           if (inserted && inserted.length > 0) {
             const aeInserts = [];
-            inserted.forEach((act, i) => {
-              const assignments = aiActivities[i]?.meta?.evidence_assignments || [];
+            inserted.forEach((act) => {
+              // Match by name since DB insert order may differ
+              const source = aiActivities.find(a => a.name === act.name);
+              const assignments = source?.meta?.evidence_assignments || [];
               const validSteps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
               assignments.forEach(a => {
                 if (a.evidence_id && validSteps.includes(a.step)) {
