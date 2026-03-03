@@ -1,6 +1,6 @@
 import {
-  Sparkles, FolderPlus, FileText, Brain, BarChart3, FileOutput,
-  UserPlus, Users, Mail, Upload, Github, StickyNote, Settings,
+  Sparkles, FolderPlus, FileText, Brain, BarChart3, DollarSign, FileOutput,
+  UserPlus, Users, Mail, Upload, Github, StickyNote, Settings, Layers,
 } from 'lucide-react';
 
 const STEP_COLORS = {
@@ -46,8 +46,8 @@ function ProjectFormVisual() {
     }}>
       {[
         { label: 'Project name', width: '70%' },
+        { label: 'Financial year', width: '40%' },
         { label: 'Hypothesis', width: '100%' },
-        { label: 'Year', width: '40%' },
       ].map((field, i) => (
         <div key={i} style={{ marginBottom: i < 2 ? 12 : 0 }}>
           <div style={{ fontSize: 10, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>{field.label}</div>
@@ -62,10 +62,10 @@ function ProjectFormVisual() {
 
 function EvidenceSourcesVisual() {
   const sources = [
-    { icon: StickyNote, label: 'Quick note', color: '#6366f1' },
-    { icon: Upload, label: 'File upload', color: '#0ea5e9' },
-    { icon: Mail, label: 'Email inbox', color: '#10b981' },
     { icon: Github, label: 'GitHub', color: '#1f2937' },
+    { icon: Layers, label: 'Jira', color: '#0052cc' },
+    { icon: Mail, label: 'Email inbox', color: '#10b981' },
+    { icon: Upload, label: 'File upload', color: '#0ea5e9' },
   ];
   return (
     <div style={{
@@ -85,33 +85,38 @@ function EvidenceSourcesVisual() {
   );
 }
 
-function StepsPillsVisual() {
+function ActivitiesVisual() {
+  const activities = [
+    { name: 'Custom ML inference engine', coverage: [true, true, true, false, false] },
+    { name: 'API rate-limit optimisation', coverage: [true, true, false, false, false] },
+    { name: 'Database sharding approach', coverage: [true, false, false, false, false] },
+  ];
+  const colors = Object.values(STEP_COLORS);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '80%', maxWidth: 260 }}>
-      {STEPS.map((step, i) => {
-        const color = STEP_COLORS[step.toLowerCase()];
-        return (
-          <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 10, height: 10, borderRadius: '50%', backgroundColor: color,
-              flexShrink: 0,
-            }} />
-            {i < STEPS.length - 1 && (
-              <div style={{
-                position: 'absolute', left: 'calc(50% - 130px + 4px)', marginTop: 22,
-                width: 2, height: 6, backgroundColor: color, opacity: 0.3,
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '85%', maxWidth: 300 }}>
+      {activities.map((act, i) => (
+        <div key={i} style={{
+          background: '#fff', borderRadius: 8, padding: '10px 14px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.05)',
+          display: 'flex', flexDirection: 'column', gap: 6,
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#111827',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {act.name}
+          </div>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {act.coverage.map((filled, j) => (
+              <div key={j} style={{
+                width: 8, height: 8, borderRadius: '50%',
+                backgroundColor: filled ? colors[j] : '#e2e8f0',
               }} />
-            )}
-            <div style={{
-              flex: 1, height: 6, borderRadius: 3, backgroundColor: color,
-              opacity: 0.15 + (i * 0.18),
-            }} />
-            <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500, width: 80, textAlign: 'right' }}>
-              {step}
+            ))}
+            <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4 }}>
+              {act.coverage.filter(Boolean).length}/5 steps
             </span>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -139,6 +144,46 @@ function CoverageBarsVisual() {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function CostsVisual() {
+  const rows = [
+    { person: 'Alex Chen',    pct: 60, activity: 'ML inference engine' },
+    { person: 'Sam Rivera',   pct: 40, activity: 'API optimisation'    },
+    { person: 'Jordan Blake', pct: 80, activity: 'ML inference engine' },
+  ];
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 12, width: '85%', maxWidth: 300,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.06)',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        display: 'flex', padding: '8px 14px', borderBottom: '1px solid #f1f5f9',
+        fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase',
+      }}>
+        <span style={{ flex: 1 }}>Person</span>
+        <span style={{ width: 36, textAlign: 'center' }}>R&D %</span>
+      </div>
+      {rows.map((row, i) => (
+        <div key={i} style={{
+          display: 'flex', alignItems: 'center', padding: '8px 14px',
+          borderBottom: i < rows.length - 1 ? '1px solid #f8fafc' : 'none',
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#374151' }}>{row.person}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 170 }}>
+              {row.activity}
+            </div>
+          </div>
+          <div style={{ width: 36, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#021048' }}>
+            {row.pct}%
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -293,35 +338,35 @@ export function getRegularUserSteps() {
     {
       id: 'create-project',
       title: 'Create Your First Project',
-      description: 'Each project represents an R&D activity for a specific financial year. Give it a name, set the year, and invite your team.',
+      description: 'A project covers one financial year of R&D work and can contain multiple activities. Start by naming the project, setting the financial year, and writing your first hypothesis.',
       icon: FolderPlus,
       renderVisual: () => <ProjectFormVisual />,
     },
     {
       id: 'collect-evidence',
-      title: 'Collect Evidence Your Way',
-      description: 'Add evidence through quick notes, file uploads, a dedicated email inbox, or GitHub integration. Everything gets timestamped automatically.',
+      title: 'Integrate With Your Favourite Tools',
+      description: 'Connect GitHub and Jira to pull in commits and tickets automatically, or add evidence via quick notes, file uploads, and a dedicated email inbox. Everything gets timestamped as it arrives.',
       icon: FileText,
       renderVisual: () => <EvidenceSourcesVisual />,
     },
     {
-      id: 'ai-classification',
-      title: 'AI Classifies Into 5 R&D Steps',
-      description: 'Each piece of evidence is automatically sorted into the 5-step R&D framework: Hypothesis, Experiment, Observation, Evaluation, and Conclusion.',
+      id: 'review-activities',
+      title: 'Review & Adopt Your Activities',
+      description: 'AI groups your evidence into named R&D activities. Review them in the Activities tab, adopt the ones that apply, and see which of the 5 R&D steps each activity covers.',
       icon: Brain,
-      renderVisual: () => <StepsPillsVisual />,
+      renderVisual: () => <ActivitiesVisual />,
     },
     {
-      id: 'track-coverage',
-      title: 'Track Your Coverage',
-      description: 'The dashboard shows which R&D steps have evidence and which need attention. Aim for all 5 steps covered to build a strong claim.',
-      icon: BarChart3,
-      renderVisual: () => <CoverageBarsVisual />,
+      id: 'record-costs',
+      title: 'Record Your R&D Costs',
+      description: 'Upload your payroll data or enter costs manually. Then allocate each person\'s time across your R&D activities. This builds the financial evidence behind your claim.',
+      icon: DollarSign,
+      renderVisual: () => <CostsVisual />,
     },
     {
       id: 'claim-pack',
       title: 'Generate Your Claim Pack',
-      description: 'When you\'re ready, generate a structured R&D claim pack document \u2014 formatted for your tax advisor or the ATO.',
+      description: 'When you\'re ready, generate a structured R&D claim pack from the Claim Pack tab \u2014 formatted for your tax advisor or the ATO.',
       icon: FileOutput,
       renderVisual: () => <ClaimPackVisual />,
     },
@@ -347,14 +392,14 @@ export function getConsultantSteps() {
     {
       id: 'view-projects',
       title: 'View Client Projects',
-      description: 'Once a client signs up and creates projects, you can view their evidence timelines, costs, and coverage from your dashboard.',
+      description: 'Once a client is linked and creates projects, you can open any project to review their evidence, activities, costs, and coverage — just as if you were on their account.',
       icon: Users,
       renderVisual: () => <ClientTableVisual />,
     },
     {
       id: 'monitor-coverage',
       title: 'Monitor R&D Coverage',
-      description: 'Each project tracks the 5-step R&D framework. Check which clients have gaps so you can follow up and strengthen their claims.',
+      description: 'Each project tracks the 5-step R&D framework across its activities. Check which clients have coverage gaps and follow up to strengthen their claims.',
       icon: BarChart3,
       renderVisual: () => <CoverageBarsVisual />,
     },
