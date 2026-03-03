@@ -2,39 +2,56 @@
 import { useState, useEffect } from 'react';
 import EvidencePicker from './EvidencePicker';
 
-const STEPS = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
-const STEP_COLORS = {
-  Hypothesis: '#6366f1',
-  Experiment: '#0ea5e9',
-  Observation: '#10b981',
-  Evaluation: '#f59e0b',
-  Conclusion: '#8b5cf6',
-};
-const SOURCE_ICONS = { manual: 'M', note: 'M', email: '@', github: 'G', document: 'D', upload: 'U' };
+const NAVY = '#021048';
+
+const STAGES = [
+  { key: 'Hypothesis',  hint: 'What were you trying to prove?' },
+  { key: 'Experiment',  hint: 'What did you build or test?' },
+  { key: 'Observation', hint: 'What happened or what did you measure?' },
+  { key: 'Evaluation',  hint: 'What did the results mean?' },
+  { key: 'Conclusion',  hint: 'What did you learn?' },
+];
+
+const SRC_LABELS = { manual: 'M', note: 'M', email: '@', github: 'G', document: 'D', upload: 'U' };
+
+function SrcBadge({ src }) {
+  return (
+    <span style={{
+      width: 18, height: 18, borderRadius: 3, flexShrink: 0,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      background: '#f3f4f6', border: '1px solid #e5e7eb',
+      fontSize: 9, fontWeight: 700, color: '#6b7280', fontFamily: 'ui-monospace,monospace',
+    }}>
+      {SRC_LABELS[src] || '?'}
+    </span>
+  );
+}
 
 export default function ActivityDetailView({
   activity,
   token,
   allEvidence,
-  stepCoverage: initialCoverage,
-  onBack,
   onAdopt,
   onUpdate,
   onCoverageChange,
-  inline = false,
 }) {
-  const [stepData, setStepData] = useState({});
+  const [stepData, setStepData] = useState({
+    Hypothesis: [], Experiment: [], Observation: [], Evaluation: [], Conclusion: [],
+  });
   const [loading, setLoading] = useState(true);
+  const [activeStage, setActiveStage] = useState(null);
   const [pickerStep, setPickerStep] = useState(null);
   const [adopting, setAdopting] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [editName, setEditName] = useState(activity.name);
-  const [editUncertainty, setEditUncertainty] = useState(activity.uncertainty);
-  const [editingField, setEditingField] = useState(null);
-  const [editFieldValue, setEditFieldValue] = useState('');
-  const [collapsedSteps, setCollapsedSteps] = useState(new Set());
+  const [hText, setHText] = useState(activity.hypothesis_text || '');
+  const [cText, setCText] = useState(activity.conclusion_text || '');
+
+  const isDraft = !activity.status || activity.status === 'draft';
+  const isAdopted = activity.status === 'adopted';
 
   useEffect(() => {
+    setHText(activity.hypothesis_text || '');
+    setCText(activity.conclusion_text || '');
+    setActiveStage(null);
     fetchStepData();
   }, [activity.id]);
 
@@ -44,7 +61,14 @@ export default function ActivityDetailView({
       const res = await fetch(`/api/projects/${token}/core-activities/${activity.id}/evidence`);
       if (res.ok) {
         const data = await res.json();
-        setStepData(data.steps);
+        if (data._error) console.error('[ActivityDetailView]', data._error);
+        const steps = data.steps || { Hypothesis: [], Experiment: [], Observation: [], Evaluation: [], Conclusion: [] };
+        setStepData(steps);
+        setActiveStage(prev => {
+          if (prev) return prev;
+          const firstEmpty = STAGES.find(s => !(steps[s.key] || []).length);
+          return firstEmpty?.key || 'Hypothesis';
+        });
       }
     } catch (err) {
       console.error('Failed to fetch step data:', err);
@@ -58,15 +82,12 @@ export default function ActivityDetailView({
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/projects/${token}/core-activities/${activity.id}/evidence`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ evidence_ids: evidenceIds, step })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ evidence_ids: evidenceIds, step }),
       });
       if (res.ok) {
         await fetchStepData();
-        onCoverageChange();
+        onCoverageChange?.();
       }
     } catch (err) {
       console.error('Failed to link evidence:', err);
@@ -77,18 +98,13 @@ export default function ActivityDetailView({
     try {
       const { supabase } = await import('@/lib/supabaseClient');
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/projects/${token}/core-activities/${activity.id}/evidence`, {
+      await fetch(`/api/projects/${token}/core-activities/${activity.id}/evidence`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ evidence_ids: [evidenceId], step })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ evidence_ids: [evidenceId], step }),
       });
-      if (res.ok) {
-        await fetchStepData();
-        onCoverageChange();
-      }
+      await fetchStepData();
+      onCoverageChange?.();
     } catch (err) {
       console.error('Failed to unlink evidence:', err);
     }
@@ -96,437 +112,188 @@ export default function ActivityDetailView({
 
   const handleAdopt = async () => {
     setAdopting(true);
-    const success = await onAdopt(activity.id);
+    await onAdopt(activity.id);
     setAdopting(false);
-    // In full-page mode collapse back to list; in inline mode stay open showing adopted state
-    if (success && !inline) onBack();
   };
 
-  const handleSaveName = async () => {
-    if (!editName.trim() || !editUncertainty.trim()) return;
-    await onUpdate(activity.id, { name: editName.trim(), uncertainty: editUncertainty.trim() });
-    setEditingName(false);
-  };
-
-  const handleSaveStepText = async (field) => {
+  const handleSaveText = async (field, value) => {
     try {
       const { supabase } = await import('@/lib/supabaseClient');
       const { data: { session } } = await supabase.auth.getSession();
       await fetch(`/api/projects/${token}/core-activities/${activity.id}/step-text`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ field, value: editFieldValue })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ field, value }),
       });
-      onUpdate(activity.id, { [field]: editFieldValue });
+      onUpdate?.(activity.id, { [field]: value });
     } catch (err) {
-      console.error('Failed to save step text:', err);
+      console.error('Failed to save text:', err);
     }
-    setEditingField(null);
   };
 
-  const toggleCollapse = (step) => {
-    setCollapsedSteps(prev => {
-      const next = new Set(prev);
-      if (next.has(step)) next.delete(step);
-      else next.add(step);
-      return next;
-    });
-  };
+  const coveredCount = STAGES.filter(s => (stepData[s.key] || []).length > 0).length;
+  const canAdopt = coveredCount >= 3;
 
-  const isDraft = activity.status === 'draft' || !activity.status;
-  const coveredSteps = STEPS.filter(s => (stepData[s] || []).length > 0);
-  const canAdopt = coveredSteps.length >= 3;
+  const linkedIds = new Set();
+  STAGES.forEach(s => (stepData[s.key] || []).forEach(ev => linkedIds.add(ev.id)));
 
-  // Gather all evidence IDs already linked to this activity
-  const linkedEvidenceIds = new Set();
-  STEPS.forEach(s => {
-    (stepData[s] || []).forEach(ev => linkedEvidenceIds.add(ev.id));
-  });
+  const activeItems = stepData[activeStage] || [];
+  const activeStageObj = STAGES.find(s => s.key === activeStage);
+
+  const fmtDate = (ts) => ts ? new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
+  const snippet = (text) => (text || '').length > 200 ? (text || '').slice(0, 200) + '...' : (text || '');
+
+  if (loading) {
+    return <div style={{ padding: '16px 18px', fontSize: 13, color: '#9ca3af' }}>Loading...</div>;
+  }
 
   return (
-    <div style={{ padding: inline ? '20px 20px 20px 20px' : '20px 0' }}>
-      {/* Back button — full-page mode only */}
-      {!inline && (
-        <button
-          onClick={onBack}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '6px 0',
-            background: 'none',
-            border: 'none',
-            color: '#64748b',
-            fontSize: 13,
-            cursor: 'pointer',
-            marginBottom: 16,
-            fontFamily: 'inherit',
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = '#021048'}
-          onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
-        >
-          <span style={{ fontSize: 16 }}>&larr;</span> Back to Activities
-        </button>
-      )}
+    <div>
+      {/* Uncertainty paragraph */}
+      <p style={{ margin: 0, padding: '12px 18px', fontSize: 13, color: '#6b7280', lineHeight: 1.65, borderBottom: '1px solid #f3f4f6' }}>
+        {activity.uncertainty}
+      </p>
 
-      {/* Activity header */}
-      <div style={{
-        backgroundColor: inline ? 'transparent' : 'white',
-        border: inline ? 'none' : '1px solid #e5e7eb',
-        borderRadius: inline ? 0 : 12,
-        padding: inline ? '0 0 16px 0' : 24,
-        marginBottom: 20,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-          <div style={{ flex: 1 }}>
-            {/* Status + source */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span style={{
-                padding: '3px 10px',
-                borderRadius: 12,
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                backgroundColor: isDraft ? '#fef3c7' : '#dcfce7',
-                color: isDraft ? '#92400e' : '#166534',
-              }}>
-                {isDraft ? 'Draft' : 'Adopted'}
-              </span>
-              {activity.source === 'ai' && (
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>AI-generated</span>
-              )}
-              <span style={{ fontSize: 12, color: '#94a3b8' }}>
-                {coveredSteps.length}/5 steps covered
-              </span>
-            </div>
-
-            {/* Name + uncertainty */}
-            {editingName ? (
-              <div style={{ marginBottom: 8 }}>
-                <input
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  style={{
-                    width: '100%', padding: '8px 10px', fontSize: 18, fontWeight: 600,
-                    border: '1px solid #d1d5db', borderRadius: 6, outline: 'none',
-                    marginBottom: 8, boxSizing: 'border-box', color: '#0f172a',
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#021048'}
-                  onBlur={e => e.target.style.borderColor = '#d1d5db'}
-                />
-                <textarea
-                  value={editUncertainty}
-                  onChange={e => setEditUncertainty(e.target.value)}
-                  rows={2}
-                  style={{
-                    width: '100%', padding: '8px 10px', fontSize: 14,
-                    border: '1px solid #d1d5db', borderRadius: 6, outline: 'none',
-                    resize: 'vertical', marginBottom: 8, boxSizing: 'border-box', color: '#374151',
-                  }}
-                  onFocus={e => e.target.style.borderColor = '#021048'}
-                  onBlur={e => e.target.style.borderColor = '#d1d5db'}
-                />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={handleSaveName} style={smallBtnPrimary}>Save</button>
-                  <button onClick={() => { setEditingName(false); setEditName(activity.name); setEditUncertainty(activity.uncertainty); }} style={smallBtnSecondary}>Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <h2 style={{ fontSize: 20, fontWeight: 600, color: '#0f172a', margin: '0 0 6px 0' }}>
-                    {activity.name}
-                  </h2>
-                  {isDraft && (
-                    <button
-                      onClick={() => setEditingName(true)}
-                      style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-                <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.5, margin: 0 }}>
-                  {activity.uncertainty}
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* Adopt button */}
-          {isDraft && (
-            <button
-              onClick={handleAdopt}
-              disabled={!canAdopt || adopting}
-              title={!canAdopt ? 'At least 3 systematic steps must have linked evidence' : ''}
-              style={{
-                padding: '10px 24px',
-                backgroundColor: canAdopt ? '#021048' : '#94a3b8',
-                color: 'white',
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: canAdopt ? 'pointer' : 'not-allowed',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                opacity: adopting ? 0.7 : 1,
-              }}
-            >
-              {adopting ? 'Adopting...' : 'Adopt Activity'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Step Sections */}
-      {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Loading evidence...</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {STEPS.map(step => {
-            const items = stepData[step] || [];
-            const isCollapsed = collapsedSteps.has(step);
-            const hasItems = items.length > 0;
-            const isTextStep = step === 'Hypothesis' || step === 'Conclusion';
-            const textField = step === 'Hypothesis' ? 'hypothesis_text' : step === 'Conclusion' ? 'conclusion_text' : null;
-            const textValue = textField ? activity[textField] : null;
-
+      {isAdopted ? (
+        /* Adopted: all stages at once, read-only */
+        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {STAGES.map(s => {
+            const items = stepData[s.key] || [];
             return (
-              <div key={step} style={{
-                backgroundColor: 'white',
-                border: `1px solid ${hasItems ? STEP_COLORS[step] + '30' : '#e5e7eb'}`,
-                borderRadius: 10,
-                overflow: 'hidden',
-              }}>
-                {/* Step header */}
-                <div
-                  onClick={() => toggleCollapse(step)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '14px 20px',
-                    cursor: 'pointer',
-                    backgroundColor: hasItems ? STEP_COLORS[step] + '08' : 'transparent',
-                    borderBottom: isCollapsed ? 'none' : `1px solid ${hasItems ? STEP_COLORS[step] + '20' : '#f1f5f9'}`,
-                    userSelect: 'none',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      backgroundColor: hasItems ? STEP_COLORS[step] : '#cbd5e1',
-                    }} />
-                    <span style={{ fontSize: 15, fontWeight: 600, color: '#0f172a' }}>{step}</span>
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>
-                      {items.length} {items.length === 1 ? 'item' : 'items'}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: 12, color: '#94a3b8', transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
-                    &#9660;
-                  </span>
+              <div key={s.key}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: items.length ? '#374151' : '#d1d5db', marginBottom: 8 }}>
+                  {items.length ? '✓ ' : ''}{s.key}
                 </div>
-
-                {/* Step content */}
-                {!isCollapsed && (
-                  <div style={{ padding: '12px 20px' }}>
-                    {/* Editable text for Hypothesis / Conclusion */}
-                    {isTextStep && (
-                      <div style={{ marginBottom: items.length > 0 ? 14 : 0 }}>
-                        {editingField === textField ? (
-                          <div>
-                            <textarea
-                              value={editFieldValue}
-                              onChange={e => setEditFieldValue(e.target.value)}
-                              rows={3}
-                              placeholder={step === 'Hypothesis'
-                                ? 'We hypothesized that...'
-                                : 'This activity determined that...'}
-                              style={{
-                                width: '100%', padding: '10px 12px', fontSize: 14,
-                                border: '1px solid #d1d5db', borderRadius: 6, outline: 'none',
-                                resize: 'vertical', marginBottom: 8, boxSizing: 'border-box',
-                                color: '#374151', lineHeight: 1.5,
-                              }}
-                              autoFocus
-                            />
-                            <div style={{ display: 'flex', gap: 8 }}>
-                              <button onClick={() => handleSaveStepText(textField)} style={smallBtnPrimary}>Save</button>
-                              <button onClick={() => setEditingField(null)} style={smallBtnSecondary}>Cancel</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div
-                            onClick={() => { if (isDraft) { setEditingField(textField); setEditFieldValue(textValue || ''); } }}
-                            style={{
-                              padding: '10px 14px',
-                              backgroundColor: textValue ? '#f8fafc' : '#fefce8',
-                              border: `1px dashed ${textValue ? '#e2e8f0' : '#fde68a'}`,
-                              borderRadius: 6,
-                              fontSize: 14,
-                              color: textValue ? '#374151' : '#92400e',
-                              lineHeight: 1.5,
-                              cursor: isDraft ? 'pointer' : 'default',
-                            }}
-                          >
-                            {textValue || (isDraft
-                              ? `Click to add ${step.toLowerCase()} statement...`
-                              : `No ${step.toLowerCase()} statement recorded.`
-                            )}
-                          </div>
-                        )}
+                {items.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 12, borderLeft: '2px solid #f0f0f0' }}>
+                    {items.map(item => (
+                      <div key={item.id} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+                        <SrcBadge src={item.source} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 1 }}>{fmtDate(item.created_at)}</div>
+                          <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55 }}>{snippet(item.content)}</div>
+                        </div>
                       </div>
-                    )}
-
-                    {/* Evidence items */}
-                    {items.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {items.map(ev => {
-                          const content = ev.content || '';
-                          const snippet = content.length > 160 ? content.slice(0, 160) + '...' : content;
-                          const source = ev.source || 'manual';
-                          const date = ev.created_at ? new Date(ev.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-
-                          return (
-                            <div key={ev.id} style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: 10,
-                              padding: '10px 12px',
-                              backgroundColor: '#fafbfc',
-                              borderRadius: 6,
-                              border: '1px solid #f1f5f9',
-                            }}>
-                              {/* Source icon */}
-                              <div style={{
-                                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                                backgroundColor: source === 'github' ? '#24292f' : source === 'email' ? '#0ea5e9' : source === 'document' ? '#8b5cf6' : '#021048',
-                                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 10, fontWeight: 600, marginTop: 2,
-                              }}>
-                                {SOURCE_ICONS[source] || 'M'}
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.5 }}>
-                                  {snippet}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                                  <span style={{ fontSize: 11, color: '#94a3b8' }}>{date}</span>
-                                  <span style={{ fontSize: 11, color: '#94a3b8' }}>{source}</span>
-                                  {ev.link_source === 'auto' && (
-                                    <span style={{ fontSize: 10, color: '#c084fc', backgroundColor: '#faf5ff', padding: '1px 6px', borderRadius: 8 }}>auto-linked</span>
-                                  )}
-                                </div>
-                              </div>
-                              {/* Remove button */}
-                              {isDraft && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleUnlinkEvidence(ev.id, step); }}
-                                  title="Remove from this step"
-                                  style={{
-                                    background: 'none', border: 'none', color: '#cbd5e1',
-                                    cursor: 'pointer', fontSize: 16, padding: '2px 4px', flexShrink: 0,
-                                  }}
-                                  onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                                  onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}
-                                >
-                                  &times;
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : !isTextStep ? (
-                      <div style={{
-                        padding: '12px 14px',
-                        backgroundColor: '#fffbeb',
-                        border: '1px dashed #fde68a',
-                        borderRadius: 6,
-                        fontSize: 13,
-                        color: '#92400e',
-                      }}>
-                        No evidence linked to this step yet.
-                      </div>
-                    ) : null}
-
-                    {/* Link evidence button */}
-                    {isDraft && (
-                      <button
-                        onClick={() => setPickerStep(step)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: '6px 12px',
-                          marginTop: 10,
-                          background: 'none',
-                          border: '1px dashed #d1d5db',
-                          borderRadius: 6,
-                          color: '#64748b',
-                          fontSize: 12,
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#021048'; e.currentTarget.style.color = '#021048'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#64748b'; }}
-                      >
-                        + Link evidence
-                      </button>
-                    )}
+                    ))}
                   </div>
+                ) : (
+                  <div style={{ paddingLeft: 12, borderLeft: '2px solid #f0f0f0', fontSize: 12, color: '#d1d5db' }}>No evidence</div>
                 )}
               </div>
             );
           })}
         </div>
-      )}
+      ) : (
+        /* Draft: tabbed stage panel */
+        <div>
+          {/* Tab row */}
+          <div style={{ display: 'flex', borderBottom: '1px solid #f0f0f0' }}>
+            {STAGES.map(s => {
+              const done = (stepData[s.key] || []).length > 0;
+              const isActive = activeStage === s.key;
+              const count = (stepData[s.key] || []).length;
+              return (
+                <button key={s.key} onClick={() => setActiveStage(s.key)} style={{
+                  flex: 1, padding: '10px 4px', border: 'none', cursor: 'pointer',
+                  fontFamily: 'inherit', textAlign: 'center', background: 'white',
+                  borderBottom: isActive ? `2px solid ${NAVY}` : '2px solid transparent',
+                  marginBottom: -1,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: isActive ? 700 : 500, color: isActive ? NAVY : done ? '#374151' : '#9ca3af' }}>
+                    {done && !isActive ? '✓ ' : ''}{s.key}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>
+                    {count > 0 ? `${count} item${count > 1 ? 's' : ''}` : 'empty'}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Adoption helper */}
-      {isDraft && !loading && (
-        <div style={{
-          marginTop: 20,
-          padding: '14px 20px',
-          backgroundColor: canAdopt ? '#f0fdf4' : '#fffbeb',
-          border: `1px solid ${canAdopt ? '#bbf7d0' : '#fde68a'}`,
-          borderRadius: 8,
-          fontSize: 13,
-          color: canAdopt ? '#166534' : '#92400e',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <span>
-            {canAdopt
-              ? `${coveredSteps.length}/5 steps covered. Ready to adopt.`
-              : `${coveredSteps.length}/5 steps covered. Need at least 3 to adopt.`
-            }
-          </span>
-          {canAdopt && (
+          {/* Stage content */}
+          <div style={{ padding: '16px 18px', minHeight: 100 }}>
+            {activeStageObj && (
+              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>{activeStageObj.hint}</div>
+            )}
+
+            {/* H/C textarea — auto-saves on blur */}
+            {(activeStage === 'Hypothesis' || activeStage === 'Conclusion') && (
+              <textarea
+                value={activeStage === 'Hypothesis' ? hText : cText}
+                onChange={e => activeStage === 'Hypothesis' ? setHText(e.target.value) : setCText(e.target.value)}
+                onBlur={() => {
+                  const field = activeStage === 'Hypothesis' ? 'hypothesis_text' : 'conclusion_text';
+                  const val = activeStage === 'Hypothesis' ? hText : cText;
+                  handleSaveText(field, val);
+                }}
+                placeholder={activeStageObj?.hint || ''}
+                rows={2}
+                style={{
+                  width: '100%', padding: '8px 10px', fontSize: 13, lineHeight: 1.6,
+                  border: '1px solid #e5e7eb', borderRadius: 6, outline: 'none',
+                  resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit',
+                  color: '#111827', background: 'white',
+                  marginBottom: activeItems.length ? 12 : 8,
+                }}
+              />
+            )}
+
+            {/* Evidence items */}
+            {activeItems.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+                {activeItems.map(item => (
+                  <div key={item.id} style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '9px 11px', background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 6 }}>
+                    <SrcBadge src={item.source} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>{fmtDate(item.created_at)}</div>
+                      <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.6 }}>{snippet(item.content)}</div>
+                    </div>
+                    <button
+                      onClick={() => handleUnlinkEvidence(item.id, activeStage)}
+                      style={{ flexShrink: 0, background: 'none', border: 'none', color: '#d1d5db', fontSize: 14, cursor: 'pointer', padding: '0 2px' }}
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button
-              onClick={handleAdopt}
-              disabled={adopting}
+              onClick={() => setPickerStep(activeStage)}
               style={{
-                padding: '6px 16px',
-                backgroundColor: '#021048',
-                color: 'white',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
+                fontSize: 12, fontWeight: 500,
+                color: activeItems.length ? '#6b7280' : '#374151',
+                background: 'none',
+                border: `1px dashed ${activeItems.length ? '#e5e7eb' : '#9ca3af'}`,
+                borderRadius: 5, cursor: 'pointer', padding: '6px 12px', fontFamily: 'inherit',
               }}
             >
-              {adopting ? 'Adopting...' : 'Adopt Activity'}
+              {activeItems.length ? `+ Link more to ${activeStage}` : `+ Link evidence to ${activeStage}`}
             </button>
-          )}
+          </div>
+        </div>
+      )}
+
+      {/* Adopt footer — draft only */}
+      {isDraft && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', borderTop: '1px solid #f3f4f6', background: '#fafafa' }}>
+          <span style={{ fontSize: 12, color: canAdopt ? '#374151' : '#9ca3af' }}>
+            {canAdopt
+              ? 'Ready to adopt — will be included in your claim pack'
+              : `${3 - coveredCount} more stage${3 - coveredCount === 1 ? '' : 's'} needed`}
+          </span>
+          <button
+            onClick={handleAdopt}
+            disabled={!canAdopt || adopting}
+            style={{
+              padding: '6px 16px', fontSize: 12, fontWeight: 600, borderRadius: 6, border: 'none',
+              background: canAdopt ? NAVY : '#e5e7eb',
+              color: canAdopt ? 'white' : '#9ca3af',
+              cursor: canAdopt && !adopting ? 'pointer' : 'default',
+              fontFamily: 'inherit',
+            }}
+          >
+            {adopting ? 'Adopting...' : 'Adopt activity'}
+          </button>
         </div>
       )}
 
@@ -535,36 +302,11 @@ export default function ActivityDetailView({
         <EvidencePicker
           step={pickerStep}
           allEvidence={allEvidence}
-          linkedEvidenceIds={linkedEvidenceIds}
-          onLink={(ids) => {
-            handleLinkEvidence(ids, pickerStep);
-            setPickerStep(null);
-          }}
+          linkedEvidenceIds={linkedIds}
+          onLink={(ids) => { handleLinkEvidence(ids, pickerStep); setPickerStep(null); }}
           onClose={() => setPickerStep(null)}
         />
       )}
     </div>
   );
 }
-
-const smallBtnPrimary = {
-  padding: '5px 14px',
-  backgroundColor: '#021048',
-  color: 'white',
-  border: 'none',
-  borderRadius: 5,
-  fontSize: 12,
-  fontWeight: 500,
-  cursor: 'pointer',
-};
-
-const smallBtnSecondary = {
-  padding: '5px 14px',
-  backgroundColor: 'white',
-  color: '#64748b',
-  border: '1px solid #d1d5db',
-  borderRadius: 5,
-  fontSize: 12,
-  fontWeight: 500,
-  cursor: 'pointer',
-};

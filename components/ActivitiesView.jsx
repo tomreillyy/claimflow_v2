@@ -2,15 +2,163 @@
 import { useState, useEffect } from 'react';
 import ActivityDetailView from './ActivityDetailView';
 
-const STEP_LABELS = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
-const STEP_SHORT = ['H', 'E', 'O', 'Ev', 'C'];
-const STEP_COLORS = {
-  Hypothesis: '#6366f1',
-  Experiment: '#0ea5e9',
-  Observation: '#10b981',
-  Evaluation: '#f59e0b',
-  Conclusion: '#8b5cf6',
-};
+const NAVY = '#021048';
+const STAGES = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
+const SRC_LABELS = { manual: 'M', note: 'M', email: '@', github: 'G', document: 'D', upload: 'U' };
+
+function StageDots({ coverage }) {
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+      {STAGES.map(s => {
+        const done = (coverage[s] || []).length > 0;
+        return (
+          <span key={s} title={s} style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: done ? '#16a34a' : '#d1d5db',
+            flexShrink: 0,
+          }} />
+        );
+      })}
+    </div>
+  );
+}
+
+function SrcBadge({ src }) {
+  return (
+    <span style={{
+      width: 18, height: 18, borderRadius: 3, flexShrink: 0,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      background: '#f3f4f6', border: '1px solid #e5e7eb',
+      fontSize: 9, fontWeight: 700, color: '#6b7280', fontFamily: 'ui-monospace,monospace',
+    }}>
+      {SRC_LABELS[src] || '?'}
+    </span>
+  );
+}
+
+function EvidenceInbox({ unlinkedEvidence, activities, token, onLinked }) {
+  const [linking, setLinking] = useState(null);
+  const [toAct, setToAct] = useState('');
+  const [toStage, setToStage] = useState('Hypothesis');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (activities.length > 0 && !toAct) setToAct(activities[0].id);
+  }, [activities]);
+
+  if (!unlinkedEvidence || unlinkedEvidence.length === 0) return null;
+
+  const fmtDate = (ts) => ts ? new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
+
+  const handleConfirm = async (evidenceId) => {
+    if (!toAct) return;
+    setSubmitting(true);
+    try {
+      const { supabase } = await import('@/lib/supabaseClient');
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/projects/${token}/core-activities/${toAct}/evidence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ evidence_ids: [evidenceId], step: toStage }),
+      });
+      if (res.ok) {
+        setLinking(null);
+        onLinked(evidenceId, toAct);
+      }
+    } catch (err) {
+      console.error('Failed to link from inbox:', err);
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ padding: '11px 18px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>Uncategorised evidence</span>
+        <span style={{
+          fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 10,
+          background: '#fef9c3', color: '#92400e', border: '1px solid #fde68a',
+        }}>{unlinkedEvidence.length}</span>
+        <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 'auto' }}>link to an activity to include in your claim</span>
+      </div>
+      <div style={{ padding: '0 18px' }}>
+        {unlinkedEvidence.map((ev, i) => (
+          <div key={ev.id} style={{ borderTop: i > 0 ? '1px solid #f9fafb' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, padding: '10px 0' }}>
+              <SrcBadge src={ev.source} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 1 }}>
+                  {fmtDate(ev.created_at)}
+                </div>
+                <div style={{
+                  fontSize: 13, color: '#374151', lineHeight: 1.55,
+                  overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                }}>
+                  {ev.content}
+                </div>
+              </div>
+              <button
+                onClick={() => setLinking(linking === ev.id ? null : ev.id)}
+                style={{
+                  flexShrink: 0, padding: '4px 10px', fontSize: 12, fontWeight: 500,
+                  color: '#374151', background: 'white', border: '1px solid #e5e7eb',
+                  borderRadius: 5, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {linking === ev.id ? 'Cancel' : 'Link'}
+              </button>
+            </div>
+            {linking === ev.id && (
+              <div style={{
+                margin: '-2px 0 10px 27px', padding: '10px 12px',
+                background: '#f9fafb', borderRadius: 6, border: '1px solid #e5e7eb',
+                display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+              }}>
+                <span style={{ fontSize: 12, color: '#6b7280' }}>Activity</span>
+                <select
+                  value={toAct}
+                  onChange={e => setToAct(e.target.value)}
+                  style={{ padding: '4px 8px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 5, color: '#111827', background: 'white', maxWidth: 200, fontFamily: 'inherit' }}
+                >
+                  {activities.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+                <span style={{ fontSize: 12, color: '#6b7280' }}>Stage</span>
+                <div style={{ display: 'flex', gap: 3 }}>
+                  {STAGES.map(s => (
+                    <button key={s} onClick={() => setToStage(s)} style={{
+                      padding: '3px 8px', fontSize: 11, fontWeight: 600, borderRadius: 4, cursor: 'pointer',
+                      background: toStage === s ? NAVY : 'white',
+                      color: toStage === s ? 'white' : '#6b7280',
+                      border: `1px solid ${toStage === s ? NAVY : '#d1d5db'}`,
+                      fontFamily: 'inherit',
+                    }}>
+                      {s.slice(0, 3)}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => handleConfirm(ev.id)}
+                  disabled={submitting}
+                  style={{
+                    padding: '4px 12px', fontSize: 12, fontWeight: 600,
+                    background: NAVY, color: 'white', border: 'none',
+                    borderRadius: 5, cursor: submitting ? 'default' : 'pointer',
+                    fontFamily: 'inherit', opacity: submitting ? 0.7 : 1,
+                  }}
+                >
+                  Confirm
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function ActivitiesView({ token, activities, allEvidence, onActivitiesChange }) {
   const [expandedId, setExpandedId] = useState(null);
@@ -20,7 +168,10 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
   const [newName, setNewName] = useState('');
   const [newUncertainty, setNewUncertainty] = useState('');
   const [creating, setCreating] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
+  const [showAddEvidence, setShowAddEvidence] = useState(false);
+  const [newNote, setNewNote] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
+  const [noteAdded, setNoteAdded] = useState(false);
 
   // Fetch step coverage for all activities
   useEffect(() => {
@@ -28,7 +179,6 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       setLoading(false);
       return;
     }
-
     const fetchCoverage = async () => {
       const coverageMap = {};
       await Promise.all(
@@ -37,7 +187,7 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
             const res = await fetch(`/api/projects/${token}/core-activities/${act.id}/evidence`);
             if (res.ok) {
               const data = await res.json();
-              if (data._error) console.error(`[coverage useEffect] ${act.id}:`, data._error);
+              if (data._error) console.error(`[coverage] ${act.id}:`, data._error);
               coverageMap[act.id] = data.steps;
             }
           } catch {
@@ -51,6 +201,16 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
     fetchCoverage();
   }, [activities, token]);
 
+  const refreshCoverage = async (activityId) => {
+    try {
+      const res = await fetch(`/api/projects/${token}/core-activities/${activityId}/evidence`);
+      if (res.ok) {
+        const data = await res.json();
+        setStepCoverageMap(prev => ({ ...prev, [activityId]: data.steps }));
+      }
+    } catch {}
+  };
+
   const handleCreate = async () => {
     if (!newName.trim() || !newUncertainty.trim()) return;
     setCreating(true);
@@ -58,7 +218,7 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       const res = await fetch(`/api/projects/${token}/core-activities`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim(), uncertainty: newUncertainty.trim() })
+        body: JSON.stringify({ name: newName.trim(), uncertainty: newUncertainty.trim() }),
       });
       if (res.ok) {
         const activity = await res.json();
@@ -76,13 +236,11 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
 
   const handleAdopt = async (activityId) => {
     try {
-      const { data: { session } } = await (await import('@/lib/supabaseClient')).supabase.auth.getSession();
+      const { supabase } = await import('@/lib/supabaseClient');
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/projects/${token}/core-activities/${activityId}/adopt`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`
-        }
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       });
       if (res.ok) {
         const updated = await res.json();
@@ -104,7 +262,7 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       const res = await fetch(`/api/projects/${token}/core-activities/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+        body: JSON.stringify(updates),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -115,9 +273,9 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
     }
   };
 
+  // Internal: re-link evidence to activities (used after regenerate)
   const linkEvidence = async (currentActivities) => {
     await fetch(`/api/projects/${token}/core-activities/link-evidence`, { method: 'POST' });
-    // Refresh coverage — use passed-in list to avoid stale closure
     const acts = currentActivities || activities;
     if (acts && acts.length > 0) {
       const coverageMap = {};
@@ -135,229 +293,155 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
     }
   };
 
+  // Internal: regenerate draft activities (not exposed in UI — call from console if needed)
   const handleRegenerate = async () => {
     if (!confirm('This will delete all draft activities and re-generate them from your evidence. Adopted activities are kept. Continue?')) return;
-    setRegenerating(true);
     setExpandedId(null);
     try {
-      const { data: { session } } = await (await import('@/lib/supabaseClient')).supabase.auth.getSession();
+      const { supabase } = await import('@/lib/supabaseClient');
+      const { data: { session } } = await supabase.auth.getSession();
       await fetch(`/api/projects/${token}/core-activities/regenerate`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` }
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      // Re-fetch activities (GET will auto-generate new ones)
       const res = await fetch(`/api/projects/${token}/core-activities`);
       if (res.ok) {
         const data = await res.json();
         const newActivities = data.activities || [];
-        // Link evidence BEFORE notifying parent — prevents useEffect firing
-        // with new activity IDs before the DB rows exist
         await linkEvidence(newActivities);
         onActivitiesChange(newActivities);
       }
     } catch (err) {
       console.error('Regenerate failed:', err);
-    } finally {
-      setRegenerating(false);
     }
   };
 
-  const refreshCoverage = async (activityId) => {
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    setAddingNote(true);
     try {
-      const res = await fetch(`/api/projects/${token}/core-activities/${activityId}/evidence`);
+      const { supabase } = await import('@/lib/supabaseClient');
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/evidence/${token}/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ content: newNote.trim() }),
+      });
       if (res.ok) {
-        const data = await res.json();
-        setStepCoverageMap(prev => ({ ...prev, [activityId]: data.steps }));
+        setNewNote('');
+        setShowAddEvidence(false);
+        setNoteAdded(true);
+        setTimeout(() => setNoteAdded(false), 4000);
       }
-    } catch {}
+    } catch (err) {
+      console.error('Failed to add note:', err);
+    }
+    setAddingNote(false);
   };
 
-  const draftCount = activities.filter(a => a.status === 'draft' || !a.status).length;
+  // Compute unlinked evidence: not present in any activity's step coverage
+  const linkedEvidenceIds = new Set();
+  Object.values(stepCoverageMap).forEach(steps => {
+    if (steps) Object.values(steps).forEach(items => {
+      (items || []).forEach(ev => linkedEvidenceIds.add(ev.id));
+    });
+  });
+  const unlinkedEvidence = (allEvidence || []).filter(ev => !linkedEvidenceIds.has(ev.id));
+
+  const draftCount = activities.filter(a => !a.status || a.status === 'draft').length;
   const adoptedCount = activities.filter(a => a.status === 'adopted').length;
 
   return (
     <div style={{ padding: '20px 0' }}>
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24
-      }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 600, color: '#0f172a', margin: '0 0 4px 0' }}>
-            R&D Activities
-          </h2>
-          <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-            {adoptedCount > 0
-              ? `${adoptedCount} adopted, ${draftCount} draft`
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: '#111827', margin: '0 0 3px' }}>R&D Activities</h2>
+          <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
+            {adoptedCount > 0 || draftCount > 0
+              ? `${adoptedCount} adopted · ${draftCount} in progress`
               : 'Review and adopt activities to build your claim'}
           </p>
         </div>
-        <button
-          onClick={() => setIsCreating(true)}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#021048',
-            color: 'white',
-            border: 'none',
-            borderRadius: 6,
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#031560'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#021048'}
-        >
-          + Add Activity
-        </button>
+        <div style={{ display: 'flex', gap: 7 }}>
+          <button
+            onClick={() => setShowAddEvidence(true)}
+            style={{
+              padding: '7px 13px', fontSize: 13, fontWeight: 500, color: '#374151',
+              background: 'white', border: '1px solid #e5e7eb', borderRadius: 7,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            + Add evidence
+          </button>
+          <button
+            onClick={() => setIsCreating(true)}
+            style={{
+              padding: '7px 13px', fontSize: 13, fontWeight: 600, color: 'white',
+              background: NAVY, border: 'none', borderRadius: 7,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            + Add activity
+          </button>
+        </div>
       </div>
 
-      {/* AI-generated banner */}
-      {draftCount > 0 && activities.some(a => a.source === 'ai') && (
-        <div style={{
-          padding: '14px 20px',
-          backgroundColor: '#f0f4ff',
-          border: '1px solid #c7d2fe',
-          borderRadius: 8,
-          marginBottom: 20,
-          fontSize: 14,
-          color: '#3730a3',
-          lineHeight: 1.5,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 16,
-        }}>
-          <span>
-            We identified <strong>{draftCount} potential R&D {draftCount === 1 ? 'activity' : 'activities'}</strong> based on your evidence.
-            Review each one and adopt when ready.
-          </span>
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button
-              onClick={linkEvidence}
-              disabled={regenerating}
-              style={{
-                padding: '6px 14px',
-                backgroundColor: '#021048',
-                color: 'white',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: regenerating ? 'default' : 'pointer',
-                opacity: regenerating ? 0.6 : 1,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Link evidence
-            </button>
-            <button
-              onClick={handleRegenerate}
-              disabled={regenerating}
-              style={{
-                padding: '6px 14px',
-                backgroundColor: 'white',
-                color: '#3730a3',
-                border: '1px solid #a5b4fc',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: regenerating ? 'default' : 'pointer',
-                opacity: regenerating ? 0.6 : 1,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {regenerating ? 'Regenerating...' : 'Regenerate'}
-            </button>
-          </div>
+      {/* Note added confirmation */}
+      {noteAdded && (
+        <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, marginBottom: 12, fontSize: 13, color: '#166534' }}>
+          Evidence added — it will appear in your inbox below after auto-linking completes.
         </div>
       )}
 
-      {/* Manual creation form */}
+      {/* Create activity form */}
       {isCreating && (
-        <div style={{
-          padding: 20,
-          backgroundColor: 'white',
-          border: '1px solid #e5e7eb',
-          borderRadius: 12,
-          marginBottom: 20,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 12 }}>
-            New Activity
-          </div>
+        <div style={{ padding: 20, background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 12 }}>New Activity</div>
           <input
             type="text"
             value={newName}
             onChange={e => setNewName(e.target.value)}
-            placeholder="Activity name (3-6 words, e.g., 'Anomaly detection thresholding')"
+            placeholder="Activity name (e.g. 'Offline sync with conflict resolution')"
             style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: 14,
-              border: '1px solid #d1d5db',
-              borderRadius: 6,
-              outline: 'none',
-              marginBottom: 10,
-              boxSizing: 'border-box',
-              color: '#1a1a1a',
-              backgroundColor: 'white'
+              width: '100%', padding: '9px 11px', fontSize: 13, border: '1px solid #e5e7eb',
+              borderRadius: 6, outline: 'none', marginBottom: 10, boxSizing: 'border-box',
+              color: '#111827', fontFamily: 'inherit',
             }}
-            onFocus={e => e.target.style.borderColor = '#021048'}
-            onBlur={e => e.target.style.borderColor = '#d1d5db'}
+            onFocus={e => e.target.style.borderColor = NAVY}
+            onBlur={e => e.target.style.borderColor = '#e5e7eb'}
           />
           <textarea
             value={newUncertainty}
             onChange={e => setNewUncertainty(e.target.value)}
-            placeholder="What technical uncertainty does this activity explore? (1-2 sentences)"
-            rows={3}
+            placeholder="What technical uncertainty does this activity explore?"
+            rows={2}
             style={{
-              width: '100%',
-              padding: '10px 12px',
-              fontSize: 14,
-              border: '1px solid #d1d5db',
-              borderRadius: 6,
-              outline: 'none',
-              resize: 'vertical',
-              marginBottom: 12,
-              boxSizing: 'border-box',
-              color: '#1a1a1a',
-              backgroundColor: 'white'
+              width: '100%', padding: '9px 11px', fontSize: 13, border: '1px solid #e5e7eb',
+              borderRadius: 6, outline: 'none', resize: 'vertical', marginBottom: 12,
+              boxSizing: 'border-box', color: '#111827', fontFamily: 'inherit',
             }}
-            onFocus={e => e.target.style.borderColor = '#021048'}
-            onBlur={e => e.target.style.borderColor = '#d1d5db'}
+            onFocus={e => e.target.style.borderColor = NAVY}
+            onBlur={e => e.target.style.borderColor = '#e5e7eb'}
           />
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={handleCreate}
               disabled={creating || !newName.trim() || !newUncertainty.trim()}
               style={{
-                padding: '8px 20px',
-                backgroundColor: (creating || !newName.trim() || !newUncertainty.trim()) ? '#94a3b8' : '#021048',
-                color: 'white',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: (creating || !newName.trim() || !newUncertainty.trim()) ? 'default' : 'pointer'
+                padding: '7px 18px', fontSize: 13, fontWeight: 600,
+                background: (creating || !newName.trim() || !newUncertainty.trim()) ? '#e5e7eb' : NAVY,
+                color: (creating || !newName.trim() || !newUncertainty.trim()) ? '#9ca3af' : 'white',
+                border: 'none', borderRadius: 6,
+                cursor: (creating || !newName.trim() || !newUncertainty.trim()) ? 'default' : 'pointer',
+                fontFamily: 'inherit',
               }}
             >
               {creating ? 'Creating...' : 'Create Activity'}
             </button>
             <button
               onClick={() => { setIsCreating(false); setNewName(''); setNewUncertainty(''); }}
-              disabled={creating}
-              style={{
-                padding: '8px 20px',
-                backgroundColor: 'white',
-                color: '#64748b',
-                border: '1px solid #d1d5db',
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: creating ? 'default' : 'pointer'
-              }}
+              style={{ padding: '7px 18px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}
             >
               Cancel
             </button>
@@ -365,161 +449,76 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
         </div>
       )}
 
-      {/* Activity Cards */}
+      {/* Activity cards */}
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+        <div style={{ padding: 40, textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
           Loading activities...
         </div>
       ) : activities.length === 0 ? (
-        <div style={{
-          padding: 48,
-          textAlign: 'center',
-          backgroundColor: 'white',
-          border: '1px solid #e5e7eb',
-          borderRadius: 12,
-        }}>
-          <div style={{ fontSize: 15, color: '#374151', marginBottom: 8 }}>
-            No activities yet
-          </div>
-          <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5 }}>
+        <div style={{ padding: 48, textAlign: 'center', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+          <div style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>No activities yet</div>
+          <div style={{ fontSize: 13, color: '#9ca3af', lineHeight: 1.5 }}>
             Activities will be auto-generated once you have enough evidence (5+ items across 2+ systematic steps).
-            You can also add them manually.
+            You can also add one manually above.
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
           {activities.map(activity => {
             const coverage = stepCoverageMap[activity.id] || {};
-            const totalEvidence = STEP_LABELS.reduce((sum, s) => sum + (coverage[s] || []).length, 0);
-            const isDraft = activity.status === 'draft' || !activity.status;
             const isAdopted = activity.status === 'adopted';
             const isExpanded = expandedId === activity.id;
 
             return (
-              <div
-                key={activity.id}
-                style={{
-                  backgroundColor: 'white',
-                  border: `1px solid ${isExpanded ? '#021048' : isAdopted ? '#bbf7d0' : '#e5e7eb'}`,
-                  borderRadius: 12,
-                  boxShadow: isExpanded ? '0 2px 12px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
-                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Clickable summary row */}
-                <div
+              <div key={activity.id} style={{
+                background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden',
+              }}>
+                {/* Collapsed header */}
+                <button
                   onClick={() => setExpandedId(isExpanded ? null : activity.id)}
                   style={{
-                    padding: 20,
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => {
-                    if (!isExpanded) e.currentTarget.parentElement.style.borderColor = isAdopted ? '#86efac' : '#021048';
-                  }}
-                  onMouseLeave={e => {
-                    if (!isExpanded) e.currentTarget.parentElement.style.borderColor = isAdopted ? '#bbf7d0' : '#e5e7eb';
+                    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+                    padding: '13px 18px', background: 'none', border: 'none',
+                    cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
                   }}
                 >
-                  {/* Top row: status + source + chevron */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{
-                        padding: '3px 10px',
-                        borderRadius: 12,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                        backgroundColor: isAdopted ? '#dcfce7' : '#fef3c7',
-                        color: isAdopted ? '#166534' : '#92400e',
-                      }}>
-                        {isAdopted ? 'Adopted' : 'Draft'}
-                      </span>
-                      {activity.source === 'ai' && (
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>AI-generated</span>
-                      )}
+                  {/* Status dot */}
+                  <span style={{
+                    width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                    background: isAdopted ? '#16a34a' : '#f59e0b',
+                  }} />
+
+                  {/* Name + uncertainty (1-line truncated when collapsed) */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', lineHeight: 1.3, marginBottom: !isExpanded ? 3 : 0 }}>
+                      {activity.name}
                     </div>
-                    <span style={{
-                      fontSize: 14,
-                      color: '#94a3b8',
-                      transition: 'transform 0.2s ease',
-                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                      display: 'inline-block',
-                    }}>
-                      &#9660;
-                    </span>
+                    {!isExpanded && (
+                      <div style={{ fontSize: 12, color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        {activity.uncertainty}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Activity name */}
-                  <div style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: '#0f172a',
-                    marginBottom: 6,
-                    lineHeight: 1.3,
-                  }}>
-                    {activity.name}
-                  </div>
+                  {/* 5 stage dots */}
+                  <StageDots coverage={coverage} />
 
-                  {/* Uncertainty */}
-                  <div style={{
-                    fontSize: 13,
-                    color: '#64748b',
-                    lineHeight: 1.5,
-                    marginBottom: 14,
-                    display: '-webkit-box',
-                    WebkitLineClamp: isExpanded ? 'unset' : 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: isExpanded ? 'visible' : 'hidden',
-                  }}>
-                    {activity.uncertainty}
-                  </div>
+                  {/* Chevron */}
+                  <span style={{
+                    fontSize: 10, color: '#c4c9d0', flexShrink: 0, marginLeft: 4,
+                    display: 'inline-block',
+                    transform: isExpanded ? 'rotate(90deg)' : 'none',
+                    transition: 'transform 0.15s',
+                  }}>▶</span>
+                </button>
 
-                  {/* Bottom row: step pills + evidence count */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {STEP_LABELS.map((step, i) => {
-                        const filled = (coverage[step] || []).length > 0;
-                        return (
-                          <div
-                            key={step}
-                            title={`${step}: ${(coverage[step] || []).length} items`}
-                            style={{
-                              width: 28,
-                              height: 24,
-                              borderRadius: 4,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: 10,
-                              fontWeight: 600,
-                              backgroundColor: filled ? STEP_COLORS[step] + '20' : '#f1f5f9',
-                              color: filled ? STEP_COLORS[step] : '#cbd5e1',
-                              border: `1px solid ${filled ? STEP_COLORS[step] + '40' : '#e2e8f0'}`,
-                            }}
-                          >
-                            {STEP_SHORT[i]}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>
-                      {totalEvidence} evidence {totalEvidence === 1 ? 'item' : 'items'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Expanded detail — inline accordion */}
+                {/* Expanded detail */}
                 {isExpanded && (
-                  <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ borderTop: '1px solid #f3f4f6' }}>
                     <ActivityDetailView
-                      inline
                       activity={activity}
                       token={token}
                       allEvidence={allEvidence}
-                      stepCoverage={coverage}
-                      onBack={() => setExpandedId(null)}
                       onAdopt={handleAdopt}
                       onUpdate={handleUpdate}
                       onCoverageChange={() => refreshCoverage(activity.id)}
@@ -529,6 +528,62 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Unlinked evidence inbox */}
+      {!loading && (
+        <EvidenceInbox
+          unlinkedEvidence={unlinkedEvidence}
+          activities={activities}
+          token={token}
+          onLinked={(evidenceId, activityId) => refreshCoverage(activityId)}
+        />
+      )}
+
+      {/* Add evidence modal */}
+      {showAddEvidence && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
+          <div style={{ background: 'white', borderRadius: 10, padding: 22, width: 480, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Add evidence</span>
+              <button onClick={() => { setShowAddEvidence(false); setNewNote(''); }} style={{ background: 'none', border: 'none', fontSize: 18, color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+            <textarea
+              autoFocus
+              value={newNote}
+              onChange={e => setNewNote(e.target.value)}
+              placeholder="What did you work on? Notes on experiments, observations, technical challenges or outcomes..."
+              rows={4}
+              style={{
+                width: '100%', padding: '9px 11px', fontSize: 13, lineHeight: 1.55,
+                border: '1px solid #e5e7eb', borderRadius: 6, outline: 'none',
+                resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', color: '#111827',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 7, marginTop: 10 }}>
+              <button
+                onClick={() => { setShowAddEvidence(false); setNewNote(''); }}
+                style={{ padding: '6px 12px', fontSize: 12, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddNote}
+                disabled={addingNote || !newNote.trim()}
+                style={{
+                  padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                  background: (!newNote.trim() || addingNote) ? '#e5e7eb' : NAVY,
+                  color: (!newNote.trim() || addingNote) ? '#9ca3af' : 'white',
+                  border: 'none', borderRadius: 6,
+                  cursor: (!newNote.trim() || addingNote) ? 'default' : 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {addingNote ? 'Adding...' : 'Add note'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
