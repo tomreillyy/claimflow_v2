@@ -58,7 +58,7 @@ CREATE POLICY "Users can view activity_evidence in their projects"
       SELECT 1 FROM core_activities ca
       JOIN projects p ON p.id = ca.project_id
       WHERE ca.id = activity_evidence.activity_id
-        AND (p.owner_id = auth.uid() OR p.participants @> ARRAY[(SELECT email FROM auth.users WHERE id = auth.uid())])
+        AND (p.owner_id = auth.uid() OR p.participants @> ARRAY[(SELECT email::text FROM auth.users WHERE id = auth.uid())])
     )
   );
 
@@ -69,7 +69,7 @@ CREATE POLICY "Users can insert activity_evidence in their projects"
       SELECT 1 FROM core_activities ca
       JOIN projects p ON p.id = ca.project_id
       WHERE ca.id = activity_evidence.activity_id
-        AND (p.owner_id = auth.uid() OR p.participants @> ARRAY[(SELECT email FROM auth.users WHERE id = auth.uid())])
+        AND (p.owner_id = auth.uid() OR p.participants @> ARRAY[(SELECT email::text FROM auth.users WHERE id = auth.uid())])
     )
   );
 
@@ -80,6 +80,6 @@ CREATE POLICY "Users can delete activity_evidence in their projects"
       SELECT 1 FROM core_activities ca
       JOIN projects p ON p.id = ca.project_id
       WHERE ca.id = activity_evidence.activity_id
-        AND (p.owner_id = auth.uid() OR p.participants @> ARRAY[(SELECT email FROM auth.users WHERE id = auth.uid())])
+        AND (p.owner_id = auth.uid() OR p.participants @> ARRAY[(SELECT email::text FROM auth.users WHERE id = auth.uid())])
     )
   );
