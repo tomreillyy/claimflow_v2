@@ -31,9 +31,11 @@ export default function ActivityDetailView({
   activity,
   token,
   allEvidence,
+  activities = [],       // full list for "move to different activity"
   onAdopt,
   onUpdate,
   onCoverageChange,
+  onMovedToActivity,     // callback(activityId) when evidence is moved to a different activity
 }) {
   const [stepData, setStepData] = useState({
     Hypothesis: [], Experiment: [], Observation: [], Evaluation: [], Conclusion: [],
@@ -45,6 +47,12 @@ export default function ActivityDetailView({
   const [hText, setHText] = useState(activity.hypothesis_text || '');
   const [cText, setCText] = useState(activity.conclusion_text || '');
 
+  // Move state
+  const [editingEv, setEditingEv] = useState(null); // { id, currentStep }
+  const [moveToAct, setMoveToAct] = useState('');
+  const [moveToStep, setMoveToStep] = useState('');
+  const [moving, setMoving] = useState(false);
+
   const isDraft = !activity.status || activity.status === 'draft';
   const isAdopted = activity.status === 'adopted';
 
@@ -52,6 +60,7 @@ export default function ActivityDetailView({
     setHText(activity.hypothesis_text || '');
     setCText(activity.conclusion_text || '');
     setActiveStage(null);
+    setEditingEv(null);
     fetchStepData();
   }, [activity.id]);
 
@@ -76,10 +85,15 @@ export default function ActivityDetailView({
     setLoading(false);
   };
 
+  const getSession = async () => {
+    const { supabase } = await import('@/lib/supabaseClient');
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  };
+
   const handleLinkEvidence = async (evidenceIds, step) => {
     try {
-      const { supabase } = await import('@/lib/supabaseClient');
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSession();
       const res = await fetch(`/api/projects/${token}/core-activities/${activity.id}/evidence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -96,8 +110,7 @@ export default function ActivityDetailView({
 
   const handleUnlinkEvidence = async (evidenceId, step) => {
     try {
-      const { supabase } = await import('@/lib/supabaseClient');
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSession();
       await fetch(`/api/projects/${token}/core-activities/${activity.id}/evidence`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -110,6 +123,47 @@ export default function ActivityDetailView({
     }
   };
 
+  const openMovePanel = (evidenceId, currentStep) => {
+    setEditingEv({ id: evidenceId, currentStep });
+    setMoveToAct(activity.id);
+    setMoveToStep(currentStep);
+  };
+
+  const handleMove = async () => {
+    if (!editingEv) return;
+    const { id, currentStep } = editingEv;
+    if (moveToAct === activity.id && moveToStep === currentStep) {
+      setEditingEv(null);
+      return;
+    }
+    setMoving(true);
+    try {
+      const session = await getSession();
+      // 1. Unlink from current position
+      await fetch(`/api/projects/${token}/core-activities/${activity.id}/evidence`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ evidence_ids: [id], step: currentStep }),
+      });
+      // 2. Link to new position
+      await fetch(`/api/projects/${token}/core-activities/${moveToAct}/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ evidence_ids: [id], step: moveToStep }),
+      });
+      setEditingEv(null);
+      await fetchStepData();
+      onCoverageChange?.();
+      // If moved to a different activity, notify parent to refresh that activity's dots too
+      if (moveToAct !== activity.id) {
+        onMovedToActivity?.(moveToAct);
+      }
+    } catch (err) {
+      console.error('Failed to move evidence:', err);
+    }
+    setMoving(false);
+  };
+
   const handleAdopt = async () => {
     setAdopting(true);
     await onAdopt(activity.id);
@@ -118,8 +172,7 @@ export default function ActivityDetailView({
 
   const handleSaveText = async (field, value) => {
     try {
-      const { supabase } = await import('@/lib/supabaseClient');
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSession();
       await fetch(`/api/projects/${token}/core-activities/${activity.id}/step-text`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -143,6 +196,65 @@ export default function ActivityDetailView({
   const fmtDate = (ts) => ts ? new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
   const snippet = (text) => (text || '').length > 200 ? (text || '').slice(0, 200) + '...' : (text || '');
 
+  // Inline reassign panel — shared between draft and adopted views
+  const MovePanel = ({ evidenceId, currentStep }) => {
+    const isSamePosition = moveToAct === activity.id && moveToStep === currentStep;
+    return (
+      <div style={{
+        marginTop: 4, padding: '10px 12px',
+        background: '#f9fafb', borderRadius: 6, border: '1px solid #e5e7eb',
+        display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+      }}>
+        {activities.length > 1 && (
+          <>
+            <span style={{ fontSize: 12, color: '#6b7280' }}>Activity</span>
+            <select
+              value={moveToAct}
+              onChange={e => setMoveToAct(e.target.value)}
+              style={{ padding: '4px 8px', fontSize: 12, border: '1px solid #d1d5db', borderRadius: 5, color: '#111827', background: 'white', maxWidth: 200, fontFamily: 'inherit' }}
+            >
+              {activities.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </>
+        )}
+        <span style={{ fontSize: 12, color: '#6b7280' }}>Stage</span>
+        <div style={{ display: 'flex', gap: 3 }}>
+          {STAGES.map(s => (
+            <button key={s.key} onClick={() => setMoveToStep(s.key)} style={{
+              padding: '3px 8px', fontSize: 11, fontWeight: 600, borderRadius: 4, cursor: 'pointer',
+              background: moveToStep === s.key ? NAVY : 'white',
+              color: moveToStep === s.key ? 'white' : '#6b7280',
+              border: `1px solid ${moveToStep === s.key ? NAVY : '#d1d5db'}`,
+              fontFamily: 'inherit',
+            }}>
+              {s.key.slice(0, 3)}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={handleMove}
+          disabled={moving || isSamePosition}
+          style={{
+            padding: '4px 12px', fontSize: 12, fontWeight: 600,
+            background: isSamePosition ? '#e5e7eb' : NAVY,
+            color: isSamePosition ? '#9ca3af' : 'white',
+            border: 'none', borderRadius: 5,
+            cursor: (moving || isSamePosition) ? 'default' : 'pointer',
+            fontFamily: 'inherit', opacity: moving ? 0.7 : 1,
+          }}
+        >
+          {moving ? 'Moving...' : 'Confirm'}
+        </button>
+        <button
+          onClick={() => setEditingEv(null)}
+          style={{ padding: '4px 8px', fontSize: 12, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 5, cursor: 'pointer', fontFamily: 'inherit' }}
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  };
+
   if (loading) {
     return <div style={{ padding: '16px 18px', fontSize: 13, color: '#9ca3af' }}>Loading...</div>;
   }
@@ -155,7 +267,7 @@ export default function ActivityDetailView({
       </p>
 
       {isAdopted ? (
-        /* Adopted: all stages at once, read-only */
+        /* Adopted: all stages at once */
         <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {STAGES.map(s => {
             const items = stepData[s.key] || [];
@@ -167,12 +279,21 @@ export default function ActivityDetailView({
                 {items.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 12, borderLeft: '2px solid #f0f0f0' }}>
                     {items.map(item => (
-                      <div key={item.id} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-                        <SrcBadge src={item.source} />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 1 }}>{fmtDate(item.created_at)}</div>
-                          <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55 }}>{snippet(item.content)}</div>
+                      <div key={item.id}>
+                        <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+                          <SrcBadge src={item.source} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 1 }}>{fmtDate(item.created_at)}</div>
+                            <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55 }}>{snippet(item.content)}</div>
+                          </div>
+                          <button
+                            onClick={() => editingEv?.id === item.id ? setEditingEv(null) : openMovePanel(item.id, s.key)}
+                            style={{ flexShrink: 0, background: 'none', border: 'none', fontSize: 11, color: editingEv?.id === item.id ? NAVY : '#9ca3af', cursor: 'pointer', padding: '1px 4px', fontFamily: 'inherit' }}
+                          >
+                            {editingEv?.id === item.id ? 'Cancel' : 'Move'}
+                          </button>
                         </div>
+                        {editingEv?.id === item.id && <MovePanel evidenceId={item.id} currentStep={s.key} />}
                       </div>
                     ))}
                   </div>
@@ -193,7 +314,7 @@ export default function ActivityDetailView({
               const isActive = activeStage === s.key;
               const count = (stepData[s.key] || []).length;
               return (
-                <button key={s.key} onClick={() => setActiveStage(s.key)} style={{
+                <button key={s.key} onClick={() => { setActiveStage(s.key); setEditingEv(null); }} style={{
                   flex: 1, padding: '10px 4px', border: 'none', cursor: 'pointer',
                   fontFamily: 'inherit', textAlign: 'center', background: 'white',
                   borderBottom: isActive ? `2px solid ${NAVY}` : '2px solid transparent',
@@ -242,16 +363,27 @@ export default function ActivityDetailView({
             {activeItems.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
                 {activeItems.map(item => (
-                  <div key={item.id} style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '9px 11px', background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 6 }}>
-                    <SrcBadge src={item.source} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>{fmtDate(item.created_at)}</div>
-                      <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.6 }}>{snippet(item.content)}</div>
+                  <div key={item.id}>
+                    <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '9px 11px', background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 6 }}>
+                      <SrcBadge src={item.source} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>{fmtDate(item.created_at)}</div>
+                        <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.6 }}>{snippet(item.content)}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 2, flexShrink: 0, alignItems: 'center' }}>
+                        <button
+                          onClick={() => editingEv?.id === item.id ? setEditingEv(null) : openMovePanel(item.id, activeStage)}
+                          style={{ background: 'none', border: 'none', fontSize: 11, color: editingEv?.id === item.id ? NAVY : '#9ca3af', cursor: 'pointer', padding: '1px 4px', fontFamily: 'inherit' }}
+                        >
+                          {editingEv?.id === item.id ? 'Cancel' : 'Move'}
+                        </button>
+                        <button
+                          onClick={() => handleUnlinkEvidence(item.id, activeStage)}
+                          style={{ background: 'none', border: 'none', color: '#d1d5db', fontSize: 14, cursor: 'pointer', padding: '0 2px' }}
+                        >×</button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleUnlinkEvidence(item.id, activeStage)}
-                      style={{ flexShrink: 0, background: 'none', border: 'none', color: '#d1d5db', fontSize: 14, cursor: 'pointer', padding: '0 2px' }}
-                    >×</button>
+                    {editingEv?.id === item.id && <MovePanel evidenceId={item.id} currentStep={activeStage} />}
                   </div>
                 ))}
               </div>

@@ -519,9 +519,11 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
                       activity={activity}
                       token={token}
                       allEvidence={allEvidence}
+                      activities={activities}
                       onAdopt={handleAdopt}
                       onUpdate={handleUpdate}
                       onCoverageChange={() => refreshCoverage(activity.id)}
+                      onMovedToActivity={(targetId) => refreshCoverage(targetId)}
                     />
                   </div>
                 )}
