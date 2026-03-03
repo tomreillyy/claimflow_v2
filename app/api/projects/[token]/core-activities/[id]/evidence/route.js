@@ -22,18 +22,16 @@ export async function GET(req, { params }) {
       .eq('activity_id', id)
       .order('created_at', { ascending: true });
 
+    const emptySteps = { Hypothesis: [], Experiment: [], Observation: [], Evaluation: [], Conclusion: [] };
+
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      // Table may not exist yet (migration pending) — return empty rather than crashing the UI
+      console.error('activity_evidence query error:', error.message);
+      return NextResponse.json({ steps: emptySteps });
     }
 
     // Group by systematic step
-    const steps = {
-      Hypothesis: [],
-      Experiment: [],
-      Observation: [],
-      Evaluation: [],
-      Conclusion: []
-    };
+    const steps = { ...emptySteps };
 
     (rows || []).forEach(row => {
       if (steps[row.systematic_step]) {
