@@ -131,6 +131,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
 
       {/* Nav */}
       <nav style={{ padding: '6px 0', flex: 1, overflowY: 'auto' }}>
+        <NavBtn label="Dashboard"  viewKey="dashboard" />
         <NavBtn label="Activities" viewKey="activities" />
         <NavBtn label="Costs"      viewKey="costs" />
         <a
