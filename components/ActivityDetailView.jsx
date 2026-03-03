@@ -21,6 +21,7 @@ export default function ActivityDetailView({
   onAdopt,
   onUpdate,
   onCoverageChange,
+  inline = false,
 }) {
   const [stepData, setStepData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -97,7 +98,8 @@ export default function ActivityDetailView({
     setAdopting(true);
     const success = await onAdopt(activity.id);
     setAdopting(false);
-    if (success) onBack();
+    // In full-page mode collapse back to list; in inline mode stay open showing adopted state
+    if (success && !inline) onBack();
   };
 
   const handleSaveName = async () => {
@@ -145,35 +147,37 @@ export default function ActivityDetailView({
   });
 
   return (
-    <div style={{ padding: '20px 0' }}>
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 0',
-          background: 'none',
-          border: 'none',
-          color: '#64748b',
-          fontSize: 13,
-          cursor: 'pointer',
-          marginBottom: 16,
-          fontFamily: 'inherit',
-        }}
-        onMouseEnter={e => e.currentTarget.style.color = '#021048'}
-        onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
-      >
-        <span style={{ fontSize: 16 }}>&larr;</span> Back to Activities
-      </button>
+    <div style={{ padding: inline ? '20px 20px 20px 20px' : '20px 0' }}>
+      {/* Back button — full-page mode only */}
+      {!inline && (
+        <button
+          onClick={onBack}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 0',
+            background: 'none',
+            border: 'none',
+            color: '#64748b',
+            fontSize: 13,
+            cursor: 'pointer',
+            marginBottom: 16,
+            fontFamily: 'inherit',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = '#021048'}
+          onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
+        >
+          <span style={{ fontSize: 16 }}>&larr;</span> Back to Activities
+        </button>
+      )}
 
       {/* Activity header */}
       <div style={{
-        backgroundColor: 'white',
-        border: '1px solid #e5e7eb',
-        borderRadius: 12,
-        padding: 24,
+        backgroundColor: inline ? 'transparent' : 'white',
+        border: inline ? 'none' : '1px solid #e5e7eb',
+        borderRadius: inline ? 0 : 12,
+        padding: inline ? '0 0 16px 0' : 24,
         marginBottom: 20,
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>

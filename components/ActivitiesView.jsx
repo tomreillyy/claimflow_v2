@@ -13,7 +13,7 @@ const STEP_COLORS = {
 };
 
 export default function ActivitiesView({ token, activities, allEvidence, onActivitiesChange }) {
-  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
   const [stepCoverageMap, setStepCoverageMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -109,7 +109,6 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       if (res.ok) {
         const updated = await res.json();
         onActivitiesChange(activities.map(a => a.id === id ? updated : a));
-        if (selectedActivity?.id === id) setSelectedActivity(updated);
       }
     } catch (err) {
       console.error('Failed to update activity:', err);
@@ -139,6 +138,7 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
   const handleRegenerate = async () => {
     if (!confirm('This will delete all draft activities and re-generate them from your evidence. Adopted activities are kept. Continue?')) return;
     setRegenerating(true);
+    setExpandedId(null);
     try {
       const { data: { session } } = await (await import('@/lib/supabaseClient')).supabase.auth.getSession();
       await fetch(`/api/projects/${token}/core-activities/regenerate`, {
@@ -171,25 +171,6 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       }
     } catch {}
   };
-
-  // If an activity is selected, show the detail view
-  if (selectedActivity) {
-    return (
-      <ActivityDetailView
-        activity={selectedActivity}
-        token={token}
-        allEvidence={allEvidence}
-        stepCoverage={stepCoverageMap[selectedActivity.id] || {}}
-        onBack={() => {
-          setSelectedActivity(null);
-          refreshCoverage(selectedActivity.id);
-        }}
-        onAdopt={handleAdopt}
-        onUpdate={handleUpdate}
-        onCoverageChange={() => refreshCoverage(selectedActivity.id)}
-      />
-    );
-  }
 
   const draftCount = activities.filter(a => a.status === 'draft' || !a.status).length;
   const adoptedCount = activities.filter(a => a.status === 'adopted').length;
@@ -409,120 +390,142 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {activities.map(activity => {
             const coverage = stepCoverageMap[activity.id] || {};
-            const coveredSteps = STEP_LABELS.filter(s => (coverage[s] || []).length > 0);
             const totalEvidence = STEP_LABELS.reduce((sum, s) => sum + (coverage[s] || []).length, 0);
             const isDraft = activity.status === 'draft' || !activity.status;
             const isAdopted = activity.status === 'adopted';
+            const isExpanded = expandedId === activity.id;
 
             return (
               <div
                 key={activity.id}
-                onClick={() => setSelectedActivity(activity)}
                 style={{
-                  padding: 20,
                   backgroundColor: 'white',
-                  border: `1px solid ${isAdopted ? '#bbf7d0' : '#e5e7eb'}`,
+                  border: `1px solid ${isExpanded ? '#021048' : isAdopted ? '#bbf7d0' : '#e5e7eb'}`,
                   borderRadius: 12,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = isAdopted ? '#86efac' : '#021048';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = isAdopted ? '#bbf7d0' : '#e5e7eb';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+                  boxShadow: isExpanded ? '0 2px 12px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
+                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                  overflow: 'hidden',
                 }}
               >
-                {/* Top row: status + name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <span style={{
-                    padding: '3px 10px',
-                    borderRadius: 12,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    backgroundColor: isAdopted ? '#dcfce7' : '#fef3c7',
-                    color: isAdopted ? '#166534' : '#92400e',
-                  }}>
-                    {isAdopted ? 'Adopted' : 'Draft'}
-                  </span>
-                  {activity.source === 'ai' && (
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>AI-generated</span>
-                  )}
-                </div>
-
-                {/* Activity name */}
-                <div style={{
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: '#0f172a',
-                  marginBottom: 6,
-                  lineHeight: 1.3,
-                }}>
-                  {activity.name}
-                </div>
-
-                {/* Uncertainty */}
-                <div style={{
-                  fontSize: 13,
-                  color: '#64748b',
-                  lineHeight: 1.5,
-                  marginBottom: 14,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}>
-                  {activity.uncertainty}
-                </div>
-
-                {/* Bottom row: evidence count + step coverage */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  {/* Step coverage pills */}
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {STEP_LABELS.map((step, i) => {
-                      const filled = (coverage[step] || []).length > 0;
-                      return (
-                        <div
-                          key={step}
-                          title={`${step}: ${(coverage[step] || []).length} items`}
-                          style={{
-                            width: 28,
-                            height: 24,
-                            borderRadius: 4,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 10,
-                            fontWeight: 600,
-                            backgroundColor: filled ? STEP_COLORS[step] + '20' : '#f1f5f9',
-                            color: filled ? STEP_COLORS[step] : '#cbd5e1',
-                            border: `1px solid ${filled ? STEP_COLORS[step] + '40' : '#e2e8f0'}`,
-                          }}
-                        >
-                          {STEP_SHORT[i]}
-                        </div>
-                      );
-                    })}
+                {/* Clickable summary row */}
+                <div
+                  onClick={() => setExpandedId(isExpanded ? null : activity.id)}
+                  style={{
+                    padding: 20,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isExpanded) e.currentTarget.parentElement.style.borderColor = isAdopted ? '#86efac' : '#021048';
+                  }}
+                  onMouseLeave={e => {
+                    if (!isExpanded) e.currentTarget.parentElement.style.borderColor = isAdopted ? '#bbf7d0' : '#e5e7eb';
+                  }}
+                >
+                  {/* Top row: status + source + chevron */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: 12,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        backgroundColor: isAdopted ? '#dcfce7' : '#fef3c7',
+                        color: isAdopted ? '#166534' : '#92400e',
+                      }}>
+                        {isAdopted ? 'Adopted' : 'Draft'}
+                      </span>
+                      {activity.source === 'ai' && (
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>AI-generated</span>
+                      )}
+                    </div>
+                    <span style={{
+                      fontSize: 14,
+                      color: '#94a3b8',
+                      transition: 'transform 0.2s ease',
+                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      display: 'inline-block',
+                    }}>
+                      &#9660;
+                    </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  {/* Activity name */}
+                  <div style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: '#0f172a',
+                    marginBottom: 6,
+                    lineHeight: 1.3,
+                  }}>
+                    {activity.name}
+                  </div>
+
+                  {/* Uncertainty */}
+                  <div style={{
+                    fontSize: 13,
+                    color: '#64748b',
+                    lineHeight: 1.5,
+                    marginBottom: 14,
+                    display: '-webkit-box',
+                    WebkitLineClamp: isExpanded ? 'unset' : 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: isExpanded ? 'visible' : 'hidden',
+                  }}>
+                    {activity.uncertainty}
+                  </div>
+
+                  {/* Bottom row: step pills + evidence count */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {STEP_LABELS.map((step, i) => {
+                        const filled = (coverage[step] || []).length > 0;
+                        return (
+                          <div
+                            key={step}
+                            title={`${step}: ${(coverage[step] || []).length} items`}
+                            style={{
+                              width: 28,
+                              height: 24,
+                              borderRadius: 4,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              backgroundColor: filled ? STEP_COLORS[step] + '20' : '#f1f5f9',
+                              color: filled ? STEP_COLORS[step] : '#cbd5e1',
+                              border: `1px solid ${filled ? STEP_COLORS[step] + '40' : '#e2e8f0'}`,
+                            }}
+                          >
+                            {STEP_SHORT[i]}
+                          </div>
+                        );
+                      })}
+                    </div>
                     <span style={{ fontSize: 12, color: '#94a3b8' }}>
                       {totalEvidence} evidence {totalEvidence === 1 ? 'item' : 'items'}
                     </span>
-                    <span style={{
-                      fontSize: 12,
-                      fontWeight: 500,
-                      color: '#021048',
-                    }}>
-                      {isDraft ? 'Review & Confirm \u2192' : 'View Details \u2192'}
-                    </span>
                   </div>
                 </div>
+
+                {/* Expanded detail — inline accordion */}
+                {isExpanded && (
+                  <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                    <ActivityDetailView
+                      inline
+                      activity={activity}
+                      token={token}
+                      allEvidence={allEvidence}
+                      stepCoverage={coverage}
+                      onBack={() => setExpandedId(null)}
+                      onAdopt={handleAdopt}
+                      onUpdate={handleUpdate}
+                      onCoverageChange={() => refreshCoverage(activity.id)}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
