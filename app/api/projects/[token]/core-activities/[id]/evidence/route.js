@@ -7,39 +7,49 @@ export async function GET(req, { params }) {
   try {
     const { id } = await params;
 
-    const { data: rows, error } = await supabaseAdmin
+    const emptySteps = { Hypothesis: [], Experiment: [], Observation: [], Evaluation: [], Conclusion: [] };
+
+    // Step 1: get activity_evidence link rows (no join — avoids PostgREST schema cache issues)
+    const { data: aeRows, error: aeError } = await supabaseAdmin
       .from('activity_evidence')
-      .select(`
-        id,
-        systematic_step,
-        link_source,
-        created_at,
-        evidence:evidence_id (
-          id, content, source, created_at, file_url, author_email,
-          systematic_step_primary, activity_type
-        )
-      `)
+      .select('id, evidence_id, systematic_step, link_source, created_at')
       .eq('activity_id', id)
       .order('created_at', { ascending: true });
 
-    const emptySteps = { Hypothesis: [], Experiment: [], Observation: [], Evaluation: [], Conclusion: [] };
+    if (aeError) {
+      console.error('activity_evidence query error:', aeError.message);
+      return NextResponse.json({ steps: emptySteps, _error: aeError.message });
+    }
 
-    if (error) {
-      // Table may not exist yet (migration pending) — return empty rather than crashing the UI
-      console.error('activity_evidence query error:', error.message);
+    if (!aeRows || aeRows.length === 0) {
       return NextResponse.json({ steps: emptySteps });
     }
 
+    // Step 2: fetch evidence details for all linked IDs
+    const evidenceIds = [...new Set(aeRows.map(r => r.evidence_id))];
+    const { data: evidenceRows, error: evError } = await supabaseAdmin
+      .from('evidence')
+      .select('id, content, source, created_at, file_url, author_email, systematic_step_primary, activity_type')
+      .in('id', evidenceIds);
+
+    if (evError) {
+      console.error('evidence fetch error:', evError.message);
+      return NextResponse.json({ steps: emptySteps, _error: evError.message });
+    }
+
+    // Build lookup map
+    const evidenceById = {};
+    (evidenceRows || []).forEach(e => { evidenceById[e.id] = e; });
+
     // Group by systematic step
     const steps = { ...emptySteps };
-
-    (rows || []).forEach(row => {
-      if (steps[row.systematic_step]) {
+    aeRows.forEach(row => {
+      if (steps[row.systematic_step] && evidenceById[row.evidence_id]) {
         steps[row.systematic_step].push({
           link_id: row.id,
           link_source: row.link_source,
           linked_at: row.created_at,
-          ...row.evidence
+          ...evidenceById[row.evidence_id]
         });
       }
     });

@@ -37,6 +37,7 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
             const res = await fetch(`/api/projects/${token}/core-activities/${act.id}/evidence`);
             if (res.ok) {
               const data = await res.json();
+              if (data._error) console.error(`[coverage useEffect] ${act.id}:`, data._error);
               coverageMap[act.id] = data.steps;
             }
           } catch {
@@ -124,7 +125,11 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       await Promise.all(acts.map(async (act) => {
         try {
           const res = await fetch(`/api/projects/${token}/core-activities/${act.id}/evidence`);
-          if (res.ok) coverageMap[act.id] = (await res.json()).steps;
+          if (res.ok) {
+            const d = await res.json();
+            if (d._error) console.error(`[coverage] ${act.id}:`, d._error);
+            coverageMap[act.id] = d.steps;
+          }
         } catch {}
       }));
       setStepCoverageMap(coverageMap);
@@ -145,9 +150,10 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       if (res.ok) {
         const data = await res.json();
         const newActivities = data.activities || [];
-        onActivitiesChange(newActivities);
-        // Pass new activities directly to avoid stale closure
+        // Link evidence BEFORE notifying parent — prevents useEffect firing
+        // with new activity IDs before the DB rows exist
         await linkEvidence(newActivities);
+        onActivitiesChange(newActivities);
       }
     } catch (err) {
       console.error('Regenerate failed:', err);
