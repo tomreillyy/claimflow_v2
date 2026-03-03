@@ -8,8 +8,6 @@ import PrintButton from './PrintButton';
 
 async function getUser() {
   const cookieStore = await cookies();
-  const allCookies = cookieStore.getAll();
-  console.log('[pack/page] cookies present:', allCookies.map(c => c.name));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -32,24 +30,18 @@ async function getUser() {
     }
   );
 
-  const { data: { user }, error } = await supabase.auth.getUser();
-  console.log('[pack/page] getUser result:', { userId: user?.id ?? null, error: error?.message ?? null });
+  const { data: { user } } = await supabase.auth.getUser();
   return user;
 }
 
 async function checkSubscription(userId) {
-  if (!userId) {
-    console.log('[pack/page] checkSubscription: no userId, returning false');
-    return false;
-  }
+  if (!userId) return false;
 
-  const { data: subscription, error } = await supabaseAdmin
+  const { data: subscription } = await supabaseAdmin
     .from('subscriptions')
     .select('status, current_period_end')
     .eq('user_id', userId)
     .single();
-
-  console.log('[pack/page] checkSubscription:', { userId, subscription, error: error?.message ?? null });
 
   if (!subscription) return false;
 
