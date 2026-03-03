@@ -27,6 +27,39 @@ function SrcBadge({ src }) {
   );
 }
 
+// Wrapper that reveals action buttons on hover
+function EvidenceRow({ item, isEditing, onMove, onUnlink, children }) {
+  const [hovered, setHovered] = useState(false);
+  const showActions = hovered || isEditing;
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '9px 11px', background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 6 }}
+    >
+      {children}
+      <div style={{ display: 'flex', gap: 5, flexShrink: 0, alignItems: 'center', opacity: showActions ? 1 : 0, transition: 'opacity 0.12s' }}>
+        <button
+          onClick={onMove}
+          style={{ padding: '2px 7px', fontSize: 11, fontWeight: 500, color: '#6b7280', background: 'white', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer', fontFamily: 'inherit' }}
+        >
+          {isEditing ? 'Cancel' : 'Move'}
+        </button>
+        {onUnlink && (
+          <button
+            onClick={onUnlink}
+            style={{ padding: '2px 7px', fontSize: 11, fontWeight: 500, color: '#6b7280', background: 'white', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer', fontFamily: 'inherit' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#fca5a5'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#6b7280'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+          >
+            Remove
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ActivityDetailView({
   activity,
   token,
@@ -280,19 +313,17 @@ export default function ActivityDetailView({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 12, borderLeft: '2px solid #f0f0f0' }}>
                     {items.map(item => (
                       <div key={item.id}>
-                        <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+                        <EvidenceRow
+                          item={item}
+                          isEditing={editingEv?.id === item.id}
+                          onMove={() => editingEv?.id === item.id ? setEditingEv(null) : openMovePanel(item.id, s.key)}
+                        >
                           <SrcBadge src={item.source} />
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 1 }}>{fmtDate(item.created_at)}</div>
                             <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55 }}>{snippet(item.content)}</div>
                           </div>
-                          <button
-                            onClick={() => editingEv?.id === item.id ? setEditingEv(null) : openMovePanel(item.id, s.key)}
-                            style={{ flexShrink: 0, background: 'none', border: 'none', fontSize: 11, color: editingEv?.id === item.id ? NAVY : '#9ca3af', cursor: 'pointer', padding: '1px 4px', fontFamily: 'inherit' }}
-                          >
-                            {editingEv?.id === item.id ? 'Cancel' : 'Move'}
-                          </button>
-                        </div>
+                        </EvidenceRow>
                         {editingEv?.id === item.id && <MovePanel evidenceId={item.id} currentStep={s.key} />}
                       </div>
                     ))}
@@ -364,25 +395,18 @@ export default function ActivityDetailView({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
                 {activeItems.map(item => (
                   <div key={item.id}>
-                    <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '9px 11px', background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 6 }}>
+                    <EvidenceRow
+                      item={item}
+                      isEditing={editingEv?.id === item.id}
+                      onMove={() => editingEv?.id === item.id ? setEditingEv(null) : openMovePanel(item.id, activeStage)}
+                      onUnlink={() => handleUnlinkEvidence(item.id, activeStage)}
+                    >
                       <SrcBadge src={item.source} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>{fmtDate(item.created_at)}</div>
                         <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.6 }}>{snippet(item.content)}</div>
                       </div>
-                      <div style={{ display: 'flex', gap: 2, flexShrink: 0, alignItems: 'center' }}>
-                        <button
-                          onClick={() => editingEv?.id === item.id ? setEditingEv(null) : openMovePanel(item.id, activeStage)}
-                          style={{ background: 'none', border: 'none', fontSize: 11, color: editingEv?.id === item.id ? NAVY : '#9ca3af', cursor: 'pointer', padding: '1px 4px', fontFamily: 'inherit' }}
-                        >
-                          {editingEv?.id === item.id ? 'Cancel' : 'Move'}
-                        </button>
-                        <button
-                          onClick={() => handleUnlinkEvidence(item.id, activeStage)}
-                          style={{ background: 'none', border: 'none', color: '#d1d5db', fontSize: 14, cursor: 'pointer', padding: '0 2px' }}
-                        >×</button>
-                      </div>
-                    </div>
+                    </EvidenceRow>
                     {editingEv?.id === item.id && <MovePanel evidenceId={item.id} currentStep={activeStage} />}
                   </div>
                 ))}
