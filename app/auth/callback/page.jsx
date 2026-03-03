@@ -64,20 +64,25 @@ function AuthCallbackContent() {
       router.push('/dashboard');
     };
 
-    // With createBrowserClient, the magic link token is processed asynchronously.
-    // Listen for SIGNED_IN so we catch it whether it fires before or after this effect runs.
+    // With implicit flow, SIGNED_IN fires when the client processes the magic link hash.
+    // We also call getSession() immediately as a fallback for already-established sessions.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        handleSession(session);
-      }
+      if (event === 'SIGNED_IN') handleSession(session);
     });
 
-    // Also check immediately in case the session is already established.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) handleSession(data.session);
     });
 
-    return () => subscription.unsubscribe();
+    // Safety fallback: if nothing fires after 8s, redirect to login.
+    const timeout = setTimeout(() => {
+      if (!handled.current) router.push('/auth/login');
+    }, 8000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [router, searchParams]);
 
   return (
