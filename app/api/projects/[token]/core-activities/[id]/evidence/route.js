@@ -29,7 +29,7 @@ export async function GET(req, { params }) {
     const evidenceIds = [...new Set(aeRows.map(r => r.evidence_id))];
     const { data: evidenceRows, error: evError } = await supabaseAdmin
       .from('evidence')
-      .select('id, content, source, created_at, file_url, author_email, systematic_step_primary, activity_type')
+      .select('id, content, source, created_at, file_url, author_email, systematic_step_primary')
       .in('id', evidenceIds);
 
     if (evError) {
