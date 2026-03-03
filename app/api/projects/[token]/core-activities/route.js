@@ -188,30 +188,50 @@ export async function GET(req, { params }) {
 
           console.log(`[Core Activities] Auto-generated ${inserted?.length || 0} activities`);
 
-          // Insert activity_evidence rows from AI evidence_assignments
+          // Link evidence to activities: try AI assignments first, then fall back to step-based linking
           if (inserted && inserted.length > 0) {
+            const validSteps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
+
+            // Collect AI-suggested assignments (keyed by evidence_id to track which are AI-assigned)
+            const aiAssignedIds = new Set();
             const aeInserts = [];
             inserted.forEach((act) => {
-              // Match by name since DB insert order may differ
               const source = aiActivities.find(a => a.name === act.name);
               const assignments = source?.meta?.evidence_assignments || [];
-              const validSteps = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
+              console.log(`[Core Activities] Activity "${act.name}" has ${assignments.length} AI assignments`);
               assignments.forEach(a => {
                 if (a.evidence_id && validSteps.includes(a.step)) {
-                  aeInserts.push({
-                    activity_id: act.id,
-                    evidence_id: a.evidence_id,
-                    systematic_step: a.step,
-                    link_source: 'auto'
-                  });
+                  aeInserts.push({ activity_id: act.id, evidence_id: a.evidence_id, systematic_step: a.step, link_source: 'auto' });
+                  aiAssignedIds.add(a.evidence_id);
                 }
               });
             });
+
+            // Fallback: link ALL evidence by its existing systematic_step_primary
+            // so activities always have evidence even if AI assignments are empty/wrong
+            const stepEvidence = (evidence || []).filter(e => validSteps.includes(e.systematic_step_primary));
+            if (stepEvidence.length > 0) {
+              inserted.forEach((act) => {
+                stepEvidence.forEach(ev => {
+                  aeInserts.push({
+                    activity_id: act.id,
+                    evidence_id: ev.id,
+                    systematic_step: ev.systematic_step_primary,
+                    link_source: 'auto'
+                  });
+                });
+              });
+            }
+
             if (aeInserts.length > 0) {
-              await supabaseAdmin
+              const { error: aeError } = await supabaseAdmin
                 .from('activity_evidence')
                 .upsert(aeInserts, { onConflict: 'activity_id,evidence_id,systematic_step' });
-              console.log(`[Core Activities] Linked ${aeInserts.length} evidence items to activities`);
+              if (aeError) {
+                console.error('[Core Activities] activity_evidence upsert error:', aeError.message);
+              } else {
+                console.log(`[Core Activities] Linked ${aeInserts.length} evidence items (${aiAssignedIds.size} AI-assigned, ${stepEvidence.length} step-based)`);
+              }
             }
           }
 
