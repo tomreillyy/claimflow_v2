@@ -64,8 +64,18 @@ function AuthCallbackContent() {
       router.push('/dashboard');
     };
 
-    // With implicit flow, SIGNED_IN fires when the client processes the magic link hash.
-    // We also call getSession() immediately as a fallback for already-established sessions.
+    // Explicitly parse the hash in case detectSessionInUrl hasn't fired yet.
+    if (window.location.hash.includes('access_token=')) {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (accessToken && refreshToken) {
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ data }) => { if (data.session) handleSession(data.session); });
+      }
+    }
+
+    // Also listen for SIGNED_IN (fired when detectSessionInUrl processes the hash).
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') handleSession(session);
     });
