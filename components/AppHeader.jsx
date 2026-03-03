@@ -22,6 +22,7 @@ export function AppHeader() {
           { name: 'Team', href: '/consultant/team' },
         ]
       : [
+          { name: 'Dashboard', href: '/dashboard' },
           { name: 'Projects', href: '/projects' },
           { name: 'Team', href: '/settings/team' },
           { name: 'Timesheets', href: '/timesheets' },
@@ -63,6 +64,7 @@ export function AppHeader() {
 
   // Determine active tab based on pathname
   const getActiveTab = () => {
+    if (pathname === '/dashboard') return 'Dashboard';
     if (pathname.startsWith('/marketplace')) return 'Find Advisor';
     if (pathname === '/consultant/profile') return 'Profile';
     if (pathname === '/consultant/settings') return 'Settings';
