@@ -115,6 +115,21 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
     }
   };
 
+  const linkEvidence = async () => {
+    await fetch(`/api/projects/${token}/core-activities/link-evidence`, { method: 'POST' });
+    // Refresh coverage for all activities
+    if (activities && activities.length > 0) {
+      const coverageMap = {};
+      await Promise.all(activities.map(async (act) => {
+        try {
+          const res = await fetch(`/api/projects/${token}/core-activities/${act.id}/evidence`);
+          if (res.ok) coverageMap[act.id] = (await res.json()).steps;
+        } catch {}
+      }));
+      setStepCoverageMap(coverageMap);
+    }
+  };
+
   const handleRegenerate = async () => {
     if (!confirm('This will delete all draft activities and re-generate them from your evidence. Adopted activities are kept. Continue?')) return;
     setRegenerating(true);
@@ -129,6 +144,8 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       if (res.ok) {
         const data = await res.json();
         onActivitiesChange(data.activities || []);
+        // Explicitly link evidence to new activities
+        await linkEvidence();
       }
     } catch (err) {
       console.error('Regenerate failed:', err);
@@ -227,25 +244,44 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
             We identified <strong>{draftCount} potential R&D {draftCount === 1 ? 'activity' : 'activities'}</strong> based on your evidence.
             Review each one and adopt when ready.
           </span>
-          <button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            style={{
-              flexShrink: 0,
-              padding: '6px 14px',
-              backgroundColor: 'white',
-              color: '#3730a3',
-              border: '1px solid #a5b4fc',
-              borderRadius: 6,
-              fontSize: 12,
-              fontWeight: 500,
-              cursor: regenerating ? 'default' : 'pointer',
-              opacity: regenerating ? 0.6 : 1,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {regenerating ? 'Regenerating...' : 'Regenerate'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={linkEvidence}
+              disabled={regenerating}
+              style={{
+                padding: '6px 14px',
+                backgroundColor: '#021048',
+                color: 'white',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: regenerating ? 'default' : 'pointer',
+                opacity: regenerating ? 0.6 : 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Link evidence
+            </button>
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              style={{
+                padding: '6px 14px',
+                backgroundColor: 'white',
+                color: '#3730a3',
+                border: '1px solid #a5b4fc',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: regenerating ? 'default' : 'pointer',
+                opacity: regenerating ? 0.6 : 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {regenerating ? 'Regenerating...' : 'Regenerate'}
+            </button>
+          </div>
         </div>
       )}
 
