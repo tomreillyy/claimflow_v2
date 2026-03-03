@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
-import { EditProjectModal } from '@/components/EditProjectModal';
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -15,7 +14,7 @@ export function ProjectsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [editingProject, setEditingProject] = useState(null);
+  const [menuAnchor, setMenuAnchor] = useState({ top: 0, right: 0 });
   const [hoveredRow, setHoveredRow] = useState(null);
   const menuRefs = useRef({});
 
@@ -32,14 +31,10 @@ export function ProjectsDashboard() {
         }
 
         const response = await fetch('/api/projects', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch projects');
-        }
+        if (!response.ok) throw new Error('Failed to fetch projects');
 
         const data = await response.json();
         setProjects(data.projects);
@@ -60,33 +55,16 @@ export function ProjectsDashboard() {
         setOpenMenuId(null);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openMenuId]);
 
-  const handleEditProject = (project) => {
-    setEditingProject(project);
-    setOpenMenuId(null);
-  };
-
-  const handleProjectUpdated = (updatedProject) => {
-    setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
-  };
-
   const handleDeleteProject = async (projectId) => {
-    if (!confirm('Are you sure you want to delete this project? It will be hidden but can be recovered.')) {
-      return;
-    }
+    if (!confirm('Are you sure you want to delete this project? It will be hidden but can be recovered.')) return;
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        alert('Please sign in to delete projects');
-        return;
-      }
+      if (!session) { alert('Please sign in to delete projects'); return; }
 
       const response = await fetch('/api/projects/delete', {
         method: 'POST',
@@ -147,23 +125,18 @@ export function ProjectsDashboard() {
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px' }}>
       {/* Page header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ fontSize: 24, fontWeight: 600, color: '#0f172a', margin: 0 }}>
-          Your Projects
-        </h2>
-        <a href="/admin/new-project" style={btnPrimary}>
-          + New Project
-        </a>
+        <h2 style={{ fontSize: 24, fontWeight: 600, color: '#0f172a', margin: 0 }}>Your Projects</h2>
+        <a href="/admin/new-project" style={btnPrimary}>+ New Project</a>
       </div>
 
-      {/* Table container */}
+      {/* Table container — no overflow:hidden so the fixed dropdown can escape */}
       <div style={{
         background: '#fff',
         border: '1px solid #e5e7eb',
         borderRadius: 12,
         boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)',
-        overflow: 'hidden'
       }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', borderRadius: 12 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e5e7eb' }}>
@@ -190,12 +163,7 @@ export function ProjectsDashboard() {
                   <td style={td()}>
                     <a
                       href={`/p/${project.project_token}`}
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: '#0f172a',
-                        textDecoration: 'none',
-                      }}
+                      style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', textDecoration: 'none' }}
                       onMouseEnter={(e) => { e.currentTarget.style.color = '#021048'; e.currentTarget.style.textDecoration = 'underline'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.color = '#0f172a'; e.currentTarget.style.textDecoration = 'none'; }}
                     >
@@ -275,13 +243,19 @@ export function ProjectsDashboard() {
                         </svg>
                       </a>
 
-                      {/* Kebab menu */}
-                      <div style={{ position: 'relative' }} ref={el => menuRefs.current[project.id] = el}>
+                      {/* Kebab — delete only */}
+                      <div ref={el => menuRefs.current[project.id] = el}>
                         <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setOpenMenuId(openMenuId === project.id ? null : project.id);
+                            if (openMenuId === project.id) {
+                              setOpenMenuId(null);
+                            } else {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setMenuAnchor({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                              setOpenMenuId(project.id);
+                            }
                           }}
                           style={{
                             background: 'transparent',
@@ -310,56 +284,6 @@ export function ProjectsDashboard() {
                             <circle cx="12" cy="19" r="2"></circle>
                           </svg>
                         </button>
-
-                        {openMenuId === project.id && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            right: 0,
-                            marginTop: 4,
-                            backgroundColor: 'white',
-                            border: '1px solid rgba(0,0,0,0.08)',
-                            borderRadius: 10,
-                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 10px 20px -2px rgba(0,0,0,0.1)',
-                            zIndex: 1000,
-                            minWidth: 150,
-                            overflow: 'hidden',
-                            padding: '4px'
-                          }}>
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleEditProject(project);
-                              }}
-                              style={menuItem()}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                              </svg>
-                              Edit Details
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleDeleteProject(project.id);
-                              }}
-                              style={menuItem({ color: '#ef4444' })}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                              </svg>
-                              Delete Project
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </td>
@@ -370,12 +294,37 @@ export function ProjectsDashboard() {
         </div>
       </div>
 
-      {editingProject && (
-        <EditProjectModal
-          project={editingProject}
-          onClose={() => setEditingProject(null)}
-          onUpdate={handleProjectUpdated}
-        />
+      {/* Dropdown rendered at fixed position — escapes table overflow */}
+      {openMenuId && (
+        <div style={{
+          position: 'fixed',
+          top: menuAnchor.top,
+          right: menuAnchor.right,
+          backgroundColor: 'white',
+          border: '1px solid rgba(0,0,0,0.08)',
+          borderRadius: 10,
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 10px 20px -2px rgba(0,0,0,0.1)',
+          zIndex: 9999,
+          minWidth: 150,
+          padding: '4px'
+        }}>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDeleteProject(openMenuId);
+            }}
+            style={menuItem({ color: '#ef4444' })}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Delete Project
+          </button>
+        </div>
       )}
     </div>
   );
