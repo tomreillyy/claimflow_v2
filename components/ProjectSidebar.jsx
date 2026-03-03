@@ -11,22 +11,14 @@ function currentFY() {
   return now.getMonth() < 6 ? now.getFullYear() : now.getFullYear() + 1;
 }
 
-const MORE_ITEMS = [
-  { label: 'Evidence',        key: 'timeline' },
-  { label: 'Project Details', key: 'details'  },
-  { label: 'Team',            key: 'team'     },
-  { label: 'Documents',       key: 'knowledge'},
-  { label: 'Integrations',    key: 'records'  },
-];
 
 export default function ProjectSidebar({ token, projectName, stepperData = [] }) {
   const searchParams = useSearchParams();
   const pathname    = usePathname();
   const router      = useRouter();
 
-  const [showMore,    setShowMore]    = useState(false);
-  const [isMobile,    setIsMobile]    = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [isMobile,   setIsMobile]   = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const currentView = searchParams.get('view') || 'dashboard';
   const isMain      = pathname === `/p/${token}`;
@@ -42,11 +34,6 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Auto-open More if the current view is a More item
-  useEffect(() => {
-    if (MORE_ITEMS.some(i => i.key === currentView)) setShowMore(true);
-  }, [currentView]);
-
   const go = (key) => {
     const p = new URLSearchParams(searchParams.toString());
     key === 'dashboard' ? p.delete('view') : p.set('view', key);
@@ -60,14 +47,13 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
     else if (step.navigateTo?.view) go(step.navigateTo.view);
   };
 
-  const done      = stepperData.filter(s => s.complete).length;
-  const total     = stepperData.length;
-  const nextStep  = stepperData.find(s => !s.complete);
-  const pct       = total ? Math.round((done / total) * 100) : 0;
+  const done     = stepperData.filter(s => s.complete).length;
+  const total    = stepperData.length;
+  const nextStep = stepperData.find(s => !s.complete);
 
   const isActive = (key) => isMain && currentView === key;
 
-  const NavBtn = ({ label, viewKey, suffix }) => {
+  const NavBtn = ({ label, viewKey }) => {
     const active = isActive(viewKey);
     return (
       <button
@@ -83,7 +69,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
           cursor: 'pointer', fontFamily: 'inherit',
         }}
       >
-        {label}{suffix && <span style={{ marginLeft: 4, opacity: 0.5 }}>{suffix}</span>}
+        {label}
       </button>
     );
   };
@@ -107,7 +93,6 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       {/* Progress */}
       {total > 0 && (
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
-          {/* Segmented bar */}
           <div style={{ display: 'flex', gap: 3, marginBottom: 7 }}>
             {stepperData.map((step, i) => (
               <button
@@ -144,8 +129,8 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
         </div>
       )}
 
-      {/* Primary nav */}
-      <nav style={{ padding: '6px 0', flex: 1 }}>
+      {/* Nav */}
+      <nav style={{ padding: '6px 0', flex: 1, overflowY: 'auto' }}>
         <NavBtn label="Activities" viewKey="activities" />
         <NavBtn label="Costs"      viewKey="costs" />
         <a
@@ -155,51 +140,20 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
             color: '#374151', textDecoration: 'none', fontFamily: 'inherit',
             borderLeft: '3px solid transparent',
           }}
-          onMouseEnter={e => e.currentTarget.style.color = NAVY}
-          onMouseLeave={e => e.currentTarget.style.color = '#374151'}
+          onMouseEnter={e => { e.currentTarget.style.color = NAVY; e.currentTarget.style.background = 'rgba(0,0,0,0.02)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}
         >
-          Claim Pack <span style={{ opacity: 0.45 }}>↗</span>
+          Claim Pack
         </a>
-      </nav>
 
-      {/* More */}
-      <div style={{ borderTop: '1px solid #f0f0f0' }}>
-        <button
-          onClick={() => setShowMore(m => !m)}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            width: '100%', padding: '9px 16px', fontSize: 12, color: '#9ca3af',
-            background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          <span>More</span>
-          <span style={{ fontSize: 8, marginTop: 1 }}>{showMore ? '▲' : '▼'}</span>
-        </button>
-        {showMore && (
-          <div style={{ paddingBottom: 8 }}>
-            {MORE_ITEMS.map(item => {
-              const active = isActive(item.key);
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => go(item.key)}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '6px 16px 6px 26px', fontSize: 12,
-                    color: active ? NAVY : '#6b7280',
-                    fontWeight: active ? 600 : 400,
-                    background: active ? '#eef2ff' : 'none',
-                    border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                    borderLeft: `3px solid ${active ? NAVY : 'transparent'}`,
-                  }}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+        <div style={{ margin: '6px 16px', borderTop: '1px solid #f0f0f0' }} />
+
+        <NavBtn label="Evidence"       viewKey="timeline"  />
+        <NavBtn label="Project Details" viewKey="details"   />
+        <NavBtn label="Project Team"   viewKey="team"      />
+        <NavBtn label="Documents"      viewKey="knowledge" />
+        <NavBtn label="Integrations"   viewKey="records"   />
+      </nav>
     </div>
   );
 

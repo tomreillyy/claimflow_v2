@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { User, LogOut, Menu, X, HelpCircle } from 'lucide-react';
+import { User, LogOut, Menu, X, HelpCircle, Settings, Compass } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { usePathname } from 'next/navigation';
 import { OnboardingModal } from '@/components/OnboardingModal';
@@ -12,6 +13,7 @@ export function AppHeader() {
   const { signOut, isConsultant, consultantBranding, user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const tabs = [
     ...(isConsultant
@@ -20,15 +22,13 @@ export function AppHeader() {
           { name: 'Team', href: '/consultant/team' },
         ]
       : [
-          { name: 'Dashboard', href: '/dashboard' },
           { name: 'Projects', href: '/projects' },
           { name: 'Team', href: '/settings/team' },
           { name: 'Timesheets', href: '/timesheets' },
-          { name: 'Settings', href: '/settings/company' },
         ]),
-    { name: 'Find Advisor', href: '/marketplace' },
     ...(isConsultant
       ? [
+          { name: 'Find Advisor', href: '/marketplace' },
           { name: 'Profile', href: '/consultant/profile' },
           { name: 'Settings', href: '/consultant/settings' },
         ]
@@ -63,16 +63,13 @@ export function AppHeader() {
 
   // Determine active tab based on pathname
   const getActiveTab = () => {
-    if (pathname === '/dashboard') return 'Dashboard';
     if (pathname.startsWith('/marketplace')) return 'Find Advisor';
     if (pathname === '/consultant/profile') return 'Profile';
     if (pathname === '/consultant/settings') return 'Settings';
     if (pathname === '/consultant/team') return 'Team';
     if (pathname.startsWith('/consultant')) return 'Clients';
     if (isConsultant && pathname.startsWith('/p/')) return 'Clients';
-    if (pathname === '/' || pathname === '/projects' || pathname.startsWith('/p/')) return 'Projects';
     if (pathname === '/settings/team') return 'Team';
-    if (pathname === '/settings/company') return 'Settings';
     if (pathname.startsWith('/timesheets')) return 'Timesheets';
     return 'Projects';
   };
@@ -103,7 +100,7 @@ export function AppHeader() {
           }}
         >
           {/* Left: Logo (fixed width to align with project sidebar) */}
-          <Link href={isConsultant ? '/consultant' : '/dashboard'} style={{
+          <Link href={isConsultant ? '/consultant' : '/projects'} style={{
             display: 'flex',
             alignItems: 'center',
             textDecoration: 'none',
@@ -231,6 +228,27 @@ export function AppHeader() {
                   overflow: 'hidden',
                   zIndex: 100,
                 }}>
+                  {[
+                    { label: 'Settings', icon: <Settings size={16} color="#6b7280" />, action: () => router.push('/settings/company') },
+                    { label: 'Find Advisor', icon: <Compass size={16} color="#6b7280" />, action: () => router.push('/marketplace') },
+                  ].map(({ label, icon, action }) => (
+                    <button
+                      key={label}
+                      onClick={() => { setIsUserMenuOpen(false); action(); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        width: '100%', padding: '10px 14px',
+                        border: 'none', borderBottom: '1px solid rgba(0,0,0,0.06)',
+                        backgroundColor: 'transparent', cursor: 'pointer',
+                        fontSize: 14, color: '#374151', fontFamily: 'inherit',
+                        transition: 'background-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      {icon}{label}
+                    </button>
+                  ))}
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
@@ -344,6 +362,26 @@ export function AppHeader() {
               })}
             </nav>
 
+            {/* Mobile Settings + Find Advisor */}
+            {[
+              { label: 'Settings', icon: <Settings size={18} color="#6b7280" />, href: '/settings/company' },
+              { label: 'Find Advisor', icon: <Compass size={18} color="#6b7280" />, href: '/marketplace' },
+            ].map(({ label, icon, href }) => (
+              <Link
+                key={label}
+                href={href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  width: '100%', padding: '10px 14px',
+                  borderRadius: 8, textDecoration: 'none',
+                  fontSize: 15, fontWeight: 500, color: '#374151',
+                  marginBottom: 4,
+                }}
+              >
+                {icon}{label}
+              </Link>
+            ))}
             {/* Mobile Walkthrough */}
             <button
               onClick={() => {
