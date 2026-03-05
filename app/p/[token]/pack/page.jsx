@@ -127,7 +127,8 @@ export default async function PackV2Page({ params }) {
   const sections = {};
   (sectionsArray || []).forEach(section => {
     sections[section.section_key] = {
-      initialContent: section.content,
+      content: section.content,         // used by claimPackValidator
+      initialContent: section.content,  // used by SectionEditor (Tiptap)
       aiGenerated: section.ai_generated,
       lastEditedAt: section.last_edited_at,
       lastEditedBy: section.last_edited_by,
@@ -172,7 +173,7 @@ export default async function PackV2Page({ params }) {
 
       {/* Main content — offset for fixed AppHeader (56px) + sub-header (44px) */}
       <main className="print-main" style={{
-        maxWidth: 1000,
+        maxWidth: 1200,
         margin: '0 auto',
         padding: '24px 24px 48px',
         paddingTop: 124,

@@ -18,42 +18,27 @@ export default function SectionEditor({
 }) {
   const [content, setContent] = useState(initialContent || '');
   const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(''); // 'saving', 'saved', 'error'
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Auto-save debounce timer
+  const [saveStatus, setSaveStatus] = useState('');
   const [saveTimer, setSaveTimer] = useState(null);
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3, 4]
-        }
-      }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3, 4] } }),
       Placeholder.configure({
-        placeholder: `${sectionName} content will appear here after generation...`
-      })
+        placeholder: `Click "Generate All Sections" to create this section, or type here to write it manually.`,
+      }),
     ],
-    content: content,
+    content,
     editable: true,
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
       setContent(newContent);
-      setIsEditing(true);
-
-      // Debounced auto-save
       if (saveTimer) clearTimeout(saveTimer);
-
-      const timer = setTimeout(() => {
-        handleSave(newContent);
-      }, 2000); // 2 second debounce
-
+      const timer = setTimeout(() => handleSave(newContent), 2000);
       setSaveTimer(timer);
-    }
+    },
   });
 
-  // Update editor content when initialContent changes (from regeneration)
   useEffect(() => {
     if (editor && initialContent !== content) {
       editor.commands.setContent(initialContent || '');
@@ -62,41 +47,23 @@ export default function SectionEditor({
   }, [initialContent]);
 
   const handleSave = useCallback(async (contentToSave) => {
-    if (!contentToSave || contentToSave === '<p></p>') {
-      return; // Don't save empty content
-    }
-
+    if (!contentToSave || contentToSave === '<p></p>') return;
     setIsSaving(true);
     setSaveStatus('saving');
-
     try {
-      // Get auth session
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
+      if (!session) throw new Error('Not authenticated');
       const response = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ content: contentToSave })
+        body: JSON.stringify({ content: contentToSave }),
       });
-
-      if (!response.ok) {
-        throw new Error('Save failed');
-      }
-
+      if (!response.ok) throw new Error('Save failed');
       setSaveStatus('saved');
-      setIsEditing(false);
-
-      // Clear "saved" status after 2 seconds
-      setTimeout(() => {
-        setSaveStatus('');
-      }, 2000);
-
+      setTimeout(() => setSaveStatus(''), 2000);
     } catch (error) {
       console.error('[SectionEditor] Save error:', error);
       setSaveStatus('error');
@@ -109,11 +76,9 @@ export default function SectionEditor({
     if (!timestamp) return '';
     const date = new Date(timestamp);
     const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
+    const diffMins = Math.floor((now - date) / 60000);
+    const diffHours = Math.floor((now - date) / 3600000);
+    const diffDays = Math.floor((now - date) / 86400000);
     if (diffMins < 1) return 'just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -121,290 +86,266 @@ export default function SectionEditor({
     return date.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
   };
 
-  if (!editor) {
-    return null;
-  }
+  if (!editor) return null;
 
-  const hasContent = content && content !== '<p></p>' && content.length > 10;
+  const hasContent = content && content !== '<p></p>' && content.trim().length > 10;
+
+  const toolbarButtons = [
+    {
+      label: 'B',
+      title: 'Bold',
+      style: { fontWeight: 700 },
+      action: () => editor.chain().focus().toggleBold().run(),
+      active: editor.isActive('bold'),
+    },
+    {
+      label: 'I',
+      title: 'Italic',
+      style: { fontStyle: 'italic' },
+      action: () => editor.chain().focus().toggleItalic().run(),
+      active: editor.isActive('italic'),
+    },
+    {
+      label: 'H2',
+      title: 'Heading',
+      style: { fontSize: 11 },
+      action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+      active: editor.isActive('heading', { level: 2 }),
+    },
+    {
+      label: '—',
+      title: 'Bullet list',
+      style: {},
+      action: () => editor.chain().focus().toggleBulletList().run(),
+      active: editor.isActive('bulletList'),
+    },
+    {
+      label: '1.',
+      title: 'Numbered list',
+      style: { fontSize: 11 },
+      action: () => editor.chain().focus().toggleOrderedList().run(),
+      active: editor.isActive('orderedList'),
+    },
+  ];
 
   return (
     <div className="section-editor print-section" style={{
-      marginBottom: 40,
-      pageBreakInside: 'avoid'
+      marginBottom: 12,
+      pageBreakInside: 'avoid',
+      backgroundColor: 'white',
+      border: '1px solid #e5e7eb',
+      borderRadius: 8,
+      overflow: 'hidden',
     }}>
-      {/* Section Header (hidden in print) */}
+      {/* Section header — screen only */}
       <div className="print-hide" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 12,
-        paddingBottom: 8,
-        borderBottom: '1px solid #e5e5e5'
+        padding: '10px 14px',
+        borderBottom: '1px solid #f3f4f6',
+        backgroundColor: '#fafafa',
+        gap: 8,
       }}>
-        <h2 style={{
-          fontSize: 16,
-          fontWeight: 600,
-          color: '#1a1a1a',
-          margin: 0
-        }}>
-          {sectionName}
-        </h2>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Save status */}
-          {saveStatus === 'saving' && (
-            <span style={{ fontSize: 12, color: '#666' }}>Saving...</span>
-          )}
-          {saveStatus === 'saved' && (
-            <span style={{ fontSize: 12, color: '#10b981' }}>✓ Saved</span>
-          )}
-          {saveStatus === 'error' && (
-            <span style={{ fontSize: 12, color: '#ef4444' }}>Save failed</span>
-          )}
-
-          {/* Metadata */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <h2 style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: '#111827',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {sectionName}
+          </h2>
           {hasContent && (
-            <span style={{ fontSize: 11, color: '#999', fontFamily: 'system-ui' }}>
-              {aiGenerated === false ? '✏️ Edited' : '🤖 AI-generated'}
-              {lastEditedAt && ` · ${formatTimestamp(lastEditedAt)}`}
+            <span style={{
+              fontSize: 10,
+              color: '#9ca3af',
+              backgroundColor: '#f3f4f6',
+              padding: '2px 6px',
+              borderRadius: 3,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}>
+              {aiGenerated === false ? 'Edited' : 'AI draft'}
+              {lastEditedAt ? ` · ${formatTimestamp(lastEditedAt)}` : ''}
             </span>
           )}
+        </div>
 
-          {/* Regenerate button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          {saveStatus === 'saving' && (
+            <span style={{ fontSize: 11, color: '#9ca3af' }}>Saving...</span>
+          )}
+          {saveStatus === 'saved' && (
+            <span style={{ fontSize: 11, color: '#10b981' }}>Saved</span>
+          )}
+          {saveStatus === 'error' && (
+            <span style={{ fontSize: 11, color: '#ef4444' }}>Save failed</span>
+          )}
           {onRegenerateClick && (
             <button
               onClick={onRegenerateClick}
               style={{
-                padding: '6px 12px',
-                backgroundColor: 'white',
-                color: '#021048',
-                border: '1px solid #021048',
+                padding: '4px 10px',
+                backgroundColor: 'transparent',
+                color: '#6b7280',
+                border: '1px solid #e5e7eb',
                 borderRadius: 4,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 500,
                 cursor: 'pointer',
-                fontFamily: 'system-ui'
+                fontFamily: 'system-ui',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = '#021048';
+                e.currentTarget.style.color = '#021048';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = '#e5e7eb';
+                e.currentTarget.style.color = '#6b7280';
               }}
             >
-              Regenerate AI
+              Regenerate
             </button>
           )}
         </div>
       </div>
 
-      {/* Print-only header */}
+      {/* Print-only section header */}
       <h2 className="print-only" style={{
         fontSize: 16,
         fontWeight: 600,
         color: '#1a1a1a',
         margin: '0 0 12px 0',
         borderBottom: '1px solid #333',
-        paddingBottom: 4
+        paddingBottom: 4,
       }}>
         {sectionName}
       </h2>
 
-      {/* Editor Toolbar (hidden in print) */}
+      {/* Toolbar — screen only, only if has content */}
       {hasContent && (
         <div className="print-hide" style={{
           display: 'flex',
-          gap: 8,
-          marginBottom: 12,
-          padding: 8,
-          backgroundColor: '#f8fafc',
-          borderRadius: 4,
-          border: '1px solid #e2e8f0'
+          gap: 2,
+          padding: '6px 14px',
+          borderBottom: '1px solid #f3f4f6',
+          backgroundColor: 'white',
         }}>
-          <button
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            className={editor.isActive('bold') ? 'is-active' : ''}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: editor.isActive('bold') ? '#021048' : 'white',
-              color: editor.isActive('bold') ? 'white' : '#333',
-              border: '1px solid #ddd',
-              borderRadius: 3,
-              fontSize: 12,
-              cursor: 'pointer',
-              fontWeight: editor.isActive('bold') ? 600 : 400
-            }}
-          >
-            Bold
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={editor.isActive('italic') ? 'is-active' : ''}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: editor.isActive('italic') ? '#021048' : 'white',
-              color: editor.isActive('italic') ? 'white' : '#333',
-              border: '1px solid #ddd',
-              borderRadius: 3,
-              fontSize: 12,
-              cursor: 'pointer',
-              fontStyle: 'italic'
-            }}
-          >
-            Italic
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: editor.isActive('heading', { level: 2 }) ? '#021048' : 'white',
-              color: editor.isActive('heading', { level: 2 }) ? 'white' : '#333',
-              border: '1px solid #ddd',
-              borderRadius: 3,
-              fontSize: 12,
-              cursor: 'pointer'
-            }}
-          >
-            Heading
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={editor.isActive('bulletList') ? 'is-active' : ''}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: editor.isActive('bulletList') ? '#021048' : 'white',
-              color: editor.isActive('bulletList') ? 'white' : '#333',
-              border: '1px solid #ddd',
-              borderRadius: 3,
-              fontSize: 12,
-              cursor: 'pointer'
-            }}
-          >
-            • List
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={editor.isActive('orderedList') ? 'is-active' : ''}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: editor.isActive('orderedList') ? '#021048' : 'white',
-              color: editor.isActive('orderedList') ? 'white' : '#333',
-              border: '1px solid #ddd',
-              borderRadius: 3,
-              fontSize: 12,
-              cursor: 'pointer'
-            }}
-          >
-            1. List
-          </button>
+          {toolbarButtons.map(({ label, title, style, action, active }) => (
+            <button
+              key={label}
+              onClick={action}
+              title={title}
+              style={{
+                padding: '3px 7px',
+                minWidth: 26,
+                backgroundColor: active ? '#021048' : 'transparent',
+                color: active ? 'white' : '#6b7280',
+                border: '1px solid',
+                borderColor: active ? '#021048' : 'transparent',
+                borderRadius: 3,
+                fontSize: 12,
+                cursor: 'pointer',
+                fontFamily: 'system-ui',
+                lineHeight: 1.4,
+                ...style,
+              }}
+              onMouseEnter={e => {
+                if (!active) {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!active) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Editor Content */}
-      <div style={{
-        fontSize: 14,
-        lineHeight: 1.7,
-        color: '#333',
-        fontFamily: 'Georgia, "Times New Roman", serif',
-        minHeight: hasContent ? 0 : 100
-      }}>
+      {/* Editor content */}
+      <div style={{ padding: '14px 16px' }}>
         <EditorContent editor={editor} />
       </div>
-
-      {/* Empty state message (hidden in print) */}
-      {!hasContent && (
-        <div className="print-hide" style={{
-          padding: 24,
-          textAlign: 'center',
-          color: '#999',
-          fontStyle: 'italic',
-          fontSize: 13
-        }}>
-          No content yet. Click "Generate Claim Pack" to create AI-generated content.
-        </div>
-      )}
 
       <style jsx global>{`
         .ProseMirror {
           outline: none;
-          padding: 12px;
-          border: 1px solid #e5e5e5;
-          border-radius: 4px;
-          background: white;
-          min-height: 100px;
-        }
-
-        .ProseMirror:focus {
-          border-color: #021048;
-          box-shadow: 0 0 0 1px #021048;
+          min-height: 60px;
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 14px;
+          line-height: 1.7;
+          color: #374151;
         }
 
         .ProseMirror p {
-          margin: 0 0 12px 0;
+          margin: 0 0 10px 0;
         }
-
         .ProseMirror p:last-child {
           margin-bottom: 0;
         }
-
         .ProseMirror h2 {
-          font-size: 18px;
-          font-weight: 600;
-          margin: 20px 0 12px 0;
-          color: #1a1a1a;
-        }
-
-        .ProseMirror h3 {
           font-size: 16px;
           font-weight: 600;
-          margin: 16px 0 10px 0;
-          color: #333;
+          margin: 18px 0 10px 0;
+          color: #111827;
         }
-
-        .ProseMirror h4 {
+        .ProseMirror h3 {
           font-size: 14px;
           font-weight: 600;
-          margin: 12px 0 8px 0;
-          color: #333;
+          margin: 14px 0 8px 0;
+          color: #1f2937;
         }
-
-        .ProseMirror ul,
-        .ProseMirror ol {
-          margin: 0 0 12px 0;
-          padding-left: 24px;
+        .ProseMirror h4 {
+          font-size: 13px;
+          font-weight: 600;
+          margin: 12px 0 6px 0;
+          color: #374151;
         }
-
+        .ProseMirror ul, .ProseMirror ol {
+          margin: 0 0 10px 0;
+          padding-left: 22px;
+        }
         .ProseMirror li {
-          margin-bottom: 4px;
+          margin-bottom: 3px;
         }
-
         .ProseMirror strong {
           font-weight: 600;
+          color: #111827;
         }
-
         .ProseMirror em {
           font-style: italic;
         }
-
         .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
-          color: #adb5bd;
+          color: #d1d5db;
           pointer-events: none;
           height: 0;
+          font-style: italic;
+          font-size: 13px;
         }
 
         @media print {
-          .print-hide {
-            display: none !important;
-          }
-          .print-only {
-            display: block !important;
-          }
+          .print-hide { display: none !important; }
+          .print-only { display: block !important; }
           .ProseMirror {
-            border: none;
-            padding: 0;
+            min-height: 0;
           }
         }
 
-        .print-only {
-          display: none;
-        }
+        .print-only { display: none; }
       `}</style>
     </div>
   );
