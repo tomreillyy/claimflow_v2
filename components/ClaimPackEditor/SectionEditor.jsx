@@ -4,7 +4,18 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect, useState, useCallback } from 'react';
+import { marked } from 'marked';
 import { supabase } from '@/lib/supabaseClient';
+
+// Convert markdown to HTML if content looks like markdown (not already HTML)
+function normaliseContent(raw) {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  // If it starts with an HTML tag, treat as already-HTML (Tiptap output)
+  if (trimmed.startsWith('<')) return trimmed;
+  // Otherwise parse as markdown
+  return marked.parse(trimmed, { breaks: false });
+}
 
 export default function SectionEditor({
   sectionKey,
@@ -16,7 +27,7 @@ export default function SectionEditor({
   lastEditedBy,
   onRegenerateClick
 }) {
-  const [content, setContent] = useState(initialContent || '');
+  const [content, setContent] = useState(normaliseContent(initialContent));
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [saveTimer, setSaveTimer] = useState(null);
@@ -28,7 +39,7 @@ export default function SectionEditor({
         placeholder: `Click "Generate All Sections" to create this section, or type here to write it manually.`,
       }),
     ],
-    content,
+    content: normaliseContent(initialContent),
     editable: true,
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
@@ -40,9 +51,10 @@ export default function SectionEditor({
   });
 
   useEffect(() => {
-    if (editor && initialContent !== content) {
-      editor.commands.setContent(initialContent || '');
-      setContent(initialContent || '');
+    const normalised = normaliseContent(initialContent);
+    if (editor && normalised !== content) {
+      editor.commands.setContent(normalised);
+      setContent(normalised);
     }
   }, [initialContent]);
 
@@ -88,7 +100,9 @@ export default function SectionEditor({
 
   if (!editor) return null;
 
-  const hasContent = content && content !== '<p></p>' && content.trim().length > 10;
+  // Strip tags to get plain text length for has-content check
+  const plainTextLength = content.replace(/<[^>]*>/g, '').trim().length;
+  const hasContent = plainTextLength > 10;
 
   const toolbarButtons = [
     {
