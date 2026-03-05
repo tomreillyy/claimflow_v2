@@ -32,7 +32,7 @@ export const maxDuration = 60; // Allow up to 60 seconds for generation
  */
 export async function POST(req, { params }) {
   const startTime = Date.now();
-  const token = params.token;
+  const { token } = await params;
 
   // Get project by token (authentication optional for now - anyone with token can generate)
   const { data: project, error: projectError } = await supabaseAdmin
