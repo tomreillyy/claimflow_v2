@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { User, LogOut, Menu, X, HelpCircle, Settings, Compass } from 'lucide-react';
+import { LogOut, Menu, X, HelpCircle, Settings, Compass } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { usePathname } from 'next/navigation';
@@ -87,8 +87,9 @@ export function AppHeader() {
         right: 0,
         zIndex: 50,
         width: '100%',
-        backgroundColor: '#FAFAFA',
-        borderBottom: '1px solid rgba(229, 231, 235, 0.6)',
+        backgroundColor: '#ffffff',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+        boxShadow: '0 1px 0 rgba(0, 0, 0, 0.04)',
       }}>
         <div
           className="app-header-row"
@@ -153,7 +154,7 @@ export function AppHeader() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 0,
               marginRight: 'auto',
               height: '100%',
             }}
@@ -165,25 +166,27 @@ export function AppHeader() {
                   key={tab.name}
                   href={tab.href}
                   style={{
-                    padding: '6px 14px',
-                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: '100%',
+                    padding: '0 14px',
+                    borderRadius: 0,
+                    borderBottom: isActive ? '2px solid #021048' : '2px solid transparent',
                     fontSize: 14,
-                    fontWeight: 500,
+                    fontWeight: isActive ? 600 : 500,
                     textDecoration: 'none',
-                    transition: 'all 0.15s ease',
-                    backgroundColor: isActive ? '#021048' : 'transparent',
-                    color: isActive ? '#fff' : '#6b7280',
+                    transition: 'color 0.15s ease, border-color 0.15s ease',
+                    backgroundColor: 'transparent',
+                    color: isActive ? '#021048' : '#64748b',
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)';
-                      e.currentTarget.style.color = '#374151';
+                      e.currentTarget.style.color = '#0f172a';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#6b7280';
+                      e.currentTarget.style.color = '#64748b';
                     }
                   }}
                 >
@@ -203,18 +206,23 @@ export function AppHeader() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: 34,
-                  height: 34,
+                  width: 32,
+                  height: 32,
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  backgroundColor: '#021048',
                   border: 'none',
                   cursor: 'pointer',
-                  transition: 'background-color 0.15s ease',
+                  transition: 'opacity 0.15s ease',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  letterSpacing: '0.02em',
+                  flexShrink: 0,
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.08)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
-                <User size={18} color="#6b7280" />
+                {user?.email?.charAt(0).toUpperCase() ?? '?'}
               </button>
 
               {/* User Dropdown Menu */}
@@ -334,8 +342,8 @@ export function AppHeader() {
           <div
             className="app-header-mobile-menu"
             style={{
-              borderTop: '1px solid rgba(229, 231, 235, 0.6)',
-              backgroundColor: '#FAFAFA',
+              borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+              backgroundColor: '#ffffff',
               padding: '8px 16px 16px',
             }}
           >
