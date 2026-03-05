@@ -3,10 +3,10 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import ClaimPackEditor from '@/components/ClaimPackEditor/ClaimPackEditor';
 import Paywall from '@/components/Paywall';
-import Link from 'next/link';
 import PrintButton from './PrintButton';
 import { enrichEvidenceWithActivityLinks } from '@/lib/enrichEvidence';
-import { AppHeader } from '@/components/AppHeader';
+import { Header } from '@/components/Header';
+import ProjectSidebar from '@/components/ProjectSidebar';
 
 async function getUser() {
   const cookieStore = await cookies();
@@ -143,72 +143,42 @@ export default async function PackV2Page({ params }) {
       fontFamily: 'system-ui, -apple-system, sans-serif',
       color: '#1a1a1a'
     }}>
-      {/* Standard app header */}
-      <AppHeader />
+      <Header projectName={project.name} projectToken={token} />
 
-      {/* Sub-header: breadcrumb + print button (hidden in print) */}
-      <div className="print-hide" style={{
-        position: 'fixed',
-        top: 56,
-        left: 0,
-        right: 0,
-        zIndex: 40,
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb',
-        padding: '0 24px',
-        height: 44,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#6b7280' }}>
-          <Link href={`/p/${token}`} style={{ color: '#6b7280', textDecoration: 'none' }}>
-            {project.name}
-          </Link>
-          <span>/</span>
-          <span style={{ color: '#111827', fontWeight: 500 }}>Claim Pack</span>
-        </div>
-        <PrintButton />
+      <div style={{ display: 'flex' }}>
+        <ProjectSidebar token={token} projectName={project.name} stepperData={[]} />
+
+        <main className="print-main" style={{
+          flex: 1,
+          minWidth: 0,
+          padding: '32px 40px 64px',
+        }}>
+          {/* Print button — top right, hidden in print */}
+          <div className="print-hide" style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginBottom: 16,
+          }}>
+            <PrintButton />
+          </div>
+
+          <ClaimPackEditor
+            project={project}
+            activities={activities || []}
+            evidence={evidence || []}
+            costLedger={costLedger || []}
+            initialSections={sections}
+          />
+        </main>
       </div>
-
-      {/* Main content — offset for fixed AppHeader (56px) + sub-header (44px) */}
-      <main className="print-main" style={{
-        maxWidth: 1200,
-        margin: '0 auto',
-        padding: '24px 24px 48px',
-        paddingTop: 124,
-      }}>
-        <ClaimPackEditor
-          project={project}
-          activities={activities || []}
-          evidence={evidence || []}
-          costLedger={costLedger || []}
-          initialSections={sections}
-        />
-      </main>
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          .print-hide {
-            display: none !important;
-          }
-
-          .print-main {
-            max-width: 100% !important;
-            padding: 0 !important;
-          }
-
-          @page {
-            margin: 2cm;
-          }
-
-          h1, h2, h3 {
-            page-break-after: avoid;
-          }
-
-          .section-editor {
-            page-break-inside: avoid;
-          }
+          .print-hide { display: none !important; }
+          .print-main { padding: 0 !important; }
+          @page { margin: 2cm; }
+          h1, h2, h3 { page-break-after: avoid; }
+          .section-editor { page-break-inside: avoid; }
         }
       `}} />
     </div>

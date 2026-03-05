@@ -134,7 +134,7 @@ export default function ClaimPackEditor({
   const scrollToSection = (key) => {
     const el = document.getElementById(`section-${key}`);
     if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - 116;
+    const y = el.getBoundingClientRect().top + window.scrollY - 88;
     window.scrollTo({ top: y, behavior: 'smooth' });
   };
 
@@ -162,8 +162,8 @@ export default function ClaimPackEditor({
           width: 216,
           flexShrink: 0,
           position: 'sticky',
-          top: 108,
-          maxHeight: 'calc(100vh - 120px)',
+          top: 80,
+          maxHeight: 'calc(100vh - 92px)',
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
