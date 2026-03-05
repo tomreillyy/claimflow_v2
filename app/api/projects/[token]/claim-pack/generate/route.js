@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 import { generateClaimPackSection } from '@/lib/claimPackGenerator';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
+import { enrichEvidenceWithActivityLinks } from '@/lib/enrichEvidence';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -87,7 +88,8 @@ export async function POST(req, { params }) {
       { data: narratives },
       { data: costLedger },
       { data: existingSections },
-      { data: knowledgeDocs }
+      { data: knowledgeDocs },
+      { data: activityEvidenceLinks }
     ] = await Promise.all([
       supabaseAdmin
         .from('evidence')
@@ -122,17 +124,39 @@ export async function POST(req, { params }) {
         .eq('extraction_status', 'completed')
         .not('extracted_text', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(10),
+
+      activityIds.length > 0
+        ? supabaseAdmin
+            .from('activity_evidence')
+            .select('activity_id, evidence_id, systematic_step')
+            .in('activity_id', activityIds)
+        : Promise.resolve({ data: [] })
     ]);
+
+    // Enrich evidence with activity links from the join table.
+    // The activity_evidence table is the source of truth since the
+    // 20260308_activity_first migration — evidence.linked_activity_id is no longer updated.
+    const enrichedEvidence = enrichEvidenceWithActivityLinks(evidence, activityEvidenceLinks);
+
+    // Fetch company record for this project's owner (for offset rate calculation)
+    const { data: company } = project.owner_id
+      ? await supabaseAdmin
+          .from('companies')
+          .select('entity_type, aggregated_turnover_band, abn, company_name')
+          .eq('owner_id', project.owner_id)
+          .maybeSingle()
+      : { data: null };
 
     // Build project data object
     const projectData = {
       project,
       activities: activities || [],
-      evidence: evidence || [],
+      evidence: enrichedEvidence,
       narratives: narratives || [],
       costLedger: costLedger || [],
-      knowledgeDocs: knowledgeDocs || []
+      knowledgeDocs: knowledgeDocs || [],
+      company: company || null
     };
 
     // Check which sections can be generated (skip manually edited unless force=true)

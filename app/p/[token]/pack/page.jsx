@@ -5,6 +5,7 @@ import ClaimPackEditor from '@/components/ClaimPackEditor/ClaimPackEditor';
 import Paywall from '@/components/Paywall';
 import Link from 'next/link';
 import PrintButton from './PrintButton';
+import { enrichEvidenceWithActivityLinks } from '@/lib/enrichEvidence';
 
 async function getUser() {
   const cookieStore = await cookies();
@@ -63,10 +64,10 @@ export default async function PackV2Page({ params }) {
     return <Paywall projectToken={token} />;
   }
 
-  // Fetch project
+  // Fetch project (include technical framing fields for validator and display)
   const { data: project } = await supabaseAdmin
     .from('projects')
-    .select('id, name, year, current_hypothesis, project_token')
+    .select('id, name, year, current_hypothesis, project_token, project_overview, technical_uncertainty, knowledge_gap, testing_method, success_criteria')
     .eq('project_token', token)
     .is('deleted_at', null)
     .single();
@@ -86,13 +87,27 @@ export default async function PackV2Page({ params }) {
     .eq('project_id', project.id)
     .order('created_at', { ascending: true });
 
-  // Fetch all evidence
-  const { data: evidence } = await supabaseAdmin
-    .from('evidence')
-    .select('*')
-    .eq('project_id', project.id)
-    .or('soft_deleted.is.null,soft_deleted.eq.false')
-    .order('created_at', { ascending: true });
+  const activityIds = (activities || []).map(a => a.id);
+
+  // Fetch evidence and activity_evidence join table in parallel
+  const [{ data: rawEvidence }, { data: activityEvidenceLinks }] = await Promise.all([
+    supabaseAdmin
+      .from('evidence')
+      .select('*')
+      .eq('project_id', project.id)
+      .or('soft_deleted.is.null,soft_deleted.eq.false')
+      .order('created_at', { ascending: true }),
+
+    activityIds.length > 0
+      ? supabaseAdmin
+          .from('activity_evidence')
+          .select('activity_id, evidence_id, systematic_step')
+          .in('activity_id', activityIds)
+      : Promise.resolve({ data: [] })
+  ]);
+
+  // Enrich evidence with activity links from the join table
+  const evidence = enrichEvidenceWithActivityLinks(rawEvidence, activityEvidenceLinks);
 
   // Fetch cost ledger
   const { data: costLedger } = await supabaseAdmin
