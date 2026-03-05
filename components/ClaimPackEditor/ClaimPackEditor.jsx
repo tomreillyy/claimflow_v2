@@ -4,6 +4,7 @@ import { useState } from 'react';
 import SectionEditor from './SectionEditor';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 import { validateClaimPack, getRatingColor, getRatingLabel } from '@/lib/claimPackValidator';
+import { useAuth } from '@/components/AuthProvider';
 
 const SECTIONS_ORDER = [
   SECTION_KEYS.PROJECT_OVERVIEW,
@@ -56,6 +57,7 @@ export default function ClaimPackEditor({
   costLedger,
   initialSections
 }) {
+  const { consultantBranding } = useAuth();
   const [sections] = useState(initialSections || {});
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState(null);
@@ -420,8 +422,28 @@ export default function ClaimPackEditor({
             marginRight: -24,
             marginTop: -24,
             marginBottom: 40,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
           }}>
-            <img src="/claimflow-white-text-and-icon.png" alt="ClaimFlow" style={{ height: 50, width: 'auto' }} />
+            {consultantBranding?.logo_url ? (
+              <img
+                src={consultantBranding.logo_url}
+                alt={consultantBranding.company_name || 'Logo'}
+                style={{ height: 44, width: 'auto', objectFit: 'contain' }}
+              />
+            ) : (
+              <img
+                src="/claimflow-white-text-and-icon.png"
+                alt="ClaimFlow"
+                style={{ height: 44, width: 'auto' }}
+              />
+            )}
+            {consultantBranding?.company_name && (
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.02em' }}>
+                Powered by ClaimFlow
+              </span>
+            )}
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 400, color: '#1a1a1a', margin: '0 0 16px 0' }}>
             R&D Tax Incentive Claim Pack
