@@ -289,7 +289,7 @@ export default function SectionEditor({
       )}
 
       {/* Editor content */}
-      <div style={{ padding: '14px 16px' }}>
+      <div className="section-body" style={{ padding: '14px 16px' }}>
         <EditorContent editor={editor} />
       </div>
 

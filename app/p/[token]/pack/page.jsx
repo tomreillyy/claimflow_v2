@@ -174,11 +174,66 @@ export default async function PackV2Page({ params }) {
 
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          .print-hide { display: none !important; }
-          .print-main { padding: 0 !important; }
-          @page { margin: 2cm; }
+          /* Hide all nav and UI chrome */
+          header,
+          aside,
+          .print-hide {
+            display: none !important;
+          }
+
+          /* Show print-only blocks */
+          .print-only {
+            display: block !important;
+          }
+
+          /* Full-width main, no padding */
+          .print-main {
+            padding: 0 !important;
+            flex: none !important;
+            width: 100% !important;
+          }
+
+          body {
+            background: white !important;
+            font-family: system-ui, -apple-system, sans-serif !important;
+            font-size: 11pt !important;
+            color: #111 !important;
+          }
+
+          /* Strip card chrome from section editors */
+          .section-editor {
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            background: transparent !important;
+            margin-bottom: 0 !important;
+            padding-bottom: 20pt !important;
+            border-bottom: 0.5pt solid #d1d5db !important;
+            page-break-inside: avoid;
+          }
+
+          .section-editor:last-child {
+            border-bottom: none !important;
+          }
+
+          /* Zero out content padding */
+          .section-body {
+            padding: 0 !important;
+          }
+
+          .ProseMirror {
+            min-height: 0 !important;
+            font-size: 11pt !important;
+            line-height: 1.65 !important;
+          }
+
           h1, h2, h3 { page-break-after: avoid; }
-          .section-editor { page-break-inside: avoid; }
+
+          @page {
+            size: A4;
+            margin: 2.5cm 2cm;
+          }
         }
       `}} />
     </div>
