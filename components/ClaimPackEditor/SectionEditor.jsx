@@ -6,8 +6,6 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { marked } from 'marked';
 import { supabase } from '@/lib/supabaseClient';
-import SectionStrengthener from './SectionStrengthener';
-
 // Convert markdown to HTML if content looks like markdown (not already HTML)
 function normaliseContent(raw) {
   if (!raw) return '';
@@ -17,9 +15,6 @@ function normaliseContent(raw) {
   // Otherwise parse as markdown
   return marked.parse(trimmed, { breaks: false });
 }
-
-// Sections that support AI gap detection
-const STRENGTHEN_SUPPORTED = new Set(['supporting_activities', 'project_overview', 'core_activities', 'rd_boundary']);
 
 export default function SectionEditor({
   sectionKey,
@@ -36,7 +31,6 @@ export default function SectionEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [saveTimer, setSaveTimer] = useState(null);
-  const [showStrengthener, setShowStrengthener] = useState(false);
   // Only auto-save after the user has made at least one edit — prevents spurious
   // saves triggered by Tiptap normalising HTML on initial render.
   const isDirtyRef = useRef(false);
@@ -221,38 +215,6 @@ export default function SectionEditor({
           {saveStatus === 'error' && (
             <span style={{ fontSize: 11, color: '#ef4444' }}>Save failed</span>
           )}
-          {token && STRENGTHEN_SUPPORTED.has(sectionKey) && (
-            <button
-              onClick={() => setShowStrengthener(s => !s)}
-              style={{
-                padding: '4px 10px',
-                backgroundColor: showStrengthener ? '#dbeafe' : 'transparent',
-                color: showStrengthener ? '#1d4ed8' : '#6b7280',
-                border: '1px solid',
-                borderColor: showStrengthener ? '#93c5fd' : '#e5e7eb',
-                borderRadius: 4,
-                fontSize: 11,
-                fontWeight: 500,
-                cursor: 'pointer',
-                fontFamily: 'system-ui',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => {
-                if (!showStrengthener) {
-                  e.currentTarget.style.borderColor = '#93c5fd';
-                  e.currentTarget.style.color = '#1d4ed8';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!showStrengthener) {
-                  e.currentTarget.style.borderColor = '#e5e7eb';
-                  e.currentTarget.style.color = '#6b7280';
-                }
-              }}
-            >
-              ✦ Strengthen
-            </button>
-          )}
           {onRegenerateClick && (
             <button
               onClick={onRegenerateClick}
@@ -340,17 +302,6 @@ export default function SectionEditor({
             </button>
           ))}
         </div>
-      )}
-
-      {/* Strengthen panel */}
-      {showStrengthener && token && (
-        <SectionStrengthener
-          sectionKey={sectionKey}
-          projectToken={token}
-          currentContent={content}
-          onInsertContent={handleInsertContent}
-          onClose={() => setShowStrengthener(false)}
-        />
       )}
 
       {/* Editor content */}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import SectionEditor from './SectionEditor';
 import ClaimPackWizard from './ClaimPackWizard';
+import ClaimPackStrengthenWizard from './ClaimPackStrengthenWizard';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 import { validateClaimPack, getRatingColor, getRatingLabel } from '@/lib/claimPackValidator';
 import { useAuth } from '@/components/AuthProvider';
@@ -63,6 +64,7 @@ export default function ClaimPackEditor({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState(null);
   const [generationStats, setGenerationStats] = useState(null);
+  const [showStrengthenWizard, setShowStrengthenWizard] = useState(false);
 
   const validation = validateClaimPack(project, activities, evidence, sections, costLedger);
 
@@ -156,6 +158,17 @@ export default function ClaimPackEditor({
         activities={activities}
         evidence={evidence}
         onComplete={() => window.location.reload()}
+      />
+    );
+  }
+
+  // Show strengthen wizard when requested
+  if (showStrengthenWizard) {
+    return (
+      <ClaimPackStrengthenWizard
+        project={project}
+        sections={sections}
+        onClose={() => setShowStrengthenWizard(false)}
       />
     );
   }
@@ -281,6 +294,30 @@ export default function ClaimPackEditor({
           >
             {isGenerating ? 'Generating...' : isEmpty ? 'Generate All Sections' : 'Regenerate All'}
           </button>
+
+          {/* Strengthen button — only when content exists */}
+          {!isEmpty && (
+            <button
+              onClick={() => setShowStrengthenWizard(true)}
+              style={{
+                width: '100%',
+                padding: '9px 0',
+                backgroundColor: 'transparent',
+                color: '#021048',
+                border: '1px solid #021048',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'system-ui',
+                letterSpacing: '0.01em',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f0f4ff'; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              ✦ Strengthen
+            </button>
+          )}
 
           {/* Section nav */}
           <div style={{
