@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import PayrollDropzone from './PayrollDropzone';
 import PayrollMapper from './PayrollMapper';
-import CostInterviewPanel from './CostInterviewPanel';
+import CostSetupWizard from './CostSetupWizard';
 import NonLabourCostsSection from './NonLabourCostsSection';
 import TaxBenefitSummary from './TaxBenefitSummary';
 
@@ -265,7 +265,7 @@ export default function SimplifiedCostsPage({ projectToken, activities, onUpdate
     return (
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {showInterview ? (
-          <CostInterviewPanel
+          <CostSetupWizard
             projectToken={projectToken}
             activities={activities}
             onComplete={handleInterviewComplete}
@@ -284,7 +284,7 @@ export default function SimplifiedCostsPage({ projectToken, activities, onUpdate
                 Set up your R&D costs
               </div>
               <p style={{ fontSize: 14, color: '#666', marginBottom: 24, maxWidth: 500, margin: '0 auto 24px' }}>
-                Tell us about your team, salaries, contractors, and cloud spend. Our AI will calculate super, on-costs, and estimate your tax benefit automatically.
+                Add your team, salaries, contractors, and cloud spend. Super, on-costs, and tax benefit are calculated automatically.
               </p>
 
               <button
@@ -301,11 +301,11 @@ export default function SimplifiedCostsPage({ projectToken, activities, onUpdate
                   marginBottom: 16,
                 }}
               >
-                Start AI Cost Setup
+                Start Cost Setup
               </button>
 
               <div style={{ fontSize: 13, color: '#999' }}>
-                Takes about 5 minutes
+                Takes about 2 minutes
               </div>
             </div>
 
@@ -335,7 +335,7 @@ export default function SimplifiedCostsPage({ projectToken, activities, onUpdate
 
       {showInterview && (
         <div style={{ marginBottom: 32 }}>
-          <CostInterviewPanel
+          <CostSetupWizard
             projectToken={projectToken}
             activities={activities}
             onComplete={handleInterviewComplete}
@@ -344,7 +344,7 @@ export default function SimplifiedCostsPage({ projectToken, activities, onUpdate
             onClick={() => setShowInterview(false)}
             style={{ marginTop: 12, padding: '6px 12px', fontSize: 12, color: '#666', backgroundColor: 'transparent', border: '1px solid #d1d5db', borderRadius: 4, cursor: 'pointer' }}
           >
-            Close AI Setup
+            Close Setup
           </button>
         </div>
       )}
@@ -361,7 +361,7 @@ export default function SimplifiedCostsPage({ projectToken, activities, onUpdate
                 onClick={() => setShowInterview(true)}
                 style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, color: '#021048', backgroundColor: 'transparent', border: '1px solid #021048', borderRadius: 4, cursor: 'pointer' }}
               >
-                Re-run AI Setup
+                Re-run Cost Setup
               </button>
             )}
             <button
