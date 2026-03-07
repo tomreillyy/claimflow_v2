@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { calculateFullStaffCost, getStates, getSGCRate } from '@/lib/onCostCalculator';
 import { calculateTaxBenefit } from '@/lib/taxBenefitCalculator';
 
@@ -10,20 +10,31 @@ const STEPS = [
   { key: 'review', label: 'Review & Save' },
 ];
 
-const states = getStates();
+const statesList = getStates();
 
 export default function CostSetupWizard({ projectToken, activities, fyYear, turnoverBand, onComplete }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  // Evidence suggestions (fetched once on mount)
+  const [suggestions, setSuggestions] = useState({});
+
   // Form data
   const [state, setState] = useState('');
-  const [staffCosts, setStaffCosts] = useState([{ name: '', role: '', annualSalary: '', rdPercent: '100' }]);
+  const [staffCosts, setStaffCosts] = useState([{ name: '', email: '', role: '', annualSalary: '', rdPercent: '100' }]);
   const [contractors, setContractors] = useState([]);
   const [cloudCosts, setCloudCosts] = useState([]);
 
   const year = fyYear || '2025';
+
+  // Fetch evidence-based suggestions on mount
+  useEffect(() => {
+    fetch(`/api/projects/${projectToken}/costs/suggestions`)
+      .then(res => res.ok ? res.json() : { suggestions: {} })
+      .then(data => setSuggestions(data.suggestions || {}))
+      .catch(() => {});
+  }, [projectToken]);
 
   // --- Helpers ---
   const fmt = (n) => (n || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -31,6 +42,11 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
   const getStaffCalc = (salary) => {
     if (!salary || salary <= 0) return null;
     return calculateFullStaffCost(salary, year, { state: state || undefined });
+  };
+
+  const getSuggestion = (email) => {
+    if (!email) return null;
+    return suggestions[email.toLowerCase()] || null;
   };
 
   const canGoNext = () => {
@@ -43,11 +59,20 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
   const updateStaff = (idx, field, value) => {
     const updated = [...staffCosts];
     updated[idx] = { ...updated[idx], [field]: value };
+
+    // Auto-fill R&D % when email matches a suggestion (only if user hasn't manually changed it)
+    if (field === 'email' && value) {
+      const suggestion = getSuggestion(value);
+      if (suggestion && (updated[idx].rdPercent === '100' || updated[idx].rdPercent === '')) {
+        updated[idx].rdPercent = String(suggestion.suggestedRdPercent);
+      }
+    }
+
     setStaffCosts(updated);
   };
 
   const addStaff = () => {
-    setStaffCosts([...staffCosts, { name: '', role: '', annualSalary: '', rdPercent: '100' }]);
+    setStaffCosts([...staffCosts, { name: '', email: '', role: '', annualSalary: '', rdPercent: '100' }]);
   };
 
   const removeStaff = (idx) => {
@@ -113,6 +138,7 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
       state: state || null,
       staffCosts: validStaff.map(s => ({
         name: s.name,
+        email: s.email || null,
         role: s.role || 'Staff',
         annualSalary: parseFloat(s.annualSalary),
         rdPercent: parseFloat(s.rdPercent) || 100,
@@ -139,7 +165,7 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to save costs');
+        throw new Error(data.details || data.error || 'Failed to save costs');
       }
 
       if (onComplete) onComplete();
@@ -325,13 +351,10 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
         <select
           value={state}
           onChange={(e) => setState(e.target.value)}
-          style={{
-            ...inputStyle,
-            width: 300,
-          }}
+          style={{ ...inputStyle, width: 300 }}
         >
           <option value="">Select state...</option>
-          {states.map(s => (
+          {statesList.map(s => (
             <option key={s.code} value={s.code}>
               {s.name} ({s.code}) — payroll tax {(s.rate * 100).toFixed(2)}%
             </option>
@@ -352,7 +375,7 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
           Superannuation (SGC): {(sgcRate * 100).toFixed(1)}%<br />
           Workers compensation: 2.0%<br />
           Leave provisions: 8.33%<br />
-          {state && <>Payroll tax ({state}): {(states.find(s => s.code === state)?.rate * 100 || 0).toFixed(2)}%</>}
+          {state && <>Payroll tax ({state}): {(statesList.find(s => s.code === state)?.rate * 100 || 0).toFixed(2)}%</>}
         </div>
       </div>
     );
@@ -363,13 +386,28 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
       <div>
         <p style={{ fontSize: 13, color: '#666', marginBottom: 16, lineHeight: 1.5 }}>
           Add each person who worked on R&D. Enter their gross annual salary — super and on-costs are calculated automatically.
+          {Object.keys(suggestions).length > 0 && (
+            <span style={{ color: '#10b981', fontWeight: 500 }}>
+              {' '}Add their email to see evidence-based R&D % suggestions.
+            </span>
+          )}
         </p>
+
+        {/* Column headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 90px', gap: 10, marginBottom: 6, padding: '0 14px' }}>
+          <span style={headerLabelStyle}>Name</span>
+          <span style={headerLabelStyle}>Email (for evidence matching)</span>
+          <span style={headerLabelStyle}>Role</span>
+          <span style={headerLabelStyle}>Annual Salary</span>
+          <span style={headerLabelStyle}>% Time on R&D</span>
+        </div>
 
         {staffCosts.map((s, idx) => {
           const salary = parseFloat(s.annualSalary) || 0;
           const calc = getStaffCalc(salary);
           const rdPct = parseFloat(s.rdPercent) || 100;
           const rdAmount = calc ? calc.annualTotal * rdPct / 100 : 0;
+          const suggestion = getSuggestion(s.email);
 
           return (
             <div key={idx} style={{
@@ -386,7 +424,7 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 100px', gap: 10, marginBottom: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 90px', gap: 10, marginBottom: 8 }}>
                 <input
                   type="text"
                   placeholder="Full name"
@@ -395,15 +433,22 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
                   style={inputStyle}
                 />
                 <input
+                  type="email"
+                  placeholder="Email address"
+                  value={s.email}
+                  onChange={(e) => updateStaff(idx, 'email', e.target.value)}
+                  style={inputStyle}
+                />
+                <input
                   type="text"
-                  placeholder="Role (e.g. Senior Developer)"
+                  placeholder="Role"
                   value={s.role}
                   onChange={(e) => updateStaff(idx, 'role', e.target.value)}
                   style={inputStyle}
                 />
                 <input
                   type="number"
-                  placeholder="Annual salary ($)"
+                  placeholder="$ annual"
                   value={s.annualSalary}
                   onChange={(e) => updateStaff(idx, 'annualSalary', e.target.value)}
                   min="0"
@@ -412,15 +457,56 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
                 />
                 <input
                   type="number"
-                  placeholder="R&D %"
+                  placeholder="%"
                   value={s.rdPercent}
                   onChange={(e) => updateStaff(idx, 'rdPercent', e.target.value)}
                   min="0"
                   max="100"
-                  style={inputStyle}
+                  style={{ ...inputStyle, textAlign: 'center' }}
                 />
               </div>
 
+              {/* Evidence hint */}
+              {s.email && suggestion && (
+                <div style={{
+                  padding: '6px 10px',
+                  marginBottom: 8,
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  color: '#15803d',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  <span style={{ fontWeight: 600 }}>{suggestion.totalEvidence} evidence items found</span>
+                  {suggestion.activities.length > 0 && (
+                    <span>
+                      across {suggestion.activities.map(a => a.name).join(', ')}
+                    </span>
+                  )}
+                  <span style={{ marginLeft: 'auto', fontWeight: 600 }}>
+                    Suggested: {suggestion.suggestedRdPercent}% R&D
+                  </span>
+                </div>
+              )}
+
+              {s.email && !suggestion && s.email.includes('@') && (
+                <div style={{
+                  padding: '6px 10px',
+                  marginBottom: 8,
+                  backgroundColor: '#fafafa',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  color: '#999',
+                }}>
+                  No evidence found for this email — set R&D % manually based on their time allocation
+                </div>
+              )}
+
+              {/* Cost breakdown */}
               {calc && (
                 <div style={{ fontSize: 11, color: '#666', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <span>Salary: ${fmt(calc.monthlySalary)}/mo</span>
@@ -456,8 +542,11 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
 
         {/* Contractors */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
             Contractors
+          </div>
+          <div style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>
+            External consultants or companies hired for R&D work.
           </div>
 
           {contractors.length === 0 ? (
@@ -465,64 +554,50 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
               No contractors added yet.
             </div>
           ) : (
-            contractors.map((c, idx) => (
-              <div key={idx} style={{
-                padding: 14,
-                marginBottom: 8,
-                backgroundColor: '#fafafa',
-                border: '1px solid #e5e5e5',
-                borderRadius: 6,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                  <button onClick={() => removeContractor(idx)} style={removeBtn}>Remove</button>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 100px', gap: 10 }}>
-                  <input
-                    type="text"
-                    placeholder="Vendor / company name"
-                    value={c.vendor}
-                    onChange={(e) => updateContractor(idx, 'vendor', e.target.value)}
-                    style={inputStyle}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Description of R&D work"
-                    value={c.description}
-                    onChange={(e) => updateContractor(idx, 'description', e.target.value)}
-                    style={inputStyle}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Total amount ($)"
-                    value={c.amount}
-                    onChange={(e) => updateContractor(idx, 'amount', e.target.value)}
-                    min="0"
-                    step="100"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="number"
-                    placeholder="R&D %"
-                    value={c.rdPercent}
-                    onChange={(e) => updateContractor(idx, 'rdPercent', e.target.value)}
-                    min="0"
-                    max="100"
-                    style={inputStyle}
-                  />
-                </div>
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 90px', gap: 10, marginBottom: 6, padding: '0 14px' }}>
+                <span style={headerLabelStyle}>Vendor</span>
+                <span style={headerLabelStyle}>Description of R&D work</span>
+                <span style={headerLabelStyle}>Total amount</span>
+                <span style={headerLabelStyle}>% for R&D</span>
               </div>
-            ))
+              {contractors.map((c, idx) => (
+                <div key={idx} style={{
+                  padding: 14,
+                  marginBottom: 8,
+                  backgroundColor: '#fafafa',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: 6,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                    <button onClick={() => removeContractor(idx)} style={removeBtn}>Remove</button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 90px', gap: 10 }}>
+                    <input type="text" placeholder="Company name" value={c.vendor}
+                      onChange={(e) => updateContractor(idx, 'vendor', e.target.value)} style={inputStyle} />
+                    <input type="text" placeholder="What R&D work they did" value={c.description}
+                      onChange={(e) => updateContractor(idx, 'description', e.target.value)} style={inputStyle} />
+                    <input type="number" placeholder="$ total" value={c.amount}
+                      onChange={(e) => updateContractor(idx, 'amount', e.target.value)} min="0" step="100" style={inputStyle} />
+                    <input type="number" placeholder="%" value={c.rdPercent}
+                      onChange={(e) => updateContractor(idx, 'rdPercent', e.target.value)} min="0" max="100"
+                      style={{ ...inputStyle, textAlign: 'center' }} />
+                  </div>
+                </div>
+              ))}
+            </>
           )}
 
-          <button onClick={addContractor} style={addBtn}>
-            + Add contractor
-          </button>
+          <button onClick={addContractor} style={addBtn}>+ Add contractor</button>
         </div>
 
         {/* Cloud / Software */}
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>
             Cloud / Software
+          </div>
+          <div style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>
+            Cloud infrastructure, dev tools, or software subscriptions used for R&D. Enter the monthly cost.
           </div>
 
           {cloudCosts.length === 0 ? (
@@ -530,56 +605,43 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
               No cloud/software costs added yet.
             </div>
           ) : (
-            cloudCosts.map((c, idx) => (
-              <div key={idx} style={{
-                padding: 14,
-                marginBottom: 8,
-                backgroundColor: '#fafafa',
-                border: '1px solid #e5e5e5',
-                borderRadius: 6,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                  <button onClick={() => removeCloud(idx)} style={removeBtn}>Remove</button>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 100px', gap: 10 }}>
-                  <input
-                    type="text"
-                    placeholder="Service name (e.g. AWS, GitHub)"
-                    value={c.service}
-                    onChange={(e) => updateCloud(idx, 'service', e.target.value)}
-                    style={inputStyle}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Monthly amount ($)"
-                    value={c.monthlyAmount}
-                    onChange={(e) => updateCloud(idx, 'monthlyAmount', e.target.value)}
-                    min="0"
-                    step="10"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="number"
-                    placeholder="R&D %"
-                    value={c.rdPercent}
-                    onChange={(e) => updateCloud(idx, 'rdPercent', e.target.value)}
-                    min="0"
-                    max="100"
-                    style={inputStyle}
-                  />
-                </div>
-                {parseFloat(c.monthlyAmount) > 0 && (
-                  <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>
-                    Annual: ${fmt(parseFloat(c.monthlyAmount) * 12)} | R&D: ${fmt(parseFloat(c.monthlyAmount) * 12 * (parseFloat(c.rdPercent) || 100) / 100)}
-                  </div>
-                )}
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 90px', gap: 10, marginBottom: 6, padding: '0 14px' }}>
+                <span style={headerLabelStyle}>Service</span>
+                <span style={headerLabelStyle}>Monthly cost</span>
+                <span style={headerLabelStyle}>% for R&D</span>
               </div>
-            ))
+              {cloudCosts.map((c, idx) => (
+                <div key={idx} style={{
+                  padding: 14,
+                  marginBottom: 8,
+                  backgroundColor: '#fafafa',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: 6,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                    <button onClick={() => removeCloud(idx)} style={removeBtn}>Remove</button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 90px', gap: 10 }}>
+                    <input type="text" placeholder="e.g. AWS, GitHub" value={c.service}
+                      onChange={(e) => updateCloud(idx, 'service', e.target.value)} style={inputStyle} />
+                    <input type="number" placeholder="$ per month" value={c.monthlyAmount}
+                      onChange={(e) => updateCloud(idx, 'monthlyAmount', e.target.value)} min="0" step="10" style={inputStyle} />
+                    <input type="number" placeholder="%" value={c.rdPercent}
+                      onChange={(e) => updateCloud(idx, 'rdPercent', e.target.value)} min="0" max="100"
+                      style={{ ...inputStyle, textAlign: 'center' }} />
+                  </div>
+                  {parseFloat(c.monthlyAmount) > 0 && (
+                    <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>
+                      Annual: ${fmt(parseFloat(c.monthlyAmount) * 12)} | R&D eligible: ${fmt(parseFloat(c.monthlyAmount) * 12 * (parseFloat(c.rdPercent) || 100) / 100)}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
           )}
 
-          <button onClick={addCloud} style={addBtn}>
-            + Add cloud / software service
-          </button>
+          <button onClick={addCloud} style={addBtn}>+ Add cloud / software service</button>
         </div>
       </div>
     );
@@ -616,8 +678,8 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
                   <th style={thStyle}>Name</th>
                   <th style={thStyle}>Role</th>
                   <th style={{ ...thStyle, textAlign: 'right' }}>Salary</th>
-                  <th style={{ ...thStyle, textAlign: 'right' }}>+ Super + On-costs</th>
-                  <th style={{ ...thStyle, textAlign: 'right' }}>R&D %</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>Total (incl. super + on-costs)</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>% Time on R&D</th>
                   <th style={{ ...thStyle, textAlign: 'right' }}>R&D Cost</th>
                 </tr>
               </thead>
@@ -659,7 +721,7 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
                   <th style={thStyle}>Vendor</th>
                   <th style={thStyle}>Description</th>
                   <th style={{ ...thStyle, textAlign: 'right' }}>Amount</th>
-                  <th style={{ ...thStyle, textAlign: 'right' }}>R&D %</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>% for R&D</th>
                   <th style={{ ...thStyle, textAlign: 'right' }}>R&D Cost</th>
                 </tr>
               </thead>
@@ -698,7 +760,7 @@ export default function CostSetupWizard({ projectToken, activities, fyYear, turn
                   <th style={thStyle}>Service</th>
                   <th style={{ ...thStyle, textAlign: 'right' }}>Monthly</th>
                   <th style={{ ...thStyle, textAlign: 'right' }}>Annual</th>
-                  <th style={{ ...thStyle, textAlign: 'right' }}>R&D %</th>
+                  <th style={{ ...thStyle, textAlign: 'right' }}>% for R&D</th>
                   <th style={{ ...thStyle, textAlign: 'right' }}>R&D Cost</th>
                 </tr>
               </thead>
@@ -787,6 +849,14 @@ const inputStyle = {
   borderRadius: 4,
   color: '#1a1a1a',
   backgroundColor: 'white',
+};
+
+const headerLabelStyle = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: '#999',
+  textTransform: 'uppercase',
+  letterSpacing: '0.3px',
 };
 
 const addBtn = {

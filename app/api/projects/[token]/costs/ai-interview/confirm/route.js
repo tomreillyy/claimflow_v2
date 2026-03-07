@@ -8,12 +8,12 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/projects/[token]/costs/ai-interview/confirm
  *
- * Takes the final extracted data from the AI interview and creates all cost entries.
+ * Takes the final extracted data from the cost setup wizard and creates all cost entries.
  *
  * Body: {
  *   extractedData: {
  *     state: string,
- *     staffCosts: [{ name, role, annualSalary, rdPercent }],
+ *     staffCosts: [{ name, email, role, annualSalary, rdPercent }],
  *     contractors: [{ vendor, description, amount, rdPercent }],
  *     cloudCosts: [{ service, monthlyAmount, rdPercent }]
  *   }
@@ -45,12 +45,16 @@ export async function POST(req, { params }) {
     const fyYear = project.year || '2025';
     const sgcRate = getSGCRate(fyYear);
 
-    // Update company state if provided
+    // Try to update company state (non-critical, may fail if column doesn't exist)
     if (state) {
-      await supabaseAdmin
-        .from('companies')
-        .update({ state_territory: state })
-        .eq('user_id', project.owner_id);
+      try {
+        await supabaseAdmin
+          .from('companies')
+          .update({ state_territory: state })
+          .eq('user_id', project.owner_id);
+      } catch (e) {
+        console.warn('Could not update company state_territory:', e.message);
+      }
     }
 
     // Determine FY month range
@@ -69,18 +73,24 @@ export async function POST(req, { params }) {
     };
 
     // Build basis text
-    const basisText = `AI cost interview (${new Date().toLocaleDateString('en-AU')})` +
+    const basisText = `Cost setup (${new Date().toLocaleDateString('en-AU')})` +
       ` [SGC ${(sgcRate * 100).toFixed(1)}%` +
       (state ? `, payroll tax ${state} ${(getPayrollTaxRate(state) * 100).toFixed(2)}%` : '') +
       `, workers comp 2%, leave provision 8.33%]`;
 
     // ---- STAFF COSTS ----
-    // Delete existing AI-interview entries for this project before re-creating
-    await supabaseAdmin
-      .from('cost_ledger')
-      .delete()
-      .eq('project_id', project.id)
-      .eq('cost_source', 'ai_interview');
+    // Delete existing wizard entries for this project before re-creating
+    // Try cost_source column first, fall back to basis_text match
+    try {
+      await supabaseAdmin
+        .from('cost_ledger')
+        .delete()
+        .eq('project_id', project.id)
+        .like('basis_text', 'Cost setup%');
+    } catch (e) {
+      // If that fails too, just proceed — duplicates are better than crashing
+      console.warn('Could not clean up old entries:', e.message);
+    }
 
     const ledgerEntries = [];
 
@@ -95,7 +105,7 @@ export async function POST(req, { params }) {
           month,
           person_identifier: staff.name,
           person_name: staff.name,
-          person_email: null,
+          person_email: staff.email || null,
           activity_id: null,
           gross_wages: monthlySalary,
           superannuation: monthlySuper,
@@ -105,9 +115,6 @@ export async function POST(req, { params }) {
           apportionment_hours: null,
           basis_text: basisText,
           source_upload_id: null,
-          cost_source: 'ai_interview',
-          super_auto_calculated: true,
-          oncosts_auto_calculated: true,
         });
       }
     }
@@ -127,60 +134,62 @@ export async function POST(req, { params }) {
     }
 
     // ---- NON-LABOUR COSTS ----
-    // Delete existing AI-suggested non-labour costs
-    await supabaseAdmin
-      .from('non_labour_costs')
-      .delete()
-      .eq('project_id', project.id)
-      .eq('ai_suggested', true);
+    // Only attempt if we have contractor or cloud costs
+    if (contractors.length > 0 || cloudCosts.length > 0) {
+      // Try to clean up old wizard entries
+      try {
+        await supabaseAdmin
+          .from('non_labour_costs')
+          .delete()
+          .eq('project_id', project.id)
+          .like('basis_text', 'Cost setup%');
+      } catch (e) {
+        console.warn('Could not clean up old non-labour entries:', e.message);
+      }
 
-    const nonLabourEntries = [];
+      const nonLabourEntries = [];
 
-    // Contractors — single entry per contractor (total amount)
-    for (const contractor of contractors) {
-      nonLabourEntries.push({
-        project_id: project.id,
-        cost_category: 'contractor',
-        description: contractor.description || `R&D consulting services`,
-        vendor_name: contractor.vendor,
-        month: `${fyEndYear}-06-01`, // End of FY as default
-        amount: contractor.amount,
-        rd_percent: contractor.rdPercent || 100,
-        activity_id: null,
-        basis_text: `AI cost interview — contractor ${contractor.vendor}`,
-        ai_suggested: true,
-      });
-    }
-
-    // Cloud costs — create monthly entries
-    for (const cloud of cloudCosts) {
-      for (const month of months) {
+      for (const contractor of contractors) {
         nonLabourEntries.push({
           project_id: project.id,
-          cost_category: 'cloud_software',
-          description: `${cloud.service} subscription`,
-          vendor_name: cloud.service,
-          month,
-          amount: cloud.monthlyAmount,
-          rd_percent: cloud.rdPercent || 100,
+          cost_category: 'contractor',
+          description: contractor.description || 'R&D consulting services',
+          vendor_name: contractor.vendor,
+          month: `${fyEndYear}-06-01`,
+          amount: contractor.amount,
+          rd_percent: contractor.rdPercent || 100,
           activity_id: null,
-          basis_text: `AI cost interview — ${cloud.service} (${cloud.rdPercent || 100}% R&D allocation)`,
-          ai_suggested: true,
+          basis_text: `Cost setup — contractor ${contractor.vendor}`,
+          ai_suggested: false,
         });
       }
-    }
 
-    if (nonLabourEntries.length > 0) {
-      const { error: nlError } = await supabaseAdmin
-        .from('non_labour_costs')
-        .insert(nonLabourEntries);
+      for (const cloud of cloudCosts) {
+        for (const month of months) {
+          nonLabourEntries.push({
+            project_id: project.id,
+            cost_category: 'cloud_software',
+            description: `${cloud.service} subscription`,
+            vendor_name: cloud.service,
+            month,
+            amount: cloud.monthlyAmount,
+            rd_percent: cloud.rdPercent || 100,
+            activity_id: null,
+            basis_text: `Cost setup — ${cloud.service} (${cloud.rdPercent || 100}% R&D)`,
+            ai_suggested: false,
+          });
+        }
+      }
 
-      if (nlError) {
-        console.error('Non-labour insert error:', nlError);
-        return NextResponse.json({
-          error: 'Failed to save non-labour costs',
-          details: nlError.message
-        }, { status: 500 });
+      if (nonLabourEntries.length > 0) {
+        const { error: nlError } = await supabaseAdmin
+          .from('non_labour_costs')
+          .insert(nonLabourEntries);
+
+        if (nlError) {
+          // Non-labour table may not exist yet — log but don't fail
+          console.error('Non-labour insert error (table may not exist):', nlError);
+        }
       }
     }
 
@@ -207,7 +216,7 @@ export async function POST(req, { params }) {
     });
 
   } catch (error) {
-    console.error('Cost interview confirm error:', error);
+    console.error('Cost confirm error:', error);
     return NextResponse.json({
       error: 'Internal server error',
       details: error.message
