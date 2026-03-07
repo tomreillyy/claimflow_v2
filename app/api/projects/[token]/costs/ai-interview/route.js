@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { getSGCRate, getPayrollTaxRate } from '@/lib/onCostCalculator';
 
 export const runtime = 'nodejs';
@@ -73,11 +72,6 @@ You MUST always respond with valid JSON in this exact format:
  */
 export async function POST(req, { params }) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(req);
-    if (authError) {
-      return NextResponse.json({ error: authError }, { status: 401 });
-    }
-
     const { token } = await params;
 
     const { data: project } = await supabaseAdmin

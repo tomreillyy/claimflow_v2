@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { calculateSuper, calculateOnCosts, getSGCRate, getPayrollTaxRate } from '@/lib/onCostCalculator';
 
 export const runtime = 'nodejs';
@@ -22,11 +21,6 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req, { params }) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(req);
-    if (authError) {
-      return NextResponse.json({ error: authError }, { status: 401 });
-    }
-
     const { token } = await params;
 
     const { data: project } = await supabaseAdmin

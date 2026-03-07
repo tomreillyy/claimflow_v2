@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { getAuthenticatedUser } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,11 +10,6 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req, { params }) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(req);
-    if (authError) {
-      return NextResponse.json({ error: authError }, { status: 401 });
-    }
-
     const { token } = await params;
 
     const { data: project } = await supabaseAdmin
@@ -57,11 +51,6 @@ export async function GET(req, { params }) {
  */
 export async function POST(req, { params }) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(req);
-    if (authError) {
-      return NextResponse.json({ error: authError }, { status: 401 });
-    }
-
     const { token } = await params;
 
     const { data: project } = await supabaseAdmin
@@ -124,11 +113,6 @@ export async function POST(req, { params }) {
  */
 export async function PUT(req, { params }) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(req);
-    if (authError) {
-      return NextResponse.json({ error: authError }, { status: 401 });
-    }
-
     const { token } = await params;
 
     const { data: project } = await supabaseAdmin
@@ -188,11 +172,6 @@ export async function PUT(req, { params }) {
  */
 export async function DELETE(req, { params }) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser(req);
-    if (authError) {
-      return NextResponse.json({ error: authError }, { status: 401 });
-    }
-
     const { token } = await params;
 
     const { data: project } = await supabaseAdmin
