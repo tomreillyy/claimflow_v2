@@ -197,6 +197,17 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
       );
       setStepCoverageMap(coverageMap);
       setLoading(false);
+
+      // Auto-repair: if activities have no linked evidence but step-classified evidence exists,
+      // call link-evidence to fix the silent FK-failure from auto-generation
+      const hasAnyCoverage = Object.values(coverageMap).some(
+        steps => steps && Object.values(steps).some(items => items?.length > 0)
+      );
+      const VALID_STEPS = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
+      const hasStepEvidence = (allEvidence || []).some(e => VALID_STEPS.includes(e.systematic_step_primary));
+      if (!hasAnyCoverage && hasStepEvidence) {
+        await linkEvidence(activities);
+      }
     };
     fetchCoverage();
   }, [activities, token]);
