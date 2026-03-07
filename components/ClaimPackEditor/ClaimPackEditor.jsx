@@ -398,6 +398,7 @@ export default function ClaimPackEditor({
                 sectionKey={key}
                 sectionName={SECTION_NAMES[key]}
                 projectId={project.id}
+                token={project.project_token}
                 {...getSectionData(key)}
                 onRegenerateClick={() => handleRegenerateSection(key)}
               />
