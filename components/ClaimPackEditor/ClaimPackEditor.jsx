@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import SectionEditor from './SectionEditor';
+import ClaimPackWizard from './ClaimPackWizard';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 import { validateClaimPack, getRatingColor, getRatingLabel } from '@/lib/claimPackValidator';
 import { useAuth } from '@/components/AuthProvider';
@@ -146,6 +147,18 @@ export default function ClaimPackEditor({
   }).length;
 
   const isEmpty = completedCount === 0;
+
+  // Show guided wizard for first-time generation
+  if (isEmpty) {
+    return (
+      <ClaimPackWizard
+        project={project}
+        activities={activities}
+        evidence={evidence}
+        onComplete={() => window.location.reload()}
+      />
+    );
+  }
 
   // Derive status label
   const statusLabel = validation.isDraft
