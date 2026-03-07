@@ -131,8 +131,9 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
 
       {/* Nav */}
       <nav style={{ padding: '6px 0', flex: 1, overflowY: 'auto' }}>
-        <NavBtn label="Dashboard"  viewKey="dashboard" />
-        <NavBtn label="Activities" viewKey="activities" />
+        <NavBtn label="Dashboard"       viewKey="dashboard" />
+        <NavBtn label="Project Details" viewKey="details"   />
+        <NavBtn label="Activities"      viewKey="activities" />
         <NavBtn label="Costs"      viewKey="costs" />
         <a
           href={`/p/${token}/pack`}
@@ -150,7 +151,6 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
         <div style={{ margin: '6px 16px', borderTop: '1px solid #f0f0f0' }} />
 
         <NavBtn label="Evidence"       viewKey="timeline"  />
-        <NavBtn label="Project Details" viewKey="details"   />
         <NavBtn label="Project Team"   viewKey="team"      />
         <NavBtn label="Documents"      viewKey="knowledge" />
         <NavBtn label="Integrations"   viewKey="records"   />
