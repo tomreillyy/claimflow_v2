@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { generateSmartAttestations, fillPayrollGaps } from '@/lib/smartApportionment';
+import { calculateTaxBenefit, calculateCostSummary } from '@/lib/taxBenefitCalculator';
 
 // GET - Fetch cost ledger with apportionment
 export async function GET(req, { params }) {
@@ -10,7 +11,7 @@ export async function GET(req, { params }) {
     // Get project
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id')
+      .select('id, owner_id')
       .eq('project_token', token)
       .is('deleted_at', null)
       .single();
@@ -60,11 +61,36 @@ export async function GET(req, { params }) {
     // Apply apportionment logic
     const apportionedLedger = applyApportionment(rawLedger || [], attestations);
 
+    // Fetch non-labour costs
+    const { data: nonLabourCosts } = await supabaseAdmin
+      .from('non_labour_costs')
+      .select('*, activity:core_activities(id, name)')
+      .eq('project_id', project.id)
+      .order('cost_category')
+      .order('created_at', { ascending: false });
+
+    // Fetch company for tax benefit calculation
+    const { data: company } = await supabaseAdmin
+      .from('companies')
+      .select('aggregated_turnover_band')
+      .eq('user_id', project.owner_id)
+      .maybeSingle();
+
+    // Calculate summary
+    const costSummary = calculateCostSummary(apportionedLedger, nonLabourCosts || []);
+    const taxBenefit = calculateTaxBenefit(
+      costSummary.totalEligible,
+      company?.aggregated_turnover_band
+    );
+
     return NextResponse.json({
       ledger: apportionedLedger,
       activities: activities || [],
       attestations: attestations,
-      hasAttestations: attestations.length > 0
+      hasAttestations: attestations.length > 0,
+      nonLabourCosts: nonLabourCosts || [],
+      costSummary,
+      taxBenefit,
     });
 
   } catch (error) {

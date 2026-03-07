@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { parsePayrollFile, convertDateToISO } from '@/lib/payrollParser';
+import { calculateSuper, calculateOnCosts, getSGCRate } from '@/lib/onCostCalculator';
 
 export async function POST(req, { params }) {
   try {
@@ -17,7 +18,7 @@ export async function POST(req, { params }) {
     // Get project
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id')
+      .select('id, year')
       .eq('project_token', token)
       .is('deleted_at', null)
       .single();
@@ -95,8 +96,23 @@ export async function POST(req, { params }) {
 
         // Parse amounts
         const grossWages = parseFloat(mapping.gross_wages ? row[mapping.gross_wages] : 0) || 0;
-        const superannuation = parseFloat(mapping.superannuation ? row[mapping.superannuation] : 0) || 0;
-        const onCosts = parseFloat(mapping.on_costs ? row[mapping.on_costs] : 0) || 0;
+        let superannuation = parseFloat(mapping.superannuation ? row[mapping.superannuation] : 0) || 0;
+        let onCosts = parseFloat(mapping.on_costs ? row[mapping.on_costs] : 0) || 0;
+
+        // Auto-calculate super at SGC rate if not provided in CSV
+        let superAutoCalc = false;
+        let onCostsAutoCalc = false;
+        if (!mapping.superannuation && grossWages > 0) {
+          const fyYear = project.year || '2025';
+          superannuation = calculateSuper(grossWages, fyYear);
+          superAutoCalc = true;
+        }
+        // Auto-calculate on-costs if not provided in CSV
+        if (!mapping.on_costs && grossWages > 0) {
+          const onCostBreakdown = calculateOnCosts(grossWages);
+          onCosts = onCostBreakdown.total;
+          onCostsAutoCalc = true;
+        }
 
         if (grossWages < 0 || superannuation < 0 || onCosts < 0) {
           console.warn('Skipping row with negative amounts:', row);
@@ -156,8 +172,12 @@ export async function POST(req, { params }) {
     let basisText = `Payroll report ${upload.filename} (uploaded ${new Date(upload.uploaded_at).toLocaleDateString()})`;
     const assumptions = [];
 
-    if (!mapping.superannuation) assumptions.push('super defaulted to 0');
-    if (!mapping.on_costs) assumptions.push('on-costs defaulted to 0');
+    if (!mapping.superannuation) {
+      const fyYear = project.year || '2025';
+      const sgcRate = getSGCRate(fyYear);
+      assumptions.push(`super auto-calculated at ${(sgcRate * 100).toFixed(1)}% SGC`);
+    }
+    if (!mapping.on_costs) assumptions.push('on-costs auto-calculated (payroll tax + workers comp + leave)');
     if (!mapping.pay_period_start || !mapping.pay_period_end) {
       assumptions.push('aggregated by month');
     }

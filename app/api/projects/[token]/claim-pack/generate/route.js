@@ -139,14 +139,22 @@ export async function POST(req, { params }) {
     // 20260308_activity_first migration — evidence.linked_activity_id is no longer updated.
     const enrichedEvidence = enrichEvidenceWithActivityLinks(evidence, activityEvidenceLinks);
 
-    // Fetch company record for this project's owner (for offset rate calculation)
-    const { data: company } = project.owner_id
-      ? await supabaseAdmin
-          .from('companies')
-          .select('entity_type, aggregated_turnover_band, abn, company_name')
-          .eq('owner_id', project.owner_id)
-          .maybeSingle()
-      : { data: null };
+    // Fetch company record and non-labour costs in parallel
+    const [companyResult, { data: nonLabourCosts }] = await Promise.all([
+      project.owner_id
+        ? supabaseAdmin
+            .from('companies')
+            .select('entity_type, aggregated_turnover_band, abn, company_name')
+            .eq('owner_id', project.owner_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabaseAdmin
+        .from('non_labour_costs')
+        .select('*')
+        .eq('project_id', project.id)
+        .order('cost_category')
+    ]);
+    const company = companyResult?.data || null;
 
     // Build project data object
     const projectData = {
@@ -156,7 +164,8 @@ export async function POST(req, { params }) {
       narratives: narratives || [],
       costLedger: costLedger || [],
       knowledgeDocs: knowledgeDocs || [],
-      company: company || null
+      company: company || null,
+      nonLabourCosts: nonLabourCosts || [],
     };
 
     // Check which sections can be generated (skip manually edited unless force=true)
