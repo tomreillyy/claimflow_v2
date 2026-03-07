@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { marked } from 'marked';
 import { supabase } from '@/lib/supabaseClient';
 import SectionStrengthener from './SectionStrengthener';
@@ -37,6 +37,9 @@ export default function SectionEditor({
   const [saveStatus, setSaveStatus] = useState('');
   const [saveTimer, setSaveTimer] = useState(null);
   const [showStrengthener, setShowStrengthener] = useState(false);
+  // Only auto-save after the user has made at least one edit — prevents spurious
+  // saves triggered by Tiptap normalising HTML on initial render.
+  const isDirtyRef = useRef(false);
 
   const editor = useEditor({
     extensions: [
@@ -50,9 +53,15 @@ export default function SectionEditor({
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
       setContent(newContent);
+      if (!isDirtyRef.current) return; // ignore initialisation-time normalisation
       if (saveTimer) clearTimeout(saveTimer);
       const timer = setTimeout(() => handleSave(newContent), 2000);
       setSaveTimer(timer);
+    },
+    onSelectionUpdate: () => {
+      // First user interaction (cursor move / click) marks the editor as dirty
+      // so subsequent onUpdate calls will trigger saves.
+      isDirtyRef.current = true;
     },
   });
 
@@ -92,10 +101,9 @@ export default function SectionEditor({
 
   const handleInsertContent = useCallback((html) => {
     if (!editor) return;
-    // Convert plain text paragraph to HTML if needed
+    isDirtyRef.current = true; // programmatic insert counts as a user edit
     const htmlContent = html.startsWith('<') ? html : `<p>${html}</p>`;
     editor.commands.insertContentAt(editor.state.doc.content.size, htmlContent);
-    // Trigger auto-save via the editor's onUpdate
   }, [editor]);
 
   const formatTimestamp = (timestamp) => {
