@@ -76,7 +76,7 @@ export async function POST(req, { params }) {
 
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id, name, year')
+      .select('id, name, year, owner_id')
       .eq('project_token', token)
       .is('deleted_at', null)
       .single();
@@ -104,7 +104,7 @@ export async function POST(req, { params }) {
       supabaseAdmin
         .from('companies')
         .select('state_territory, aggregated_turnover_band')
-        .eq('user_id', project.owner_id || user.id)
+        .eq('user_id', project.owner_id)
         .maybeSingle(),
     ]);
 

@@ -50,7 +50,7 @@ export async function POST(req, { params }) {
       await supabaseAdmin
         .from('companies')
         .update({ state_territory: state })
-        .eq('user_id', project.owner_id || user.id);
+        .eq('user_id', project.owner_id);
     }
 
     // Determine FY month range
