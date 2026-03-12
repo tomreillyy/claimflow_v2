@@ -459,54 +459,128 @@ export default function ClaimPackEditor({
 
       {/* ── PRINT LAYOUT ── */}
       <div className="print-only">
-        {/* Title page */}
+        {/* Title page — full-page navy cover */}
         <div style={{
-          marginBottom: 40,
-          paddingBottom: 24,
-          borderBottom: '2px solid #333',
           pageBreakAfter: 'always',
+          margin: '-24px -24px 0 -24px',
+          minHeight: '100vh',
+          backgroundColor: '#021048',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          overflow: 'hidden',
         }}>
+          {/* Subtle geometric accent */}
           <div style={{
-            backgroundColor: '#021048',
-            padding: '40px 32px',
-            marginLeft: -24,
-            marginRight: -24,
-            marginTop: -24,
-            marginBottom: 40,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
+            position: 'absolute',
+            top: -120,
+            right: -120,
+            width: 400,
+            height: 400,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.03)',
+          }} />
+          <div style={{
+            position: 'absolute',
+            bottom: -80,
+            left: -80,
+            width: 300,
+            height: 300,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.02)',
+          }} />
+
+          {/* Top bar with logo */}
+          <div style={{
+            padding: '48px 56px 0 56px',
           }}>
             {consultantBranding?.logo_url ? (
-              <img
-                src={consultantBranding.logo_url}
-                alt={consultantBranding.company_name || 'Logo'}
-                style={{ height: 44, width: 'auto', objectFit: 'contain' }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <img
+                  src={consultantBranding.logo_url}
+                  alt={consultantBranding.company_name || 'Logo'}
+                  style={{ height: 48, width: 'auto', objectFit: 'contain' }}
+                />
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em' }}>
+                  Powered by ClaimFlow
+                </span>
+              </div>
             ) : (
               <img
                 src="/claimflow-white-text-and-icon.png"
                 alt="ClaimFlow"
-                style={{ height: 44, width: 'auto' }}
+                style={{ height: 48, width: 'auto' }}
               />
             )}
-            {consultantBranding?.company_name && (
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.02em' }}>
-                Powered by ClaimFlow
-              </span>
+          </div>
+
+          {/* Main title area — centred vertically */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: '0 56px',
+          }}>
+            <div style={{
+              width: 64,
+              height: 3,
+              backgroundColor: 'rgba(255,255,255,0.25)',
+              marginBottom: 28,
+            }} />
+            <h1 style={{
+              fontSize: 38,
+              fontWeight: 700,
+              color: '#ffffff',
+              margin: '0 0 12px 0',
+              lineHeight: 1.15,
+              letterSpacing: '-0.01em',
+            }}>
+              R&D Tax Incentive<br />Claim Pack
+            </h1>
+            <div style={{
+              width: 64,
+              height: 3,
+              backgroundColor: 'rgba(255,255,255,0.25)',
+              margin: '20px 0 28px 0',
+            }} />
+            <h2 style={{
+              fontSize: 22,
+              fontWeight: 500,
+              color: 'rgba(255,255,255,0.85)',
+              margin: '0 0 8px 0',
+            }}>
+              {project.name}
+            </h2>
+            {project.company_name && (
+              <p style={{
+                fontSize: 15,
+                color: 'rgba(255,255,255,0.55)',
+                margin: '0 0 4px 0',
+                fontWeight: 400,
+              }}>
+                {project.company_name}
+              </p>
             )}
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 400, color: '#1a1a1a', margin: '0 0 16px 0' }}>
-            R&D Tax Incentive Claim Pack
-          </h1>
-          <h2 style={{ fontSize: 20, fontWeight: 600, color: '#333', margin: '0 0 8px 0' }}>
-            {project.name}
-          </h2>
-          <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
-            Tax Year {project.year} · Generated {new Date().toLocaleDateString('en-AU', {
+
+          {/* Bottom metadata strip */}
+          <div style={{
+            padding: '0 56px 48px 56px',
+            display: 'flex',
+            gap: 32,
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.45)',
+            letterSpacing: '0.02em',
+          }}>
+            <span>Tax Year {project.year}</span>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
+            <span>{new Date().toLocaleDateString('en-AU', {
               year: 'numeric', month: 'long', day: 'numeric',
-            })}
-          </p>
+            })}</span>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
+            <span>Confidential</span>
+          </div>
         </div>
 
         {SECTIONS_ORDER.map(key => (

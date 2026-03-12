@@ -234,6 +234,14 @@ export default async function PackV2Page({ params }) {
             size: A4;
             margin: 2.5cm 2cm;
           }
+
+          /* Cover page: compensate for page margins so navy fills edge-to-edge */
+          .print-only > div:first-child {
+            margin: -2.5cm -2cm 0 -2cm !important;
+            padding-top: 48px !important;
+            min-height: calc(100vh) !important;
+            box-sizing: border-box !important;
+          }
         }
       `}} />
     </div>
