@@ -462,9 +462,9 @@ export default function ClaimPackEditor({
         {/* Title page — full-page navy cover */}
         <div style={{
           pageBreakAfter: 'always',
-          margin: '-24px -24px 0 -24px',
-          minHeight: '100vh',
           backgroundColor: '#021048',
+          WebkitPrintColorAdjust: 'exact',
+          printColorAdjust: 'exact',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',

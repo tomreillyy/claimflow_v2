@@ -198,6 +198,8 @@ export default async function PackV2Page({ params }) {
             font-family: system-ui, -apple-system, sans-serif !important;
             font-size: 11pt !important;
             color: #111 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
 
           /* Strip card chrome from section editors */
@@ -238,9 +240,11 @@ export default async function PackV2Page({ params }) {
           /* Cover page: compensate for page margins so navy fills edge-to-edge */
           .print-only > div:first-child {
             margin: -2.5cm -2cm 0 -2cm !important;
-            padding-top: 48px !important;
-            min-height: calc(100vh) !important;
+            padding: 2.5cm 2cm 0 2cm !important;
+            min-height: calc(100vh + 2.5cm) !important;
             box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}} />
