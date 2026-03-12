@@ -120,32 +120,6 @@ export function Hero() {
               Start free trial
             </a>
 
-            <a
-              href="/demo"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 28px)',
-                borderRadius: 8,
-                background: 'transparent',
-                color: '#0f172a',
-                fontWeight: 600,
-                textDecoration: 'none',
-                border: '1px solid #e2e8f0',
-                fontSize: 'clamp(14px, 3vw, 15px)',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#f8fafc';
-                e.currentTarget.style.borderColor = '#cbd5e1';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.borderColor = '#e2e8f0';
-              }}
-            >
-              Try demo
-            </a>
           </div>
 
           {/* GitHub Integration Badge */}
