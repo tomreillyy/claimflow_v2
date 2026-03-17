@@ -660,7 +660,7 @@
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 32px;
 }
 
@@ -830,11 +830,52 @@
    FINAL CTA
    —————————————————————————————————————— */
 
+.social-proof {
+  font-size: 0.88rem;
+  color: var(--text-muted-dark);
+  opacity: 0.6;
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 1;
+}
+
 .final-cta {
-  padding: 160px 0;
+  padding: 60px 0 80px;
   text-align: center;
-  background: var(--navy);
   color: var(--white);
+  position: relative;
+  background: var(--navy);
+  overflow: hidden;
+}
+
+.final-cta-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.final-cta-bg img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.final-cta-bg::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  background: linear-gradient(to bottom, transparent, var(--navy));
+}
+
+.final-cta > div {
+  position: relative;
+  z-index: 1;
 }
 
 .final-cta h2 {

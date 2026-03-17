@@ -198,7 +198,7 @@ export default function LandingPage() {
       <section className={styles.how} id="how">
         <div className={`${styles['how-header']} ${revealClass('how-header')}`} data-reveal-id="how-header" ref={setRevealRef('how-header')}>
           <div className={styles['how-eyebrow']}>How it works</div>
-          <h2>R&D documentation that<br />writes itself</h2>
+          <h2>R&D documentation,<br />captured as it happens</h2>
           <p className={styles['how-subtitle']}>Three steps, zero admin.</p>
         </div>
 
@@ -355,10 +355,6 @@ export default function LandingPage() {
               <div className={styles['metric-label']}>Follow-up emails. Evidence is captured automatically from your clients&apos; tools as they work.</div>
             </div>
             <div className={styles['metric-card']}>
-              <div className={styles['metric-value']}>5</div>
-              <div className={styles['metric-label']}>R&D steps mapped per activity. Hypothesis, Experiment, Observation, Evaluation, Conclusion.</div>
-            </div>
-            <div className={styles['metric-card']}>
               <div className={styles['metric-value']}>Real-time</div>
               <div className={styles['metric-label']}>Documentation recorded as work happens. No end-of-year reconstruction.</div>
             </div>
@@ -367,21 +363,6 @@ export default function LandingPage() {
               <div className={styles['metric-label']}>Export a structured, audit-ready claim pack for any client.</div>
             </div>
           </div>
-        </div>
-      </section>
-
-
-      {/* ═══════════════ KEY STAT ═══════════════ */}
-      <section className={styles['stat-section']}>
-        <div className={`${styles['stat-inner']} ${revealClass('stat')}`} data-reveal-id="stat" ref={setRevealRef('stat')}>
-          <div className={styles['stat-number']}>43.5%</div>
-          <div className={styles['stat-headline']}>Back on eligible R&D spend</div>
-          <p className={styles['stat-body']}>
-            The R&D Tax Incentive offers up to 43.5% refundable tax offset
-            for eligible companies. ClaimFlow helps your clients claim with
-            confidence, backed by evidence that was captured in real time,
-            not pieced together at year end.
-          </p>
         </div>
       </section>
 
@@ -441,6 +422,10 @@ export default function LandingPage() {
 
       {/* ═══════════════ FINAL CTA ═══════════════ */}
       <section className={styles['final-cta']}>
+        <div className={styles['final-cta-bg']}>
+          <img src="/landing/cta-bg.png" alt="" />
+        </div>
+        <p className={styles['social-proof']}>Currently piloting with Australian R&D advisory firms.</p>
         <div className={revealClass('final-cta')} data-reveal-id="final-cta" ref={setRevealRef('final-cta')}>
           <h2>Better substantiation<br />starts here</h2>
           <p>
