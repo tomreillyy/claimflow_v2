@@ -33,7 +33,7 @@ export async function POST(req, { params }) {
     }
 
     const { state, staffCosts = [], contractors = [], cloudCosts = [] } = extractedData;
-    const fyYear = project.year || '2025';
+    const fyYear = String(project.year || '2025');
     const sgcRate = getSGCRate(fyYear);
 
     // Determine FY month range
