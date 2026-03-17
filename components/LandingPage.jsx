@@ -36,8 +36,9 @@ const faqData = [
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [revealed, setRevealed] = useState(new Set());
   const faqRefs = useRef([]);
-  const revealRefs = useRef([]);
+  const revealRefs = useRef({});
 
   // Nav scroll effect
   useEffect(() => {
@@ -52,18 +53,20 @@ export default function LandingPage() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            if (parent) {
-              const siblings = Array.from(parent.children).filter(el =>
-                el.dataset.reveal !== undefined
-              );
-              const index = siblings.indexOf(entry.target);
-              const delay = index * 80;
+            const id = entry.target.dataset.revealId;
+            if (id) {
+              const parent = entry.target.parentElement;
+              let delay = 0;
+              if (parent) {
+                const siblings = Array.from(parent.children).filter(el =>
+                  el.dataset.revealId !== undefined
+                );
+                const index = siblings.indexOf(entry.target);
+                delay = index * 80;
+              }
               setTimeout(() => {
-                entry.target.classList.add(styles['reveal-visible']);
+                setRevealed(prev => new Set(prev).add(id));
               }, delay);
-            } else {
-              entry.target.classList.add(styles['reveal-visible']);
             }
             observer.unobserve(entry.target);
           }
@@ -72,21 +75,34 @@ export default function LandingPage() {
       { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
     );
 
-    revealRefs.current.forEach((el) => {
+    Object.values(revealRefs.current).forEach((el) => {
       if (el) observer.observe(el);
     });
 
     return () => observer.disconnect();
   }, []);
 
-  const addRevealRef = useCallback((el) => {
-    if (el && !revealRefs.current.includes(el)) {
-      revealRefs.current.push(el);
-    }
+  const setRevealRef = useCallback((id) => (el) => {
+    if (el) revealRefs.current[id] = el;
   }, []);
 
+  const revealClass = useCallback((id) => {
+    return `${styles.reveal} ${revealed.has(id) ? styles['reveal-visible'] : ''}`;
+  }, [revealed]);
+
   const toggleFaq = (index) => {
-    setOpenFaq(openFaq === index ? null : index);
+    if (openFaq === index) {
+      setOpenFaq(null);
+    } else {
+      setOpenFaq(index);
+      // Force re-measure after state update so scrollHeight is accurate
+      requestAnimationFrame(() => {
+        const el = faqRefs.current[index];
+        if (el) {
+          el.style.maxHeight = el.scrollHeight + 'px';
+        }
+      });
+    }
   };
 
   const scrollToSection = (e, id) => {
@@ -108,7 +124,7 @@ export default function LandingPage() {
         <div className={styles['nav-center']}>
           <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Home</a>
           <a href="#how" onClick={(e) => scrollToSection(e, 'how')}>Features</a>
-          <a href="#faq" onClick={(e) => scrollToSection(e, 'faq')}>Pricing</a>
+          <Link href="/pricing">Pricing</Link>
           <a href={BOOK_DEMO_URL}>Book Demo</a>
         </div>
         <div className={styles['nav-right']}>
@@ -122,9 +138,9 @@ export default function LandingPage() {
       <section className={styles.hero}>
         <div className={styles['hero-inner']}>
           <div className={styles['hero-copy']}>
-            <h1>Stop chasing clients for R&D evidence</h1>
+            <h1>Every R&D claim you<br />prepare by hand<br />is margin you&apos;re leaving behind.</h1>
             <p className={styles['hero-sub']}>
-              ClaimFlow automatically captures R&D work from your client&apos;s engineering tools and turns it into a defendable R&D claim pack.
+              ClaimFlow auto-captures R&D evidence from your clients&apos; dev tools and structures it against RDTI criteria. Prepare more claims without growing your team.
             </p>
             <div className={styles['hero-ctas']}>
               <a href={BOOK_DEMO_URL} className={styles['btn-primary']}>Book Demo</a>
@@ -165,7 +181,7 @@ export default function LandingPage() {
 
       {/* ═══════════════ THE PROBLEM ═══════════════ */}
       <section className={styles.problem}>
-        <div className={`${styles['problem-inner']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+        <div className={`${styles['problem-inner']} ${revealClass('problem')}`} data-reveal-id="problem" ref={setRevealRef('problem')}>
           <div className={styles['problem-eyebrow']}>The reality today</div>
           <h2>The documentation problem<br />every advisor knows</h2>
           <p className={styles['problem-text']}>
@@ -180,7 +196,7 @@ export default function LandingPage() {
 
       {/* ═══════════════ HOW IT WORKS ═══════════════ */}
       <section className={styles.how} id="how">
-        <div className={`${styles['how-header']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+        <div className={`${styles['how-header']} ${revealClass('how-header')}`} data-reveal-id="how-header" ref={setRevealRef('how-header')}>
           <div className={styles['how-eyebrow']}>How it works</div>
           <h2>R&D documentation that<br />writes itself</h2>
           <p className={styles['how-subtitle']}>Three steps, zero admin.</p>
@@ -188,7 +204,7 @@ export default function LandingPage() {
 
         <div className={styles['how-steps']}>
           {/* Step 1 */}
-          <div className={`${styles['how-step']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+          <div className={`${styles['how-step']} ${revealClass('step1')}`} data-reveal-id="step1" ref={setRevealRef('step1')}>
             <div className={styles['step-copy']}>
               <div className={styles['step-number']}>1</div>
               <div className={styles['step-title']}>Connect your client&apos;s tools</div>
@@ -229,7 +245,7 @@ export default function LandingPage() {
           </div>
 
           {/* Step 2 */}
-          <div className={`${styles['how-step']} ${styles['how-step-reversed']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+          <div className={`${styles['how-step']} ${styles['how-step-reversed']} ${revealClass('step2')}`} data-reveal-id="step2" ref={setRevealRef('step2')}>
             <div className={styles['step-copy']}>
               <div className={styles['step-number']}>2</div>
               <div className={styles['step-title']}>Evidence is structured automatically</div>
@@ -246,7 +262,7 @@ export default function LandingPage() {
           </div>
 
           {/* Step 3 */}
-          <div className={`${styles['how-step']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+          <div className={`${styles['how-step']} ${revealClass('step3')}`} data-reveal-id="step3" ref={setRevealRef('step3')}>
             <div className={styles['step-copy']}>
               <div className={styles['step-number']}>3</div>
               <div className={styles['step-title']}>Export a defensible claim pack</div>
@@ -268,12 +284,12 @@ export default function LandingPage() {
       {/* ═══════════════ COMPARISON ═══════════════ */}
       <section className={styles.comparison} id="comparison">
         <div className={styles['comparison-inner']}>
-          <div className={`${styles['comparison-header']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+          <div className={`${styles['comparison-header']} ${revealClass('comp-header')}`} data-reveal-id="comp-header" ref={setRevealRef('comp-header')}>
             <div className={styles['comparison-eyebrow']}>Why switch</div>
             <h2>The old way vs. ClaimFlow</h2>
           </div>
 
-          <div className={`${styles['comparison-grid']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+          <div className={`${styles['comparison-grid']} ${revealClass('comp-grid')}`} data-reveal-id="comp-grid" ref={setRevealRef('comp-grid')}>
             <div className={`${styles['compare-col']} ${styles['compare-col-old']}`}>
               <div className={styles['compare-label']}>Without ClaimFlow</div>
               <div className={styles['compare-item']}>
@@ -328,7 +344,7 @@ export default function LandingPage() {
 
       {/* ═══════════════ METRICS ═══════════════ */}
       <section className={styles.metrics}>
-        <div className={`${styles['metrics-inner']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+        <div className={`${styles['metrics-inner']} ${revealClass('metrics')}`} data-reveal-id="metrics" ref={setRevealRef('metrics')}>
           <div className={styles['metrics-header']}>
             <div className={styles['metrics-eyebrow']}>By the numbers</div>
             <h2>Built for the way advisors<br />actually work</h2>
@@ -357,7 +373,7 @@ export default function LandingPage() {
 
       {/* ═══════════════ KEY STAT ═══════════════ */}
       <section className={styles['stat-section']}>
-        <div className={`${styles['stat-inner']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+        <div className={`${styles['stat-inner']} ${revealClass('stat')}`} data-reveal-id="stat" ref={setRevealRef('stat')}>
           <div className={styles['stat-number']}>43.5%</div>
           <div className={styles['stat-headline']}>Back on eligible R&D spend</div>
           <p className={styles['stat-body']}>
@@ -373,7 +389,7 @@ export default function LandingPage() {
       {/* ═══════════════ FAQ ═══════════════ */}
       <section className={styles.faq} id="faq">
         <div className={styles['faq-inner']}>
-          <div className={`${styles['faq-header']} ${styles.reveal}`} data-reveal ref={addRevealRef}>
+          <div className={`${styles['faq-header']} ${revealClass('faq-header')}`} data-reveal-id="faq-header" ref={setRevealRef('faq-header')}>
             <div className={styles['faq-eyebrow']}>Questions</div>
             <h2>Frequently asked</h2>
           </div>
@@ -382,14 +398,26 @@ export default function LandingPage() {
             {faqData.map((item, i) => (
               <div
                 key={i}
-                className={`${styles['faq-item']} ${openFaq === i ? styles['faq-item-open'] : ''} ${styles.reveal}`}
-                data-reveal
-                ref={addRevealRef}
+                className={`${styles['faq-item']} ${openFaq === i ? styles['faq-item-open'] : ''} ${revealClass(`faq-${i}`)}`}
+                data-reveal-id={`faq-${i}`}
+                ref={setRevealRef(`faq-${i}`)}
               >
                 <button className={styles['faq-question']} onClick={() => toggleFaq(i)}>
                   <span>{item.question}</span>
                   <span className={styles['faq-toggle']}>
-                    <svg viewBox="0 0 14 14" fill="none" strokeWidth="2" strokeLinecap="round">
+                    <svg
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="#2C5282"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      style={{
+                        width: 14,
+                        height: 14,
+                        transition: 'transform .3s',
+                        transform: openFaq === i ? 'rotate(45deg)' : 'rotate(0deg)'
+                      }}
+                    >
                       <line x1="7" y1="1" x2="7" y2="13" />
                       <line x1="1" y1="7" x2="13" y2="7" />
                     </svg>
@@ -413,7 +441,7 @@ export default function LandingPage() {
 
       {/* ═══════════════ FINAL CTA ═══════════════ */}
       <section className={styles['final-cta']}>
-        <div className={styles.reveal} data-reveal ref={addRevealRef}>
+        <div className={revealClass('final-cta')} data-reveal-id="final-cta" ref={setRevealRef('final-cta')}>
           <h2>Better substantiation<br />starts here</h2>
           <p>
             Join R&D advisory firms using ClaimFlow to build stronger,
@@ -445,23 +473,21 @@ export default function LandingPage() {
               <ul className={styles['footer-links']}>
                 <li><a href="#how" onClick={(e) => scrollToSection(e, 'how')}>How it works</a></li>
                 <li><a href="#how" onClick={(e) => scrollToSection(e, 'how')}>Features</a></li>
-                <li><a href="#faq" onClick={(e) => scrollToSection(e, 'faq')}>Pricing</a></li>
+                <li><Link href="/pricing">Pricing</Link></li>
               </ul>
             </div>
             <div>
               <div className={styles['footer-col-title']}>Company</div>
               <ul className={styles['footer-links']}>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Blog</a></li>
-                <li><a href="#">Contact</a></li>
+                <li><Link href="/advisors">Advisors</Link></li>
+                <li><Link href="/blog">Blog</Link></li>
+                <li><a href="mailto:hello@aird.io">Contact</a></li>
               </ul>
             </div>
             <div>
               <div className={styles['footer-col-title']}>Legal</div>
               <ul className={styles['footer-links']}>
-                <li><a href="#">Privacy</a></li>
-                <li><a href="#">Terms</a></li>
-                <li><a href="#">Security</a></li>
+                <li><Link href="/privacy">Privacy</Link></li>
               </ul>
             </div>
           </div>

@@ -1,11 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Header } from '@/components/Header';
-import { Check } from 'lucide-react';
-import { useAuth } from '@/components/AuthProvider';
-import { supabase } from '@/lib/supabaseClient';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import styles from '../landing.module.css';
 
 const features = [
   'Unlimited projects',
@@ -15,376 +12,273 @@ const features = [
   'GitHub integration',
   'Export to PDF and Word',
   'Professional R&D narratives',
-  'Email support'
+  'Priority support'
 ];
 
+const faqs = [
+  {
+    question: "What can I do before committing?",
+    answer: "You can sign up, create projects, add team members, capture evidence, and use AI to classify your R&D activities — all for free. You only pay when you're ready to generate and export your claim pack."
+  },
+  {
+    question: "How does pricing work?",
+    answer: "We tailor pricing to your practice size and needs. Get in touch and we'll walk you through the options — no obligation."
+  },
+  {
+    question: "Is my data secure?",
+    answer: "Absolutely. All data is encrypted in transit and at rest, with Australian data residency. We use bank-level security to protect your R&D documentation."
+  }
+];
+
+const BOOK_DEMO_URL = '#'; // TODO: Replace with Calendly URL
+
 export default function PricingPage() {
-  const { user, isSubscribed } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
 
-  const handleSubscribe = async () => {
-    if (!user) {
-      window.location.href = '/auth/login?redirect=/pricing';
-      return;
-    }
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-    if (isSubscribed) {
-      window.location.href = '/';
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-    } finally {
-      setLoading(false);
-    }
+  const toggleFaq = (index) => {
+    setOpenFaq(openFaq === index ? null : index);
   };
 
   return (
-    <>
-      <Header />
+    <div className={styles.landingRoot}>
 
-      <main>
-        {/* Hero Section */}
-        <section style={{
-          maxWidth: 960,
+      {/* NAV */}
+      <nav className={`${styles['site-nav']} ${scrolled ? styles['site-nav-scrolled'] : ''}`}>
+        <Link href="/" className={styles['nav-logo']}>
+          <img src="/landing/logo-white.png" alt="ClaimFlow" />
+        </Link>
+        <div className={styles['nav-center']}>
+          <Link href="/">Home</Link>
+          <Link href="/#how">Features</Link>
+          <Link href="/pricing">Pricing</Link>
+          <a href={BOOK_DEMO_URL}>Book Demo</a>
+        </div>
+        <div className={styles['nav-right']}>
+          <Link href="/auth/login" className={styles['nav-login']}>Login</Link>
+          <a href={BOOK_DEMO_URL} className={styles['nav-cta']}>Book Demo</a>
+        </div>
+      </nav>
+
+      {/* HERO */}
+      <section className={styles.hero} style={{ minHeight: 'auto' }}>
+        <div className={styles['hero-inner']} style={{ gridTemplateColumns: '1fr', textAlign: 'center', maxWidth: 800, margin: '0 auto', padding: '140px 48px 80px' }}>
+          <div>
+            <h1 style={{ maxWidth: 'none' }}>Pricing that fits your practice</h1>
+            <p className={styles['hero-sub']} style={{ maxWidth: 520, margin: '0 auto' }}>
+              We work with advisory firms of all sizes. Get in touch and we&apos;ll tailor a plan to your needs.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING CARD */}
+      <section style={{
+        background: 'var(--cream)',
+        padding: '80px 24px'
+      }}>
+        <div style={{
+          maxWidth: 440,
           margin: '0 auto',
-          padding: '120px 24px 60px',
+          background: 'var(--white)',
+          border: '1px solid var(--border)',
+          borderRadius: 16,
+          padding: '40px 32px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
           textAlign: 'center'
         }}>
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <h3 style={{
+            fontFamily: 'var(--serif)',
+            fontSize: '1.4rem',
+            fontWeight: 400,
+            color: 'var(--text-dark)',
+            marginBottom: 8
+          }}>
+            ClaimFlow Pro
+          </h3>
+          <p style={{
+            fontSize: '0.95rem',
+            color: 'var(--text-mid)',
+            marginBottom: 28,
+            lineHeight: 1.6
+          }}>
+            Everything you need to build defensible R&D claim packs
+          </p>
+
+          <a
+            href="mailto:hello@aird.io?subject=ClaimFlow pricing enquiry"
+            className={styles['btn-primary']}
             style={{
-              fontSize: 'clamp(40px, 7vw, 64px)',
-              fontWeight: 600,
-              lineHeight: 1.1,
-              color: 'var(--ink)',
-              marginBottom: 16
+              width: '100%',
+              display: 'block',
+              marginBottom: 12
             }}
           >
-            Simple pricing
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            Get in Touch
+          </a>
+          <a
+            href={BOOK_DEMO_URL}
+            className={styles['btn-ghost']}
             style={{
-              fontSize: 20,
-              color: 'var(--muted)',
-              maxWidth: 600,
-              margin: '0 auto',
-              lineHeight: 1.6
+              width: '100%',
+              display: 'block',
+              marginBottom: 28,
+              color: 'var(--text-dark)',
+              borderColor: 'var(--border)'
             }}
           >
-            One plan, everything included. Cancel anytime.
-          </motion.p>
-        </section>
+            Book a Demo
+          </a>
 
-        {/* Single Pricing Card */}
-        <section style={{
-          maxWidth: 480,
-          margin: '0 auto',
-          padding: '0 24px 80px'
-        }}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            style={{
-              position: 'relative',
-              padding: '32px 28px',
-              borderRadius: 16,
-              border: '2px solid var(--brand)',
-              backgroundColor: '#fafbff',
-              boxShadow: '0 8px 32px rgba(2, 16, 72, 0.12)'
-            }}
-          >
-            <h3 style={{
-              fontSize: 22,
-              fontWeight: 600,
-              color: 'var(--ink)',
-              marginBottom: 8,
-              textAlign: 'center'
-            }}>
-              ClaimFlow Pro
-            </h3>
-
-            <p style={{
-              fontSize: 15,
-              color: 'var(--muted)',
-              lineHeight: 1.5,
-              marginBottom: 24,
-              textAlign: 'center'
-            }}>
-              Everything you need to build your R&D claim pack
-            </p>
-
-            <div style={{
-              marginBottom: 24,
-              textAlign: 'center'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
-                <span style={{
-                  fontSize: 48,
-                  fontWeight: 700,
-                  color: 'var(--ink)',
-                  lineHeight: 1
-                }}>
-                  $49
-                </span>
-                <span style={{
-                  fontSize: 16,
-                  color: 'var(--muted)'
-                }}>
-                  /month
-                </span>
-              </div>
-              <p style={{
-                fontSize: 14,
-                color: 'var(--muted)',
-                marginTop: 4
+          <ul style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0,
+            textAlign: 'left',
+            borderTop: '1px solid var(--border)',
+            paddingTop: 20
+          }}>
+            {features.map((feature, i) => (
+              <li key={i} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                fontSize: '0.92rem',
+                color: 'var(--text-dark)',
+                padding: '8px 0'
               }}>
-                Cancel anytime
+                <span style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  background: 'rgba(44,82,130,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  fontSize: '0.65rem',
+                  color: 'var(--accent)'
+                }}>&#10003;</span>
+                {feature}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className={styles.faq}>
+        <div className={styles['faq-inner']}>
+          <div className={styles['faq-header']}>
+            <div className={styles['faq-eyebrow']}>Questions</div>
+            <h2>Frequently asked</h2>
+          </div>
+
+          <div>
+            {faqs.map((item, i) => (
+              <div
+                key={i}
+                className={`${styles['faq-item']} ${openFaq === i ? styles['faq-item-open'] : ''}`}
+              >
+                <button className={styles['faq-question']} onClick={() => toggleFaq(i)}>
+                  <span>{item.question}</span>
+                  <span className={styles['faq-toggle']}>
+                    <svg
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="#2C5282"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      style={{
+                        width: 14,
+                        height: 14,
+                        transition: 'transform .3s',
+                        transform: openFaq === i ? 'rotate(45deg)' : 'rotate(0deg)'
+                      }}
+                    >
+                      <line x1="7" y1="1" x2="7" y2="13" />
+                      <line x1="1" y1="7" x2="13" y2="7" />
+                    </svg>
+                  </span>
+                </button>
+                <div
+                  className={styles['faq-answer']}
+                  style={{ maxHeight: openFaq === i ? 200 : 0 }}
+                >
+                  <div className={styles['faq-answer-inner']}>
+                    {item.answer}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className={styles['final-cta']}>
+        <div>
+          <h2>Ready to get started?</h2>
+          <p>
+            Join advisory firms using ClaimFlow to build stronger,
+            more defensible claims with less manual effort.
+          </p>
+          <div className={styles['final-cta-buttons']}>
+            <a href="mailto:hello@aird.io?subject=ClaimFlow pricing enquiry" className={styles['btn-primary']}>
+              Get in Touch
+            </a>
+            <a href={BOOK_DEMO_URL} className={styles['btn-ghost']}>Book Demo</a>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className={styles['site-footer']}>
+        <div className={styles['footer-inner']}>
+          <div className={styles['footer-grid']}>
+            <div>
+              <div className={styles['footer-brand']}>
+                <img src="/landing/logo-white.png" alt="ClaimFlow" />
+              </div>
+              <p className={styles['footer-tagline']}>
+                Smarter R&D claim substantiation for advisory practices.
+                Built for Australian R&D Tax Incentive claims.
               </p>
             </div>
-
-            <motion.button
-              onClick={handleSubscribe}
-              disabled={loading}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '14px 24px',
-                borderRadius: 12,
-                border: 'none',
-                backgroundColor: 'var(--brand)',
-                color: '#fff',
-                fontSize: 15,
-                fontWeight: 600,
-                textAlign: 'center',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
-                transition: 'all 0.2s ease',
-                boxShadow: '0 2px 8px rgba(2, 16, 72, 0.2)'
-              }}
-              whileHover={!loading ? {
-                scale: 1.02,
-                boxShadow: '0 4px 16px rgba(2, 16, 72, 0.25)'
-              } : {}}
-              whileTap={!loading ? { scale: 0.98 } : {}}
-            >
-              {loading ? 'Loading...' : (isSubscribed ? 'Go to Dashboard' : 'Get Started')}
-            </motion.button>
-
-            <ul style={{
-              listStyle: 'none',
-              padding: 0,
-              margin: '28px 0 0 0'
-            }}>
-              {features.map((feature, featureIndex) => (
-                <li
-                  key={featureIndex}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 12,
-                    fontSize: 15,
-                    color: 'var(--ink)',
-                    padding: '10px 0',
-                    borderTop: featureIndex === 0 ? '1px solid var(--line)' : 'none'
-                  }}
-                >
-                  <Check
-                    size={18}
-                    style={{
-                      color: '#16a34a',
-                      flexShrink: 0,
-                      marginTop: 2
-                    }}
-                  />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        </section>
-
-        {/* FAQ Section */}
-        <section style={{
-          background: 'var(--bg-soft)',
-          borderTop: '1px solid var(--line)',
-          padding: '80px 24px'
-        }}>
-          <div style={{
-            maxWidth: 720,
-            margin: '0 auto'
-          }}>
-            <h2 style={{
-              fontSize: 'clamp(28px, 4vw, 36px)',
-              fontWeight: 600,
-              lineHeight: 1.2,
-              color: 'var(--ink)',
-              textAlign: 'center',
-              marginBottom: 48
-            }}>
-              Frequently asked questions
-            </h2>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <FaqItem
-                question="What can I do for free?"
-                answer="You can sign up, create projects, add team members, capture evidence, and use AI to classify your R&D activities - all for free. You only need to subscribe when you're ready to generate and export your claim pack."
-              />
-              <FaqItem
-                question="What payment methods do you accept?"
-                answer="We accept all major credit cards (Visa, Mastercard, American Express) via our secure payment processor, Stripe."
-              />
-              <FaqItem
-                question="Can I cancel anytime?"
-                answer="Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your current billing period."
-              />
-              <FaqItem
-                question="Is my data secure?"
-                answer="Absolutely. All data is encrypted in transit and at rest. We use bank-level security to protect your R&D documentation."
-              />
+            <div>
+              <div className={styles['footer-col-title']}>Product</div>
+              <ul className={styles['footer-links']}>
+                <li><Link href="/#how">How it works</Link></li>
+                <li><Link href="/#how">Features</Link></li>
+                <li><Link href="/pricing">Pricing</Link></li>
+              </ul>
+            </div>
+            <div>
+              <div className={styles['footer-col-title']}>Company</div>
+              <ul className={styles['footer-links']}>
+                <li><Link href="/advisors">Advisors</Link></li>
+                <li><Link href="/blog">Blog</Link></li>
+                <li><a href="mailto:hello@aird.io">Contact</a></li>
+              </ul>
+            </div>
+            <div>
+              <div className={styles['footer-col-title']}>Legal</div>
+              <ul className={styles['footer-links']}>
+                <li><Link href="/privacy">Privacy</Link></li>
+              </ul>
             </div>
           </div>
-        </section>
-
-        {/* CTA Section */}
-        <section style={{
-          padding: '80px 24px',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            maxWidth: 600,
-            margin: '0 auto'
-          }}>
-            <h2 style={{
-              fontSize: 'clamp(28px, 4vw, 36px)',
-              fontWeight: 600,
-              lineHeight: 1.2,
-              color: 'var(--ink)',
-              marginBottom: 16
-            }}>
-              Ready to get started?
-            </h2>
-            <p style={{
-              fontSize: 18,
-              color: 'var(--muted)',
-              lineHeight: 1.6,
-              marginBottom: 32
-            }}>
-              Join thousands of teams capturing their innovation story with ClaimFlow.
-            </p>
-            <motion.button
-              onClick={handleSubscribe}
-              disabled={loading}
-              style={{
-                display: 'inline-block',
-                padding: '14px 28px',
-                background: 'var(--brand)',
-                color: 'white',
-                borderRadius: 'var(--radius)',
-                border: 'none',
-                fontSize: 16,
-                fontWeight: 500,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
-                boxShadow: '0 2px 8px rgba(2, 16, 72, 0.15)'
-              }}
-              whileHover={!loading ? {
-                scale: 1.05,
-                boxShadow: '0 4px 16px rgba(2, 16, 72, 0.25)'
-              } : {}}
-              whileTap={!loading ? { scale: 0.98 } : {}}
-            >
-              {loading ? 'Loading...' : (isSubscribed ? 'Go to Dashboard' : 'Get Started')}
-            </motion.button>
+          <div className={styles['footer-bottom']}>
+            &copy; 2026 ClaimFlow. All rights reserved.
           </div>
-        </section>
-      </main>
-    </>
-  );
-}
-
-function FaqItem({ question, answer }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div style={{
-      borderRadius: 12,
-      border: '1px solid var(--line)',
-      backgroundColor: '#fff',
-      overflow: 'hidden'
-    }}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          width: '100%',
-          padding: '20px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          textAlign: 'left'
-        }}
-      >
-        <span style={{
-          fontSize: 17,
-          fontWeight: 500,
-          color: 'var(--ink)'
-        }}>
-          {question}
-        </span>
-        <span style={{
-          fontSize: 24,
-          color: 'var(--muted)',
-          transition: 'transform 0.2s ease',
-          transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)'
-        }}>
-          +
-        </span>
-      </button>
-      <motion.div
-        initial={false}
-        animate={{
-          height: isOpen ? 'auto' : 0,
-          opacity: isOpen ? 1 : 0
-        }}
-        transition={{ duration: 0.2 }}
-        style={{ overflow: 'hidden' }}
-      >
-        <p style={{
-          padding: '0 24px 20px',
-          margin: 0,
-          fontSize: 15,
-          lineHeight: 1.6,
-          color: 'var(--muted)'
-        }}>
-          {answer}
-        </p>
-      </motion.div>
+        </div>
+      </footer>
     </div>
   );
 }
