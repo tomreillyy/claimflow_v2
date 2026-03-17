@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import styles from '../app/landing.module.css';
 
-const BOOK_DEMO_URL = '#'; // TODO: Replace with Calendly URL
+const BOOK_DEMO_URL = 'mailto:tom@getclaimflow.com?subject=ClaimFlow Demo Request&body=Hi Tom,%0D%0A%0D%0AI\'d like to book a demo of ClaimFlow.%0D%0A%0D%0AName: %0D%0AFirm: %0D%0ANumber of clients: %0D%0A%0D%0AThanks';
 
 const faqData = [
   {
