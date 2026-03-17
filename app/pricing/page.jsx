@@ -1,32 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import styles from '../landing.module.css';
 
-const features = [
-  'Unlimited projects',
-  'Unlimited team members',
-  'AI-generated claim pack sections',
-  'Evidence capture & organization',
-  'GitHub integration',
-  'Export to PDF and Word',
-  'Professional R&D narratives',
-  'Priority support'
-];
-
 const faqs = [
   {
-    question: "What can I do before committing?",
-    answer: "You can sign up, create projects, add team members, capture evidence, and use AI to classify your R&D activities — all for free. You only pay when you're ready to generate and export your claim pack."
+    question: "Do I need to commit to a long-term contract?",
+    answer: "No. ClaimFlow is month-to-month."
   },
   {
-    question: "How does pricing work?",
-    answer: "We tailor pricing to your practice size and needs. Get in touch and we'll walk you through the options — no obligation."
+    question: "Can I try it with one client first?",
+    answer: "Yes. Most firms start with a single client engagement to see how it fits their workflow."
   },
   {
-    question: "Is my data secure?",
-    answer: "Absolutely. All data is encrypted in transit and at rest, with Australian data residency. We use bank-level security to protect your R&D documentation."
+    question: "What integrations are included?",
+    answer: "GitHub, Jira, and Slack — all included. No add-on fees."
+  },
+  {
+    question: "How long does setup take?",
+    answer: "Most firms are capturing evidence within a week of onboarding."
   }
 ];
 
@@ -35,6 +28,7 @@ const BOOK_DEMO_URL = '#'; // TODO: Replace with Calendly URL
 export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState(null);
   const [scrolled, setScrolled] = useState(false);
+  const faqRefs = useRef([]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -43,7 +37,17 @@ export default function PricingPage() {
   }, []);
 
   const toggleFaq = (index) => {
-    setOpenFaq(openFaq === index ? null : index);
+    if (openFaq === index) {
+      setOpenFaq(null);
+    } else {
+      setOpenFaq(index);
+      requestAnimationFrame(() => {
+        const el = faqRefs.current[index];
+        if (el) {
+          el.style.maxHeight = el.scrollHeight + 'px';
+        }
+      });
+    }
   };
 
   return (
@@ -66,133 +70,131 @@ export default function PricingPage() {
         </div>
       </nav>
 
-      {/* HERO */}
-      <section className={styles.hero} style={{ minHeight: 'auto' }}>
-        <div className={styles['hero-inner']} style={{ gridTemplateColumns: '1fr', textAlign: 'center', maxWidth: 800, margin: '0 auto', padding: '140px 48px 80px' }}>
-          <div>
-            <h1 style={{ maxWidth: 'none' }}>Pricing that fits your practice</h1>
-            <p className={styles['hero-sub']} style={{ maxWidth: 520, margin: '0 auto' }}>
-              We work with advisory firms of all sizes. Get in touch and we&apos;ll tailor a plan to your needs.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING CARD */}
+      {/* PRICING */}
       <section style={{
-        background: 'var(--cream)',
-        padding: '80px 24px'
+        background: 'radial-gradient(ellipse at 20% 50%, rgba(30,60,114,0.3) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(30,60,114,0.15) 0%, transparent 50%), linear-gradient(180deg, #0a1628 0%, #0f1d33 100%)',
+        paddingTop: 72,
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
+        {/* Main pricing block */}
         <div style={{
-          maxWidth: 440,
+          maxWidth: 680,
           margin: '0 auto',
-          background: 'var(--white)',
-          border: '1px solid var(--border)',
-          borderRadius: 16,
-          padding: '40px 32px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-          textAlign: 'center'
+          padding: '140px 48px 80px',
+          textAlign: 'center',
+          flex: '0 0 auto'
         }}>
-          <h3 style={{
-            fontFamily: 'var(--serif)',
-            fontSize: '1.4rem',
-            fontWeight: 400,
-            color: 'var(--text-dark)',
-            marginBottom: 8
+          <h1 style={{
+            fontFamily: "'Manrope', var(--sans)",
+            fontSize: 'clamp(2.4rem, 4.5vw, 3.8rem)',
+            lineHeight: 1.05,
+            letterSpacing: '-0.045em',
+            fontWeight: 800,
+            color: 'var(--white)',
+            marginBottom: 24
           }}>
-            ClaimFlow Pro
-          </h3>
+            Simple pricing that<br />fits your firm.
+          </h1>
           <p style={{
-            fontSize: '0.95rem',
-            color: 'var(--text-mid)',
-            marginBottom: 28,
-            lineHeight: 1.6
+            fontSize: '1.08rem',
+            color: 'var(--text-muted-dark)',
+            lineHeight: 1.75,
+            maxWidth: 520,
+            margin: '0 auto 40px'
           }}>
-            Everything you need to build defensible R&D claim packs
+            Every firm is different. We&apos;ll put together a plan based on how you work and how many clients you manage. No lock-in contracts, no per-seat fees.
           </p>
-
-          <a
-            href="mailto:hello@aird.io?subject=ClaimFlow pricing enquiry"
-            className={styles['btn-primary']}
-            style={{
-              width: '100%',
-              display: 'block',
-              marginBottom: 12
-            }}
-          >
-            Get in Touch
-          </a>
           <a
             href={BOOK_DEMO_URL}
-            className={styles['btn-ghost']}
-            style={{
-              width: '100%',
-              display: 'block',
-              marginBottom: 28,
-              color: 'var(--text-dark)',
-              borderColor: 'var(--border)'
-            }}
+            className={styles['btn-primary']}
           >
             Book a Demo
           </a>
-
-          <ul style={{
-            listStyle: 'none',
-            padding: 0,
-            margin: 0,
-            textAlign: 'left',
-            borderTop: '1px solid var(--border)',
-            paddingTop: 20
+          <p style={{
+            fontSize: '0.88rem',
+            color: 'var(--text-muted-dark)',
+            marginTop: 20,
+            opacity: 0.7
           }}>
-            {features.map((feature, i) => (
-              <li key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                fontSize: '0.92rem',
-                color: 'var(--text-dark)',
-                padding: '8px 0'
-              }}>
-                <span style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: 'rgba(44,82,130,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  fontSize: '0.65rem',
-                  color: 'var(--accent)'
-                }}>&#10003;</span>
-                {feature}
-              </li>
-            ))}
-          </ul>
+            Most firms are set up and running within a week.
+          </p>
         </div>
-      </section>
 
-      {/* FAQ */}
-      <section className={styles.faq}>
-        <div className={styles['faq-inner']}>
-          <div className={styles['faq-header']}>
-            <div className={styles['faq-eyebrow']}>Questions</div>
-            <h2>Frequently asked</h2>
+        {/* FAQ */}
+        <div style={{
+          maxWidth: 700,
+          margin: '0 auto',
+          padding: '80px 48px 140px',
+          width: '100%'
+        }}>
+          <div style={{
+            marginBottom: 48
+          }}>
+            <div style={{
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'var(--accent-muted)',
+              marginBottom: 20
+            }}>
+              Questions
+            </div>
+            <h2 style={{
+              fontFamily: 'var(--serif)',
+              fontSize: 'clamp(1.6rem, 2.5vw, 2.2rem)',
+              fontWeight: 400,
+              lineHeight: 1.2,
+              color: 'var(--white)'
+            }}>
+              Frequently asked
+            </h2>
           </div>
 
           <div>
             {faqs.map((item, i) => (
               <div
                 key={i}
-                className={`${styles['faq-item']} ${openFaq === i ? styles['faq-item-open'] : ''}`}
+                style={{
+                  borderBottom: '1px solid rgba(255,255,255,0.08)'
+                }}
               >
-                <button className={styles['faq-question']} onClick={() => toggleFaq(i)}>
+                <button
+                  onClick={() => toggleFaq(i)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    background: 'none',
+                    border: 'none',
+                    padding: '28px 0',
+                    fontSize: '1.02rem',
+                    fontWeight: 600,
+                    color: 'var(--text-on-dark)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    gap: 16,
+                    fontFamily: 'var(--sans)'
+                  }}
+                >
                   <span>{item.question}</span>
-                  <span className={styles['faq-toggle']}>
+                  <span style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.06)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
                     <svg
                       viewBox="0 0 14 14"
                       fill="none"
-                      stroke="#2C5282"
+                      stroke="var(--accent-muted)"
                       strokeWidth="2"
                       strokeLinecap="round"
                       style={{
@@ -208,32 +210,24 @@ export default function PricingPage() {
                   </span>
                 </button>
                 <div
-                  className={styles['faq-answer']}
-                  style={{ maxHeight: openFaq === i ? 200 : 0 }}
+                  ref={(el) => { faqRefs.current[i] = el; }}
+                  style={{
+                    maxHeight: openFaq === i ? (faqRefs.current[i]?.scrollHeight || 200) + 'px' : '0px',
+                    overflow: 'hidden',
+                    transition: 'max-height .35s ease'
+                  }}
                 >
-                  <div className={styles['faq-answer-inner']}>
+                  <div style={{
+                    paddingBottom: 28,
+                    fontSize: '0.98rem',
+                    lineHeight: 1.8,
+                    color: 'var(--text-muted-dark)'
+                  }}>
                     {item.answer}
                   </div>
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FINAL CTA */}
-      <section className={styles['final-cta']}>
-        <div>
-          <h2>Ready to get started?</h2>
-          <p>
-            Join advisory firms using ClaimFlow to build stronger,
-            more defensible claims with less manual effort.
-          </p>
-          <div className={styles['final-cta-buttons']}>
-            <a href="mailto:hello@aird.io?subject=ClaimFlow pricing enquiry" className={styles['btn-primary']}>
-              Get in Touch
-            </a>
-            <a href={BOOK_DEMO_URL} className={styles['btn-ghost']}>Book Demo</a>
           </div>
         </div>
       </section>
