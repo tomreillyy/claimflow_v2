@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import EvidencePicker from './EvidencePicker';
+import { formatAuditTimestamp } from '@/lib/formatAuditTimestamp';
 
 const NAVY = '#021048';
 
@@ -227,7 +228,7 @@ export default function ActivityDetailView({
   const activeItems = stepData[activeStage] || [];
   const activeStageObj = STAGES.find(s => s.key === activeStage);
 
-  const fmtDate = (ts) => ts ? new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
+  const fmtDate = (ts) => formatAuditTimestamp(ts);
   const snippet = (text) => (text || '').length > 200 ? (text || '').slice(0, 200) + '...' : (text || '');
 
   // Inline reassign panel — shared between draft and adopted views
@@ -321,7 +322,7 @@ export default function ActivityDetailView({
                         >
                           <SrcBadge src={item.source} />
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 1 }}>{fmtDate(item.created_at)}</div>
+                            <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'ui-monospace,monospace', marginBottom: 2, fontWeight: 500 }}>{fmtDate(item.created_at)}</div>
                             <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55 }}>{snippet(item.content)}</div>
                           </div>
                         </EvidenceRow>
@@ -416,7 +417,7 @@ export default function ActivityDetailView({
                     >
                       <SrcBadge src={item.source} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>{fmtDate(item.created_at)}</div>
+                        <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'ui-monospace,monospace', marginBottom: 2, fontWeight: 500 }}>{fmtDate(item.created_at)}</div>
                         <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.6 }}>{snippet(item.content)}</div>
                       </div>
                     </EvidenceRow>

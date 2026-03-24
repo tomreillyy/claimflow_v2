@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import { formatAuditTimestampShort } from '@/lib/formatAuditTimestamp';
 
 const SOURCE_ICONS = { manual: 'M', note: 'M', email: '@', github: 'G', document: 'D', upload: 'U' };
 const SOURCE_COLORS = { github: '#24292f', email: '#0ea5e9', document: '#8b5cf6', manual: '#021048', note: '#021048', upload: '#021048' };
@@ -145,9 +146,7 @@ export default function EvidencePicker({ step, allEvidence, linkedEvidenceIds, o
               const content = ev.content || '';
               const snippet = content.length > 140 ? content.slice(0, 140) + '...' : content;
               const source = ev.source || 'manual';
-              const date = ev.created_at
-                ? new Date(ev.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
-                : '';
+              const date = formatAuditTimestampShort(ev.created_at);
 
               return (
                 <div

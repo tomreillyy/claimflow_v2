@@ -34,6 +34,9 @@ export default function ClaimPackStrengthenWizard({ project, sections, onClose }
   const [expandedId, setExpandedId] = useState(null);
   const [answers, setAnswers] = useState({});
   const [draftingId, setDraftingId] = useState(null);
+  // Before/after tracking for review page
+  const [sectionChanges, setSectionChanges] = useState({});
+  const [confirmedReview, setConfirmedReview] = useState(false);
 
   const currentKey = STRENGTHEN_SECTIONS[currentIdx];
   const allDone = currentIdx >= STRENGTHEN_SECTIONS.length;
@@ -94,6 +97,15 @@ export default function ClaimPackStrengthenWizard({ project, sections, onClose }
         body: JSON.stringify({ content: newContent }),
       });
       if (!res.ok) throw new Error('Save failed');
+
+      // Track before/after for review page (before = original on first apply, after = latest)
+      setSectionChanges(prev => ({
+        ...prev,
+        [sectionKey]: {
+          before: prev[sectionKey]?.before ?? existingContent,
+          after: newContent,
+        },
+      }));
 
       setSectionStates(prev => ({
         ...prev,
@@ -288,7 +300,143 @@ export default function ClaimPackStrengthenWizard({ project, sections, onClose }
       {/* MAIN CONTENT */}
       <div style={{ flex: 1, minWidth: 0 }}>
 
-        {allDone ? (
+        {allDone && totalApplied > 0 && !confirmedReview ? (
+          /* ── BEFORE / AFTER REVIEW PAGE ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Header */}
+            <div style={{
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: 8,
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <div>
+                <h2 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: '0 0 2px' }}>
+                  Review changes before finalising
+                </h2>
+                <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
+                  {totalApplied} improvement{totalApplied !== 1 ? 's' : ''} applied across {Object.keys(sectionChanges).length} section{Object.keys(sectionChanges).length !== 1 ? 's' : ''}. Check the before and after below.
+                </p>
+              </div>
+              <button
+                onClick={() => setConfirmedReview(true)}
+                style={{
+                  padding: '9px 20px',
+                  backgroundColor: '#021048',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'system-ui',
+                  flexShrink: 0,
+                }}
+              >
+                Finalise →
+              </button>
+            </div>
+
+            {/* One card per changed section */}
+            {Object.entries(sectionChanges).map(([sectionKey, { before, after }]) => (
+              <div key={sectionKey} style={{
+                backgroundColor: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}>
+                {/* Section title */}
+                <div style={{
+                  padding: '10px 16px',
+                  borderBottom: '1px solid #f3f4f6',
+                  backgroundColor: '#fafafa',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#374151',
+                }}>
+                  {SECTION_NAMES[sectionKey] || sectionKey}
+                </div>
+
+                {/* Side-by-side comparison */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+                  {/* Before */}
+                  <div style={{ borderRight: '1px solid #e5e7eb', padding: '12px 16px' }}>
+                    <div style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#9ca3af',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      marginBottom: 8,
+                    }}>
+                      Before
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: '#6b7280',
+                        lineHeight: 1.7,
+                        maxHeight: 300,
+                        overflowY: 'auto',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: before || '<em style="color:#d1d5db">Empty</em>' }}
+                    />
+                  </div>
+
+                  {/* After */}
+                  <div style={{ padding: '12px 16px', backgroundColor: '#f0fdf4' }}>
+                    <div style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#10b981',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      marginBottom: 8,
+                    }}>
+                      After
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: '#374151',
+                        lineHeight: 1.7,
+                        maxHeight: 300,
+                        overflowY: 'auto',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                      dangerouslySetInnerHTML={{ __html: after }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Bottom finalise */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: 8 }}>
+              <button
+                onClick={() => setConfirmedReview(true)}
+                style={{
+                  padding: '10px 24px',
+                  backgroundColor: '#021048',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'system-ui',
+                }}
+              >
+                Finalise and reload editor →
+              </button>
+            </div>
+          </div>
+
+        ) : allDone ? (
           /* ── DONE STATE ── */
           <div style={{
             backgroundColor: 'white',
@@ -461,20 +609,36 @@ export default function ClaimPackStrengthenWizard({ project, sections, onClose }
                           </div>
                         </div>
 
-                        {/* Draft preview */}
+                        {/* Draft preview — full content, scrollable */}
                         {!isApplied && (
                           <div style={{
                             margin: '0 14px 12px',
-                            padding: '8px 10px',
-                            backgroundColor: '#f9fafb',
-                            border: '1px solid #f3f4f6',
-                            borderRadius: 4,
-                            fontSize: 12,
-                            color: '#374151',
-                            lineHeight: 1.6,
-                            fontStyle: 'italic',
                           }}>
-                            {sugg.draftContent.substring(0, 220)}{sugg.draftContent.length > 220 ? '…' : ''}
+                            <div style={{
+                              fontSize: 11,
+                              color: '#9ca3af',
+                              marginBottom: 4,
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}>
+                              Draft content
+                            </div>
+                            <div style={{
+                              padding: '10px 12px',
+                              backgroundColor: '#f9fafb',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: 4,
+                              fontSize: 12,
+                              color: '#374151',
+                              lineHeight: 1.7,
+                              fontStyle: 'italic',
+                              maxHeight: 220,
+                              overflowY: 'auto',
+                              whiteSpace: 'pre-wrap',
+                            }}
+                              dangerouslySetInnerHTML={{ __html: sugg.draftContent }}
+                            />
                           </div>
                         )}
 

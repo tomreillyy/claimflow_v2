@@ -6,6 +6,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { marked } from 'marked';
 import { supabase } from '@/lib/supabaseClient';
+import { formatAuditTimestamp } from '@/lib/formatAuditTimestamp';
 // Convert markdown to HTML if content looks like markdown (not already HTML)
 function normaliseContent(raw) {
   if (!raw) return '';
@@ -100,19 +101,7 @@ export default function SectionEditor({
     editor.commands.insertContentAt(editor.state.doc.content.size, htmlContent);
   }, [editor]);
 
-  const formatTimestamp = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMins = Math.floor((now - date) / 60000);
-    const diffHours = Math.floor((now - date) / 3600000);
-    const diffDays = Math.floor((now - date) / 86400000);
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
-  };
+  const formatTimestamp = (timestamp) => formatAuditTimestamp(timestamp, { prefix: 'Edited' });
 
   if (!editor) return null;
 
