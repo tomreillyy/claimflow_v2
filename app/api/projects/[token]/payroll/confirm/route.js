@@ -2,10 +2,18 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { parsePayrollFile, convertDateToISO } from '@/lib/payrollParser';
 import { calculateSuper, calculateOnCosts, getSGCRate } from '@/lib/onCostCalculator';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 export async function POST(req, { params }) {
   try {
     const { token } = await params;
+
+    const { user, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
+
     const body = await req.json();
     const { uploadId, mapping, dateFormat } = body;
 

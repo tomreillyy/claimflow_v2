@@ -1,21 +1,17 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 export async function POST(req, { params }) {
   try {
     const { token } = await params;
-    const { personName, personEmail, month, totalAmount } = await req.json();
 
-    // Get project
-    const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('project_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    if (!project) {
-      return Response.json({ error: 'Project not found' }, { status: 404 });
+    const { user, project, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return Response.json({ error: authError }, { status });
     }
+
+    const { personName, personEmail, month, totalAmount } = await req.json();
 
     // Convert month from YYYY-MM to YYYY-MM-01 format
     const monthDate = `${month}-01`;

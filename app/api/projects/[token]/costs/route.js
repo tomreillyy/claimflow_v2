@@ -2,13 +2,20 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { generateSmartAttestations, fillPayrollGaps } from '@/lib/smartApportionment';
 import { calculateTaxBenefit, calculateCostSummary } from '@/lib/taxBenefitCalculator';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 // GET - Fetch cost ledger with apportionment
 export async function GET(req, { params }) {
   try {
     const { token } = await params;
 
-    // Get project
+    const { user, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
+
+    // Get project (need owner_id for company lookup)
     const { data: project } = await supabaseAdmin
       .from('projects')
       .select('id, owner_id')

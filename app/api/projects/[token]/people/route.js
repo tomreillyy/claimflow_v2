@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 /**
  * GET - Fetch unique people for a project
@@ -9,6 +10,12 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function GET(req, { params }) {
   try {
     const { token } = await params;
+
+    const { user, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
 
     // Get project with owner info
     const { data: project } = await supabaseAdmin

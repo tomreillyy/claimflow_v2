@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { rateLimitMiddleware, getClientIp, RATE_LIMITS } from '@/lib/rateLimit';
+import { getAuthenticatedUser } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -225,6 +226,12 @@ Return JSON exactly: {
 
 export async function POST(req) {
   const startTime = Date.now();
+
+  const { user, error: authError } = await getAuthenticatedUser(req);
+  if (authError) {
+    return NextResponse.json({ error: authError }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 

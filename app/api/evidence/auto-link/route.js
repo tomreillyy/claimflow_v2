@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getAuthenticatedUser } from '@/lib/serverAuth';
 import crypto from 'crypto';
 
 export const runtime = 'nodejs';
@@ -274,6 +275,11 @@ export async function POST(req) {
   const now = new Date();
 
   try {
+    const { user, error: authError } = await getAuthenticatedUser(req);
+    if (authError) {
+      return NextResponse.json({ error: authError }, { status: 401 });
+    }
+
     const { project_id, evidence_ids } = await req.json();
 
     if (!project_id) {

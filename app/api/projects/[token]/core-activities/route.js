@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 // AI-powered activity generation
 async function generateActivitiesWithAI(project, evidence) {
@@ -137,6 +138,12 @@ export async function GET(req, { params }) {
   try {
     const { token } = await params;
 
+    const { user, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
+
     // Get project with full details
     const { data: project } = await supabaseAdmin
       .from('projects')
@@ -245,23 +252,20 @@ export async function GET(req, { params }) {
 export async function POST(req, { params }) {
   try {
     const { token } = await params;
+
+    const { user, project: accessProject, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
+
     const { name, uncertainty, hypothesis_text, conclusion_text } = await req.json();
 
     if (!name || !uncertainty) {
       return NextResponse.json({ error: 'Name and uncertainty required' }, { status: 400 });
     }
 
-    // Get project
-    const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('project_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    }
+    const project = accessProject;
 
     // Insert activity (human-created)
     const { data: activity, error } = await supabaseAdmin

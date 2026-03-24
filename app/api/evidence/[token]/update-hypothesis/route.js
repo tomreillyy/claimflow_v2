@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 export async function PATCH(req, { params }) {
   try {
     const { token } = await params;
+
+    const { user, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
+
     const { current_hypothesis } = await req.json();
 
     // Validate hypothesis

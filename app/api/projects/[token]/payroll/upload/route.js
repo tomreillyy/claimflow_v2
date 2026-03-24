@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { parsePayrollFile, autoDetectPreset, generateSmartMapping, detectDateFormat, validatePayrollData } from '@/lib/payrollParser';
-import { validateFileUpload, sanitizeFilename } from '@/lib/serverAuth';
+import { validateFileUpload, sanitizeFilename, verifyUserAndProjectAccess } from '@/lib/serverAuth';
+import { logAudit } from '@/lib/auditLog';
 
 export const config = {
   api: {
@@ -20,7 +21,13 @@ export async function POST(req, { params }) {
   try {
     const { token } = await params;
 
-    // Get project
+    const { user, project: accessProject, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
+
+    // Get project (need name for response)
     const { data: project } = await supabaseAdmin
       .from('projects')
       .select('id, name')
@@ -149,6 +156,17 @@ export async function POST(req, { params }) {
         error: `Failed to save upload record: ${dbError.message}`
       }, { status: 500 });
     }
+
+    logAudit(req, {
+      action: 'payroll.upload',
+      resourceType: 'payroll_upload',
+      resourceId: uploadRecord.id,
+      projectId: project.id,
+      userId: user.id,
+      userEmail: user.email,
+      severity: 'warning',
+      metadata: { filename: file.name, rows: totalRows },
+    });
 
     // Return preview data + mapping for UI
     return NextResponse.json({

@@ -1,26 +1,22 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 // Manual link/unlink evidence to core activity
 export async function PATCH(req, { params }) {
   try {
     const token = params.token;
+
+    const { user, project, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
+
     const { evidence_id, activity_id } = await req.json();
 
     if (!evidence_id) {
       return NextResponse.json({ error: 'evidence_id required' }, { status: 400 });
-    }
-
-    // Get project
-    const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('project_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     // Verify evidence belongs to project

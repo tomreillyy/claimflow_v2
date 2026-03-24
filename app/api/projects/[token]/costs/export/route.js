@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
+import { logAudit } from '@/lib/auditLog';
 
 // GET - Export cost ledger as CSV
 export async function GET(req, { params }) {
   try {
     const { token } = await params;
+
+    const { user, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
 
     // Get project
     const { data: project } = await supabaseAdmin
@@ -88,6 +96,17 @@ export async function GET(req, { params }) {
         return str;
       }).join(','))
     ].join('\n');
+
+    logAudit(req, {
+      action: 'costs.export',
+      resourceType: 'cost_ledger',
+      resourceId: project.id,
+      projectId: project.id,
+      userId: user.id,
+      userEmail: user.email,
+      severity: 'warning',
+      metadata: { format: 'csv', rows: ledger.length },
+    });
 
     // Return CSV response
     const filename = `${project.name.replace(/[^a-zA-Z0-9]/g, '_')}_costs_${project.year}.csv`;

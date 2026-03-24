@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,15 +13,10 @@ export async function GET(req, { params }) {
   try {
     const { token } = await params;
 
-    const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('project_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    const { user, project, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
     }
 
     const { data: costs, error } = await supabaseAdmin
@@ -53,15 +49,10 @@ export async function POST(req, { params }) {
   try {
     const { token } = await params;
 
-    const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('project_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    const { user, project, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
     }
 
     const body = await req.json();
@@ -115,15 +106,10 @@ export async function PUT(req, { params }) {
   try {
     const { token } = await params;
 
-    const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('project_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    const { user, project, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
     }
 
     const body = await req.json();
@@ -174,15 +160,10 @@ export async function DELETE(req, { params }) {
   try {
     const { token } = await params;
 
-    const { data: project } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('project_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    const { user, project, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
     }
 
     const body = await req.json();

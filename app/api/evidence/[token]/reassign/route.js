@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 /**
  * PATCH - Reassign evidence to a different person
@@ -8,6 +9,13 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function PATCH(req, { params }) {
   try {
     const { token } = await params;
+
+    const { user, project: accessProject, error: authError } = await verifyUserAndProjectAccess(req, token);
+    if (authError) {
+      const status = !user ? 401 : 403;
+      return NextResponse.json({ error: authError }, { status });
+    }
+
     const { evidence_id, new_author_email } = await req.json();
 
     if (!evidence_id || !new_author_email) {

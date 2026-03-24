@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSignedStorageUrl } from '@/lib/serverAuth';
+import { getSignedStorageUrl, verifyUserAndProjectAccess } from '@/lib/serverAuth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
@@ -13,21 +13,15 @@ export const dynamic = 'force-dynamic';
 export async function POST(req, { params }) {
   const { token } = await params;
 
+  const { user, project, error: authError } = await verifyUserAndProjectAccess(req, token);
+  if (authError) {
+    const status = !user ? 401 : 403;
+    return NextResponse.json({ error: authError }, { status });
+  }
+
   try {
     const body = await req.json();
     const { evidence_ids, storage_path } = body;
-
-    // Validate project token exists
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('project_token', token)
-      .is('deleted_at', null)
-      .single();
-
-    if (projectError || !project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    }
 
     // Handle single storage_path request
     if (storage_path) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyUserAndProjectAccess } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,15 +8,10 @@ export const dynamic = 'force-dynamic';
 export async function GET(req, { params }) {
   const { token } = await params;
 
-  const { data: project } = await supabaseAdmin
-    .from('projects')
-    .select('id')
-    .eq('project_token', token)
-    .is('deleted_at', null)
-    .single();
-
-  if (!project) {
-    return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+  const { user, project, error: authError } = await verifyUserAndProjectAccess(req, token);
+  if (authError) {
+    const status = !user ? 401 : 403;
+    return NextResponse.json({ error: authError }, { status });
   }
 
   const { data: documents, error } = await supabaseAdmin
