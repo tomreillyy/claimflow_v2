@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import ActivityDetailView from './ActivityDetailView';
+import { formatAuditTimestampShort } from '@/lib/formatAuditTimestamp';
 
 const NAVY = '#021048';
 const STAGES = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
@@ -48,7 +49,7 @@ function EvidenceInbox({ unlinkedEvidence, activities, token, onLinked }) {
 
   if (!unlinkedEvidence || unlinkedEvidence.length === 0) return null;
 
-  const fmtDate = (ts) => ts ? new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '';
+  const fmtDate = (ts) => formatAuditTimestampShort(ts);
 
   const handleConfirm = async (evidenceId) => {
     if (!toAct) return;
@@ -90,7 +91,7 @@ function EvidenceInbox({ unlinkedEvidence, activities, token, onLinked }) {
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, padding: '10px 0' }}>
               <SrcBadge src={ev.source} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace,monospace', marginBottom: 1 }}>
+                <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'ui-monospace,monospace', marginBottom: 2, fontWeight: 500 }}>
                   {fmtDate(ev.created_at)}
                 </div>
                 <div style={{
@@ -172,6 +173,16 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
   const [noteAdded, setNoteAdded] = useState(false);
+
+  // Jira CSV import state
+  const [showJiraImport, setShowJiraImport] = useState(false);
+  const [jiraFile, setJiraFile] = useState(null);
+  const [jiraAnalysing, setJiraAnalysing] = useState(false);
+  const [jiraResults, setJiraResults] = useState(null);
+  const [jiraSelected, setJiraSelected] = useState({});
+  const [jiraImporting, setJiraImporting] = useState(false);
+  const [jiraError, setJiraError] = useState('');
+  const [jiraSuccess, setJiraSuccess] = useState('');
 
   // Fetch step coverage for all activities
   useEffect(() => {
@@ -377,6 +388,81 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
   });
   const unlinkedEvidence = (allEvidence || []).filter(ev => !linkedEvidenceIds.has(ev.id));
 
+  // Jira CSV handlers
+  const handleJiraAnalyse = async () => {
+    if (!jiraFile) return;
+    setJiraAnalysing(true);
+    setJiraError('');
+    setJiraResults(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', jiraFile);
+      const res = await fetch(`/api/projects/${token}/jira/csv-analyse`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Analysis failed');
+      setJiraResults(data);
+      // Auto-select all R&D items
+      const selected = {};
+      (data.results || []).forEach((r, i) => {
+        if (r.is_rd) selected[i] = true;
+      });
+      setJiraSelected(selected);
+    } catch (err) {
+      setJiraError(err.message);
+    } finally {
+      setJiraAnalysing(false);
+    }
+  };
+
+  const handleJiraImport = async () => {
+    if (!jiraResults) return;
+    const toImport = jiraResults.results.filter((_, i) => jiraSelected[i]);
+    if (toImport.length === 0) {
+      setJiraError('Select at least one activity to import');
+      return;
+    }
+    setJiraImporting(true);
+    setJiraError('');
+    try {
+      const res = await fetch(`/api/projects/${token}/jira/import-activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activities: toImport }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Import failed');
+      // Refresh activities
+      const listRes = await fetch(`/api/projects/${token}/core-activities`);
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        onActivitiesChange(listData.activities || []);
+      }
+      setJiraSuccess(`Imported ${data.totalImported} activities from Jira`);
+      setShowJiraImport(false);
+      setJiraResults(null);
+      setJiraFile(null);
+      setJiraSelected({});
+      setTimeout(() => setJiraSuccess(''), 5000);
+    } catch (err) {
+      setJiraError(err.message);
+    } finally {
+      setJiraImporting(false);
+    }
+  };
+
+  const resetJiraImport = () => {
+    setShowJiraImport(false);
+    setJiraFile(null);
+    setJiraResults(null);
+    setJiraSelected({});
+    setJiraError('');
+    setJiraAnalysing(false);
+    setJiraImporting(false);
+  };
+
   const draftCount = activities.filter(a => !a.status || a.status === 'draft').length;
   const adoptedCount = activities.filter(a => a.status === 'adopted').length;
 
@@ -393,6 +479,19 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
           </p>
         </div>
         <div style={{ display: 'flex', gap: 7 }}>
+          <button
+            onClick={() => setShowJiraImport(true)}
+            style={{
+              padding: '7px 13px', fontSize: 13, fontWeight: 500, color: '#2684FF',
+              background: 'white', border: '1px solid #2684FF', borderRadius: 7,
+              cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#2684FF">
+              <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
+            </svg>
+            Import from Jira
+          </button>
           <button
             onClick={() => setShowAddEvidence(true)}
             style={{
@@ -415,6 +514,13 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
           </button>
         </div>
       </div>
+
+      {/* Jira import success */}
+      {jiraSuccess && (
+        <div style={{ padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, marginBottom: 12, fontSize: 13, color: '#1e40af' }}>
+          {jiraSuccess}
+        </div>
+      )}
 
       {/* Note added confirmation */}
       {noteAdded && (
@@ -571,6 +677,229 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
           token={token}
           onLinked={(evidenceId, activityId) => refreshCoverage(activityId)}
         />
+      )}
+
+      {/* Jira CSV Import Modal */}
+      {showJiraImport && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
+          <div style={{ background: 'white', borderRadius: 12, width: 640, maxHeight: '85vh', overflow: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb' }}>
+            {/* Modal header */}
+            <div style={{ padding: '18px 22px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#2684FF">
+                  <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
+                </svg>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>Import R&D Activities from Jira</span>
+              </div>
+              <button onClick={resetJiraImport} style={{ background: 'none', border: 'none', fontSize: 20, color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+
+            <div style={{ padding: '18px 22px' }}>
+              {/* Error */}
+              {jiraError && (
+                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, marginBottom: 14, fontSize: 13, color: '#dc2626' }}>
+                  {jiraError}
+                </div>
+              )}
+
+              {/* Step 1: File upload */}
+              {!jiraResults && (
+                <div>
+                  <p style={{ fontSize: 13, color: '#6b7280', marginTop: 0, marginBottom: 14, lineHeight: 1.5 }}>
+                    Export your Jira board as CSV (Filters → Export → CSV), then upload it here. AI will identify which epics are R&D and draft RDTI-ready activity descriptions.
+                  </p>
+                  <div style={{
+                    border: '2px dashed #d1d5db', borderRadius: 8, padding: 32,
+                    textAlign: 'center', background: '#fafafa', marginBottom: 16,
+                    cursor: 'pointer',
+                  }}
+                    onClick={() => document.getElementById('jira-csv-input').click()}
+                    onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#2684FF'; }}
+                    onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; }}
+                    onDrop={e => {
+                      e.preventDefault();
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                      const f = e.dataTransfer.files[0];
+                      if (f && (f.name.endsWith('.csv') || f.type === 'text/csv')) setJiraFile(f);
+                    }}
+                  >
+                    <input
+                      id="jira-csv-input"
+                      type="file"
+                      accept=".csv"
+                      style={{ display: 'none' }}
+                      onChange={e => {
+                        if (e.target.files[0]) setJiraFile(e.target.files[0]);
+                      }}
+                    />
+                    {jiraFile ? (
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: '#111827', marginBottom: 4 }}>{jiraFile.name}</div>
+                        <div style={{ fontSize: 12, color: '#6b7280' }}>{(jiraFile.size / 1024).toFixed(1)} KB</div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: 14, color: '#374151', marginBottom: 4 }}>Drop a Jira CSV here or click to browse</div>
+                        <div style={{ fontSize: 12, color: '#9ca3af' }}>Supports standard Jira CSV exports</div>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                    <button onClick={resetJiraImport} style={{ padding: '7px 14px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleJiraAnalyse}
+                      disabled={!jiraFile || jiraAnalysing}
+                      style={{
+                        padding: '7px 18px', fontSize: 13, fontWeight: 600,
+                        background: (!jiraFile || jiraAnalysing) ? '#e5e7eb' : NAVY,
+                        color: (!jiraFile || jiraAnalysing) ? '#9ca3af' : 'white',
+                        border: 'none', borderRadius: 6,
+                        cursor: (!jiraFile || jiraAnalysing) ? 'default' : 'pointer',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {jiraAnalysing ? 'Analysing...' : 'Analyse CSV'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Triage results */}
+              {jiraResults && (
+                <div>
+                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 14 }}>
+                    Analysed {jiraResults.totalIssues} issues across {jiraResults.epicCount} epics. Select the activities to import.
+                  </div>
+
+                  {/* R&D activities */}
+                  {jiraResults.results.filter(r => r.is_rd).length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#166534', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                        R&D Activities ({jiraResults.results.filter(r => r.is_rd).length})
+                      </div>
+                      {jiraResults.results.map((r, i) => {
+                        if (!r.is_rd) return null;
+                        return (
+                          <div key={i} style={{
+                            border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, marginBottom: 8,
+                            background: jiraSelected[i] ? '#f0f9ff' : 'white',
+                            transition: 'background 0.15s',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                              <input
+                                type="checkbox"
+                                checked={!!jiraSelected[i]}
+                                onChange={() => setJiraSelected(prev => ({ ...prev, [i]: !prev[i] }))}
+                                style={{ marginTop: 3, accentColor: NAVY }}
+                              />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 3 }}>
+                                  {r.activity_name}
+                                </div>
+                                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 6 }}>
+                                  From: "{r.epic_name}" · {r.classification === 'core' ? 'Core R&D' : 'Supporting'} · {(r.issues || []).length} issues
+                                </div>
+                                <div style={{ fontSize: 12, color: '#4b5563', marginBottom: 6, lineHeight: 1.5 }}>
+                                  <strong style={{ color: '#374151' }}>Uncertainty:</strong> {r.uncertainty}
+                                </div>
+                                <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>
+                                  {r.reason}
+                                </div>
+                                {/* Issue list (collapsed) */}
+                                {r.issues && r.issues.length > 0 && (
+                                  <details style={{ marginTop: 8 }}>
+                                    <summary style={{ fontSize: 11, color: '#9ca3af', cursor: 'pointer' }}>
+                                      {r.issues.length} Jira issues mapped
+                                    </summary>
+                                    <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                      {r.issues.map((issue, j) => (
+                                        <div key={j} style={{ fontSize: 11, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'center' }}>
+                                          <span style={{
+                                            padding: '1px 5px', borderRadius: 3, fontSize: 10, fontWeight: 600,
+                                            background: issue.step === 'Hypothesis' ? '#ede9fe' : issue.step === 'Experiment' ? '#dbeafe' : issue.step === 'Observation' ? '#d1fae5' : issue.step === 'Evaluation' ? '#fef3c7' : issue.step === 'Conclusion' ? '#fee2e2' : '#f3f4f6',
+                                            color: issue.step === 'Hypothesis' ? '#7c3aed' : issue.step === 'Experiment' ? '#2563eb' : issue.step === 'Observation' ? '#059669' : issue.step === 'Evaluation' ? '#d97706' : issue.step === 'Conclusion' ? '#dc2626' : '#6b7280',
+                                          }}>
+                                            {(issue.step || '?').slice(0, 3)}
+                                          </span>
+                                          <span style={{ fontFamily: 'ui-monospace,monospace', fontWeight: 600, color: '#374151' }}>{issue.key}</span>
+                                          <span>{issue.summary}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </details>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Not R&D */}
+                  {jiraResults.results.filter(r => !r.is_rd).length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                        Not R&D ({jiraResults.results.filter(r => !r.is_rd).length})
+                      </div>
+                      {jiraResults.results.map((r, i) => {
+                        if (r.is_rd) return null;
+                        return (
+                          <div key={i} style={{
+                            border: '1px solid #f3f4f6', borderRadius: 8, padding: 12, marginBottom: 6,
+                            background: jiraSelected[i] ? '#f0f9ff' : '#fafafa',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                              <input
+                                type="checkbox"
+                                checked={!!jiraSelected[i]}
+                                onChange={() => setJiraSelected(prev => ({ ...prev, [i]: !prev[i] }))}
+                                style={{ marginTop: 2, accentColor: NAVY }}
+                                title="Override — import as R&D anyway"
+                              />
+                              <div>
+                                <div style={{ fontSize: 13, color: '#6b7280' }}>"{r.epic_name}"</div>
+                                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{r.reason}</div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #f3f4f6' }}>
+                    <button onClick={() => { setJiraResults(null); setJiraFile(null); setJiraSelected({}); }} style={{ padding: '7px 14px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Back
+                    </button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={resetJiraImport} style={{ padding: '7px 14px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleJiraImport}
+                        disabled={jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0}
+                        style={{
+                          padding: '7px 18px', fontSize: 13, fontWeight: 600,
+                          background: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? '#e5e7eb' : NAVY,
+                          color: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? '#9ca3af' : 'white',
+                          border: 'none', borderRadius: 6,
+                          cursor: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? 'default' : 'pointer',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        {jiraImporting ? 'Importing...' : `Import ${Object.values(jiraSelected).filter(Boolean).length} Activities`}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Add evidence modal */}
