@@ -28,6 +28,29 @@ function SrcBadge({ src }) {
   );
 }
 
+function ExpandableText({ text, limit = 300, style = {} }) {
+  const [expanded, setExpanded] = useState(false);
+  const content = text || '';
+  const needsTruncation = content.length > limit;
+
+  return (
+    <div style={{ ...style, whiteSpace: 'pre-line' }}>
+      {expanded || !needsTruncation ? content : content.slice(0, limit) + '...'}
+      {needsTruncation && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+          style={{
+            display: 'inline', marginLeft: 4, padding: 0, border: 'none', background: 'none',
+            fontSize: 12, fontWeight: 500, color: '#2563eb', cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          {expanded ? 'see less' : 'see more'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // Wrapper that reveals action buttons on hover
 function EvidenceRow({ item, isEditing, onMove, onUnlink, children }) {
   const [hovered, setHovered] = useState(false);
@@ -229,7 +252,6 @@ export default function ActivityDetailView({
   const activeStageObj = STAGES.find(s => s.key === activeStage);
 
   const fmtDate = (ts) => formatAuditTimestamp(ts);
-  const snippet = (text) => (text || '').length > 200 ? (text || '').slice(0, 200) + '...' : (text || '');
 
   // Inline reassign panel — shared between draft and adopted views
   const MovePanel = ({ evidenceId, currentStep }) => {
@@ -323,7 +345,7 @@ export default function ActivityDetailView({
                           <SrcBadge src={item.source} />
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'ui-monospace,monospace', marginBottom: 2, fontWeight: 500 }}>{fmtDate(item.created_at)}</div>
-                            <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55 }}>{snippet(item.content)}</div>
+                            <ExpandableText text={item.content} limit={250} style={{ fontSize: 13, color: '#374151', lineHeight: 1.55 }} />
                           </div>
                         </EvidenceRow>
                         {editingEv?.id === item.id && <MovePanel evidenceId={item.id} currentStep={s.key} />}
@@ -418,7 +440,7 @@ export default function ActivityDetailView({
                       <SrcBadge src={item.source} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'ui-monospace,monospace', marginBottom: 2, fontWeight: 500 }}>{fmtDate(item.created_at)}</div>
-                        <div style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.6 }}>{snippet(item.content)}</div>
+                        <ExpandableText text={item.content} limit={400} style={{ fontSize: 13, color: '#1f2937', lineHeight: 1.6 }} />
                       </div>
                     </EvidenceRow>
                     {editingEv?.id === item.id && <MovePanel evidenceId={item.id} currentStep={activeStage} />}

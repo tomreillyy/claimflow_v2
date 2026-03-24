@@ -37,6 +37,29 @@ function SrcBadge({ src }) {
   );
 }
 
+function ExpandableText({ text, limit = 200, style = {} }) {
+  const [expanded, setExpanded] = useState(false);
+  const content = text || '';
+  const needsTruncation = content.length > limit;
+
+  return (
+    <div style={{ ...style, whiteSpace: 'pre-line' }}>
+      {expanded || !needsTruncation ? content : content.slice(0, limit) + '...'}
+      {needsTruncation && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+          style={{
+            display: 'inline', marginLeft: 4, padding: 0, border: 'none', background: 'none',
+            fontSize: 12, fontWeight: 500, color: '#2563eb', cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          {expanded ? 'see less' : 'see more'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function EvidenceInbox({ unlinkedEvidence, activities, token, onLinked }) {
   const [linking, setLinking] = useState(null);
   const [toAct, setToAct] = useState('');
@@ -94,12 +117,7 @@ function EvidenceInbox({ unlinkedEvidence, activities, token, onLinked }) {
                 <div style={{ fontSize: 11, color: '#6b7280', fontFamily: 'ui-monospace,monospace', marginBottom: 2, fontWeight: 500 }}>
                   {fmtDate(ev.created_at)}
                 </div>
-                <div style={{
-                  fontSize: 13, color: '#374151', lineHeight: 1.55,
-                  overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                }}>
-                  {ev.content}
-                </div>
+                <ExpandableText text={ev.content} limit={200} style={{ fontSize: 13, color: '#374151', lineHeight: 1.55 }} />
               </div>
               <button
                 onClick={() => setLinking(linking === ev.id ? null : ev.id)}
@@ -628,10 +646,8 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', lineHeight: 1.3, marginBottom: !isExpanded ? 3 : 0 }}>
                       {activity.name}
                     </div>
-                    {!isExpanded && (
-                      <div style={{ fontSize: 12, color: '#6b7280', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                        {activity.uncertainty}
-                      </div>
+                    {!isExpanded && activity.uncertainty && (
+                      <ExpandableText text={activity.uncertainty} limit={180} style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.45 }} />
                     )}
                   </div>
 
