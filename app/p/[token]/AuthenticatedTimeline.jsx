@@ -674,7 +674,11 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
   const fetchCostsData = async () => {
     setCostsLoading(true);
     try {
-      const costsRes = await fetch(`/api/projects/${token}/costs`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeaders = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+      const costsRes = await fetch(`/api/projects/${token}/costs`, { headers: authHeaders });
 
       if (costsRes.ok) {
         const costsData = await costsRes.json();
@@ -904,9 +908,13 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
 
   const handleSaveCoreActivity = async (name, uncertainty) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/projects/${token}/core-activities`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+        },
         body: JSON.stringify({ name, uncertainty })
       });
 
@@ -922,9 +930,13 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
 
   const handleUpdateActivity = async (id, name, uncertainty) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`/api/projects/${token}/core-activities/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+        },
         body: JSON.stringify({ name, uncertainty })
       });
 
