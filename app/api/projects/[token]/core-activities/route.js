@@ -100,7 +100,7 @@ Return 1–3 items. Each item:
       // Extract the first JSON array if any stray text sneaks in
       const match = content.match(/\[\s*{[\s\S]*}\s*\]/);
       activities = JSON.parse(match ? match[0] : content);
-    } catch {
+    } catch (parseErr) {
       console.error('Failed to parse AI response:', content.slice(0, 200));
       return [];
     }
