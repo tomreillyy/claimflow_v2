@@ -24,22 +24,27 @@ function useStepGapHint(token) {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`/api/evidence/${token}/step-counts`)
-      .then(res => res.ok ? res.json() : null)
-      .then(counts => {
-        if (!counts) return; // Silent on error
-        const missing = [];
-        const order = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
-        order.forEach(step => {
-          if (counts[step.toLowerCase()] === 0) missing.push(step);
-        });
-        if (missing.length === 0) {
-          setHint('All five steps present at least once.');
-        } else {
-          setHint(`Missing: ${missing.join(', ')}.`);
-        }
-      })
-      .catch(() => {}); // Silent on error
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+      fetch(`/api/evidence/${token}/step-counts`, { headers })
+        .then(res => res.ok ? res.json() : null)
+        .then(counts => {
+          if (!counts) return; // Silent on error
+          const missing = [];
+          const order = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
+          order.forEach(step => {
+            if (counts[step.toLowerCase()] === 0) missing.push(step);
+          });
+          if (missing.length === 0) {
+            setHint('All five steps present at least once.');
+          } else {
+            setHint(`Missing: ${missing.join(', ')}.`);
+          }
+        })
+        .catch(() => {}); // Silent on error
+    });
   }, [token]);
 
   return hint;
@@ -563,15 +568,20 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
   useEffect(() => {
     if (!token || activitiesFetched) return;
 
-    fetch(`/api/projects/${token}/core-activities`)
-      .then(res => res.ok ? res.json() : null)
-      .then(activitiesData => {
-        if (activitiesData) {
-          setCoreActivities(activitiesData.activities || []);
-        }
-        setActivitiesFetched(true);
-      })
-      .catch(err => console.error('Failed to fetch data:', err));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+      fetch(`/api/projects/${token}/core-activities`, { headers })
+        .then(res => res.ok ? res.json() : null)
+        .then(activitiesData => {
+          if (activitiesData) {
+            setCoreActivities(activitiesData.activities || []);
+          }
+          setActivitiesFetched(true);
+        })
+        .catch(err => console.error('Failed to fetch data:', err));
+    });
   }, [token, activitiesFetched]);
 
   // Fetch GitHub connection status
