@@ -296,13 +296,18 @@ export async function POST(req) {
     // Get project
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id, current_hypothesis')
+      .select('id, current_hypothesis, ai_features_enabled')
       .eq('id', project_id)
       .is('deleted_at', null)
       .single();
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    // Check AI consent
+    if (project.ai_features_enabled === false) {
+      return NextResponse.json({ ok: true, linked: 0, reason: 'ai_features_disabled' });
     }
 
     // Get core activities (requirement A)

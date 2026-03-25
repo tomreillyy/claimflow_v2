@@ -10,7 +10,8 @@ export async function PATCH(req) {
       return NextResponse.json({ error: authError }, { status: 403 });
     }
 
-    const { projectId, name, year, year_end, project_overview, current_hypothesis, technical_uncertainty, knowledge_gap, testing_method, success_criteria } = await req.json();
+    const body = await req.json();
+    const { projectId, name, year, year_end, project_overview, current_hypothesis, technical_uncertainty, knowledge_gap, testing_method, success_criteria } = body;
 
     if (!projectId) {
       return NextResponse.json({ error: 'projectId required' }, { status: 400 });
@@ -46,6 +47,7 @@ export async function PATCH(req) {
     if (knowledge_gap !== undefined) updates.knowledge_gap = knowledge_gap;
     if (testing_method !== undefined) updates.testing_method = testing_method;
     if (success_criteria !== undefined) updates.success_criteria = success_criteria;
+    if (body.ai_features_enabled !== undefined) updates.ai_features_enabled = !!body.ai_features_enabled;
 
     // Update project
     const { data, error } = await supabaseAdmin

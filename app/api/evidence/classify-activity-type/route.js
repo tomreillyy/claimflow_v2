@@ -258,7 +258,8 @@ export async function POST(req) {
         name,
         year,
         current_hypothesis,
-        project_token
+        project_token,
+        ai_features_enabled
       )
     `)
     .eq('id', id)
@@ -269,6 +270,11 @@ export async function POST(req) {
   }
 
   const project = evidence.projects;
+
+  // Check AI consent
+  if (project?.ai_features_enabled === false) {
+    return NextResponse.json({ ok: true, activity_type: 'core', reason: 'ai_features_disabled' });
+  }
   const projectToken = project?.project_token;
 
   // Fetch core activities for context

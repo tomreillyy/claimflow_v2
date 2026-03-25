@@ -147,7 +147,7 @@ export async function GET(req, { params }) {
     // Get project with full details
     const { data: project } = await supabaseAdmin
       .from('projects')
-      .select('id, name, year, current_hypothesis')
+      .select('id, name, year, current_hypothesis, ai_features_enabled')
       .eq('project_token', token)
       .is('deleted_at', null)
       .single();
@@ -166,7 +166,8 @@ export async function GET(req, { params }) {
     // Check if we should auto-generate activities
     const shouldGenerate = (
       (!activities || activities.length === 0) && // No activities yet
-      process.env.OPENAI_API_KEY // API key available
+      process.env.OPENAI_API_KEY && // API key available
+      project.ai_features_enabled !== false // User has consented to AI features
     );
 
     if (shouldGenerate) {
@@ -178,12 +179,13 @@ export async function GET(req, { params }) {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      // Evidence quality guard: require ≥5 items AND ≥2 distinct steps
-      const distinctSteps = new Set((evidence || []).map(e => e.systematic_step_primary || 'Unknown'));
-      const hasQualityEvidence = (evidence?.length ?? 0) >= 5 && distinctSteps.size >= 2;
+      // Evidence quality guard: require ≥5 items
+      // Note: systematic_step_primary is only set after activities exist, so we can't
+      // require distinct steps here — that's a chicken-and-egg problem.
+      const hasQualityEvidence = (evidence?.length ?? 0) >= 5;
 
       if (hasQualityEvidence) {
-        console.log(`[Core Activities] Generating AI activities for project ${project.id} (${evidence.length} items, ${distinctSteps.size} steps)`);
+        console.log(`[Core Activities] Generating AI activities for project ${project.id} (${evidence.length} items)`);
 
         const aiActivities = await generateActivitiesWithAI(project, evidence);
 

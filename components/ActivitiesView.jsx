@@ -611,7 +611,7 @@ export default function ActivitiesView({ token, activities, allEvidence, onActiv
         <div style={{ padding: 48, textAlign: 'center', background: 'white', border: '1px solid #e5e7eb', borderRadius: 8 }}>
           <div style={{ fontSize: 14, color: '#374151', marginBottom: 8 }}>No activities yet</div>
           <div style={{ fontSize: 13, color: '#9ca3af', lineHeight: 1.5 }}>
-            Activities will be auto-generated once you have enough evidence (5+ items across 2+ systematic steps).
+            Activities will be auto-generated once you have 5+ evidence items.
             You can also add one manually above.
           </div>
         </div>

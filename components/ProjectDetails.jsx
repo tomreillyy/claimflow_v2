@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Check, AlertCircle, Save } from 'lucide-react';
+import { Check, AlertCircle, Save, Shield, Brain } from 'lucide-react';
 
 const TECHNICAL_FIELDS = [
   {
@@ -48,6 +48,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
     knowledge_gap: project.knowledge_gap || '',
     testing_method: project.testing_method || '',
     success_criteria: project.success_criteria || '',
+    ai_features_enabled: project.ai_features_enabled !== false,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -92,6 +93,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
           knowledge_gap: form.knowledge_gap.trim() || null,
           testing_method: form.testing_method.trim() || null,
           success_criteria: form.success_criteria.trim() || null,
+          ai_features_enabled: form.ai_features_enabled,
         }),
       });
 
@@ -449,6 +451,104 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* AI & Data Privacy Section */}
+      <div style={{
+        ...cardStyle,
+        marginTop: 20,
+        border: '1px solid #e5e5e5',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          marginBottom: 16,
+        }}>
+          <Shield size={18} color="#021048" />
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
+            AI & Data Privacy
+          </h3>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 14,
+          padding: 16,
+          backgroundColor: form.ai_features_enabled ? '#f0fdf4' : '#f9fafb',
+          border: `1px solid ${form.ai_features_enabled ? '#bbf7d0' : '#e5e5e5'}`,
+          borderRadius: 8,
+          marginBottom: 16,
+        }}>
+          <div style={{ flexShrink: 0, paddingTop: 2 }}>
+            <button
+              type="button"
+              onClick={() => {
+                updateField('ai_features_enabled', !form.ai_features_enabled);
+              }}
+              style={{
+                width: 44,
+                height: 24,
+                borderRadius: 12,
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: form.ai_features_enabled ? '#021048' : '#d1d5db',
+                position: 'relative',
+                transition: 'background-color 0.2s',
+              }}
+            >
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: 'white',
+                position: 'absolute',
+                top: 2,
+                left: form.ai_features_enabled ? 22 : 2,
+                transition: 'left 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+              }} />
+            </button>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 4,
+            }}>
+              <Brain size={15} color={form.ai_features_enabled ? '#16a34a' : '#666'} />
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
+                {form.ai_features_enabled ? 'AI features enabled' : 'AI features disabled'}
+              </span>
+            </div>
+            <p style={{ fontSize: 13, color: '#666', margin: 0, lineHeight: 1.5 }}>
+              {form.ai_features_enabled
+                ? 'ClaimFlow uses AI to auto-classify evidence, link evidence to activities, and draft R&D narratives. Project data (hypotheses, evidence summaries, activity descriptions) is sent to OpenAI for processing.'
+                : 'AI features are off. No project data will be sent to external AI providers. You can still manually classify evidence and write narratives.'}
+            </p>
+          </div>
+        </div>
+
+        <div style={{
+          padding: '12px 16px',
+          backgroundColor: '#f9fafb',
+          borderRadius: 8,
+          border: '1px solid #e5e5e5',
+        }}>
+          <p style={{ fontSize: 12, color: '#888', margin: 0, lineHeight: 1.6 }}>
+            <strong style={{ color: '#666' }}>Data handling:</strong> AI analysis uses the OpenAI API, which does not use API inputs for model training (per their{' '}
+            <a
+              href="https://openai.com/enterprise-privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#021048', textDecoration: 'underline' }}
+            >data usage policy</a>).
+            Only evidence summaries (truncated to 200 characters), activity names, and project hypotheses are sent — never payroll data, financial figures, or personal contact information.
+            All raw data remains stored in Australia. Changes take effect after saving.
+          </p>
         </div>
       </div>
     </div>
