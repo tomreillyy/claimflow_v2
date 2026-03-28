@@ -138,9 +138,9 @@ export default function LandingPage() {
       <section className={styles.hero}>
         <div className={styles['hero-inner']}>
           <div className={styles['hero-copy']}>
-            <h1>Every R&D claim you<br />prepare by hand<br />is margin you&apos;re leaving behind.</h1>
+            <h1>Do more R&D claims without hiring more staff</h1>
             <p className={styles['hero-sub']}>
-              ClaimFlow auto-captures R&D evidence from your clients&apos; dev tools and structures it against RDTI criteria. Prepare more claims without growing your team.
+              ClaimFlow connects to your clients&apos; dev tools, captures and structures their work against RDTI criteria, and generates a review-ready first draft. Your team stays in control, reviewing and refining instead of starting from scratch.
             </p>
             <div className={styles['hero-ctas']}>
               <a href={BOOK_DEMO_URL} className={styles['btn-primary']}>Book Demo</a>
@@ -182,13 +182,29 @@ export default function LandingPage() {
       {/* ═══════════════ THE PROBLEM ═══════════════ */}
       <section className={styles.problem}>
         <div className={`${styles['problem-inner']} ${revealClass('problem')}`} data-reveal-id="problem" ref={setRevealRef('problem')}>
-          <div className={styles['problem-eyebrow']}>The reality today</div>
-          <h2>The documentation problem<br />every advisor knows</h2>
+          <div className={styles['problem-eyebrow']}>An assistant for your team, not a replacement</div>
+          <h2>Your team already knows how to assess R&D.</h2>
+          <p className={styles['problem-lead']}>What takes time is everything around it.</p>
+          <div className={styles['problem-grid']}>
+            <div className={styles['problem-card']}>
+              <div className={styles['problem-card-num']}>1</div>
+              <div className={styles['problem-card-title']}>Extracting</div>
+              <p>Pulling information from client dev tools, repos, and project management systems.</p>
+            </div>
+            <div className={styles['problem-card']}>
+              <div className={styles['problem-card-num']}>2</div>
+              <div className={styles['problem-card-title']}>Interpreting</div>
+              <p>Making sense of raw technical work and identifying what qualifies.</p>
+            </div>
+            <div className={styles['problem-card']}>
+              <div className={styles['problem-card-num']}>3</div>
+              <div className={styles['problem-card-title']}>Structuring</div>
+              <p>Turning it into something defensible against RDTI criteria.</p>
+            </div>
+          </div>
           <p className={styles['problem-text']}>
-            Your clients do genuinely innovative work. But come claim time, the
-            evidence is scattered across inboxes, Slack threads, and half-remembered
-            conversations. You&apos;re left reconstructing a technical narrative months
-            after the work happened. And hoping it holds up under review.
+            ClaimFlow handles that upfront. Your team reviews, challenges, and refines the output.
+            They make the decisions &mdash; ClaimFlow just gives them a much stronger starting point.
           </p>
         </div>
       </section>
@@ -198,7 +214,7 @@ export default function LandingPage() {
       <section className={styles.how} id="how">
         <div className={`${styles['how-header']} ${revealClass('how-header')}`} data-reveal-id="how-header" ref={setRevealRef('how-header')}>
           <div className={styles['how-eyebrow']}>How it works</div>
-          <h2>R&D documentation,<br />captured as it happens</h2>
+          <h2>R&D evidence,<br />captured and structured as it happens</h2>
           <p className={styles['how-subtitle']}>Three steps, zero admin.</p>
         </div>
 
@@ -210,8 +226,8 @@ export default function LandingPage() {
               <div className={styles['step-title']}>Connect your client&apos;s tools</div>
               <p className={styles['step-desc']}>
                 Link your client&apos;s GitHub, Jira, or other engineering tools to
-                ClaimFlow. Setup takes minutes. From that point on, their R&D
-                work is captured automatically as they go about their day.
+                ClaimFlow. Setup takes minutes. From that point on, their technical
+                work is captured automatically as it happens.
               </p>
             </div>
             <div className={`${styles['step-visual']} ${styles['step-visual-integrations']}`}>
@@ -221,20 +237,8 @@ export default function LandingPage() {
                   <span className={styles['integration-card-name']}>GitHub</span>
                 </div>
                 <div className={styles['integration-card']}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="#2684FF"><path d="M11.53 2C6.066 2 2 6.066 2 11.53c0 5.464 4.066 9.53 9.53 9.53 5.464 0 9.53-4.066 9.53-9.53C21.06 6.066 16.994 2 11.53 2zM8.895 16.312c0 .262-.212.474-.474.474H6.158a.474.474 0 01-.474-.474V9.158c0-.262.212-.474.474-.474h2.263c.262 0 .474.212.474.474v7.154zm4.737 0c0 .262-.212.474-.474.474h-2.263a.474.474 0 01-.474-.474V7.632c0-.262.212-.474.474-.474h2.263c.262 0 .474.212.474.474v8.68zm4.737 0c0 .262-.212.474-.474.474h-2.263a.474.474 0 01-.474-.474v-5.417c0-.262.212-.474.474-.474h2.263c.262 0 .474.212.474.474v5.417z"/></svg>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="jira-blue-1" x1="99.68%" y1="15.81%" x2="39.6%" y2="97.34%"><stop offset="0%" stopColor="#0052CC"/><stop offset="92%" stopColor="#2684FF"/></linearGradient><linearGradient id="jira-blue-2" x1="0.39%" y1="84.61%" x2="60.47%" y2="2.41%"><stop offset="0%" stopColor="#0052CC"/><stop offset="92%" stopColor="#2684FF"/></linearGradient></defs><path d="M22.16 11.1L13.07 2.01 12 .94 4.93 8.01 1.84 11.1a.6.6 0 000 .85l5.64 5.64L12 22.11l7.07-7.07.12-.12 2.97-2.97a.6.6 0 000-.85zM12 15.17L8.83 12 12 8.83 15.17 12 12 15.17z" fill="#2684FF"/><path d="M12 8.83a4.48 4.48 0 01-.01-6.33L4.92 9.57l3.53 3.53L12 8.83z" fill="url(#jira-blue-1)"/><path d="M15.18 11.99L12 15.17a4.48 4.48 0 01.01 6.33l7.07-7.07-4.1-4.44z" fill="url(#jira-blue-2)"/></svg>
                   <span className={styles['integration-card-name']}>Jira</span>
-                </div>
-                <div className={styles['integration-card']}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="#FC6D26"><path d="M4.845 2.1L.378 6.57a.75.75 0 00.53 1.28h2.34l3.55 9.77a.75.75 0 00.7.48h8.99a.75.75 0 00.7-.48l3.55-9.77h2.34a.75.75 0 00.53-1.28L19.155 2.1a.75.75 0 00-.53-.22H5.375a.75.75 0 00-.53.22zM12 14.4a2.4 2.4 0 110-4.8 2.4 2.4 0 010 4.8z"/></svg>
-                  <span className={styles['integration-card-name']}>GitLab</span>
-                </div>
-                <div className={styles['integration-card']}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="#2684FF"><path d="M2.65 3C1.74 3 1 3.74 1 4.65v14.7C1 20.26 1.74 21 2.65 21h14.7c.91 0 1.65-.74 1.65-1.65V17h-2v2H3V5h14v2h2V4.65C19 3.74 18.26 3 17.35 3H2.65zM14 8l-1.41 1.41L15.17 12H7v2h8.17l-2.58 2.59L14 18l5-5-5-5z"/></svg>
-                  <span className={styles['integration-card-name']}>Bitbucket</span>
-                </div>
-                <div className={styles['integration-card']}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="#4A154B"><path d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 012.521-2.52 2.527 2.527 0 012.521 2.52v6.313A2.528 2.528 0 018.834 24a2.528 2.528 0 01-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 01-2.521-2.52A2.528 2.528 0 018.834 0a2.528 2.528 0 012.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 012.521 2.521 2.528 2.528 0 01-2.521 2.521H2.522A2.528 2.528 0 010 8.834a2.528 2.528 0 012.522-2.521h6.312zm10.122 2.521a2.528 2.528 0 012.522-2.521A2.528 2.528 0 0124 8.834a2.528 2.528 0 01-2.522 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 01-2.523 2.521 2.527 2.527 0 01-2.52-2.521V2.522A2.527 2.527 0 0115.165 0a2.528 2.528 0 012.523 2.522v6.312zm-2.523 10.122a2.528 2.528 0 012.523 2.522A2.528 2.528 0 0115.165 24a2.527 2.527 0 01-2.52-2.522v-2.522h2.52zm0-1.268a2.527 2.527 0 01-2.52-2.523 2.526 2.526 0 012.52-2.52h6.313A2.527 2.527 0 0124 15.165a2.528 2.528 0 01-2.522 2.523h-6.313z"/></svg>
-                  <span className={styles['integration-card-name']}>Slack</span>
                 </div>
                 <div className={`${styles['integration-card']} ${styles['integration-card-more']}`}>
                   <span className={styles['integration-card-plus']}>+</span>
@@ -250,10 +254,10 @@ export default function LandingPage() {
               <div className={styles['step-number']}>2</div>
               <div className={styles['step-title']}>Evidence is structured automatically</div>
               <p className={styles['step-desc']}>
-                ClaimFlow uses specialised AI to classify each piece of technical
-                work against RDTI criteria, mapping it to the right activities and
-                categories. You get a clear, chronological evidence trail without
-                chasing a single email.
+                ClaimFlow structures raw technical work against RDTI criteria,
+                mapping it to the right activities and categories. You get a clear,
+                chronological evidence trail ready for review &mdash; without chasing
+                a single email.
               </p>
             </div>
             <div className={`${styles['step-visual']} ${styles['step-visual-img']}`}>
@@ -265,12 +269,11 @@ export default function LandingPage() {
           <div className={`${styles['how-step']} ${revealClass('step3')}`} data-reveal-id="step3" ref={setRevealRef('step3')}>
             <div className={styles['step-copy']}>
               <div className={styles['step-number']}>3</div>
-              <div className={styles['step-title']}>Export a defensible claim pack</div>
+              <div className={styles['step-title']}>Review, refine and export</div>
               <p className={styles['step-desc']}>
-                When you are ready to lodge, export a structured, compliant claim
-                pack. Sources, timestamps, classifications and technical narratives
-                assembled into a clean document that aligns with RDTI requirements.
-                Ready for submission, review, or audit.
+                ClaimFlow assembles the structured evidence into a draft your team
+                can work through. Identify gaps, refine narratives inline, and make
+                adjustments before exporting a clean, defensible claim pack.
               </p>
             </div>
             <div className={`${styles['step-visual']} ${styles['step-visual-img']}`}>
