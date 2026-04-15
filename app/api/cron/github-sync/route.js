@@ -17,7 +17,7 @@ export async function POST(req) {
   }
 
   const results = [];
-  const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   try {
     // Find all GitHub repo connections that haven't been synced in the last 6 hours
@@ -36,7 +36,7 @@ export async function POST(req) {
     }
 
     // Filter to repos that need syncing (last synced > 6 hours ago or never)
-    const staleRepos = repos.filter(r => !r.last_synced_at || new Date(r.last_synced_at) < new Date(sixHoursAgo));
+    const staleRepos = repos.filter(r => !r.last_synced_at || new Date(r.last_synced_at) < new Date(oneDayAgo));
 
     console.log(`[GitHub Cron] ${staleRepos.length} of ${repos.length} repos need syncing`);
 
