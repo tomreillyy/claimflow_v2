@@ -23,7 +23,7 @@ const faqs = [
   }
 ];
 
-const BOOK_DEMO_URL = 'mailto:tom@getclaimflow.com?subject=ClaimFlow Demo Request&body=Hi Tom,%0D%0A%0D%0AI\'d like to book a demo of ClaimFlow.%0D%0A%0D%0AName: %0D%0AFirm: %0D%0ANumber of clients: %0D%0A%0D%0AThanks';
+const BOOK_DEMO_URL = 'https://calendly.com/tom-getclaimflow/30min';
 
 export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState(null);
