@@ -21,18 +21,32 @@ export async function POST(req) {
 
   try {
     // Find all GitHub repo connections that haven't been synced in the last 6 hours
-    const { data: repos } = await supabaseAdmin
+    const { data: repos, error: repoError } = await supabaseAdmin
       .from('github_repos')
-      .select('id, project_id, repo_owner, repo_name, filter_branches, filter_keywords')
-      .or(`last_synced_at.is.null,last_synced_at.lt.${sixHoursAgo}`);
+      .select('id, project_id, repo_owner, repo_name, filter_branches, filter_keywords, last_synced_at');
+
+    console.log(`[GitHub Cron] Query returned ${repos?.length ?? 0} repos, error: ${repoError?.message || 'none'}`);
+
+    if (repoError) {
+      return NextResponse.json({ ok: false, error: repoError.message }, { status: 500 });
+    }
 
     if (!repos || repos.length === 0) {
-      return NextResponse.json({ ok: true, message: 'No repos need syncing', results: [] });
+      return NextResponse.json({ ok: true, message: 'No repos found in github_repos table', results: [] });
+    }
+
+    // Filter to repos that need syncing (last synced > 6 hours ago or never)
+    const staleRepos = repos.filter(r => !r.last_synced_at || new Date(r.last_synced_at) < new Date(sixHoursAgo));
+
+    console.log(`[GitHub Cron] ${staleRepos.length} of ${repos.length} repos need syncing`);
+
+    if (staleRepos.length === 0) {
+      return NextResponse.json({ ok: true, message: 'All repos recently synced', total_repos: repos.length, results: [] });
     }
 
     console.log(`[GitHub Cron] Found ${repos.length} repos to sync`);
 
-    for (const repo of repos) {
+    for (const repo of staleRepos) {
       try {
         // Get the project owner's user_id
         const { data: project } = await supabaseAdmin
