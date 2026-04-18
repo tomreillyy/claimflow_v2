@@ -741,8 +741,9 @@ function ClaimPackPanel({ token }) {
       </div>
 
       {/* Section editor */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px' }}>
+      <div className="workspace-claimpack" style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px' }}>
         {projectId ? (
+          <>
           <SectionEditor
             key={activeSection}
             sectionKey={activeSection}
@@ -755,6 +756,86 @@ function ClaimPackPanel({ token }) {
             lastEditedBy={sectionData.last_edited_by || null}
             onRegenerateClick={() => handleRegenerateSection(activeSection)}
           />
+          <style>{`
+            .workspace-claimpack .section-editor {
+              border: none !important;
+              background: transparent !important;
+              border-radius: 0 !important;
+            }
+            .workspace-claimpack .section-editor .section-body {
+              padding: 0 4px !important;
+            }
+            .workspace-claimpack .ProseMirror {
+              font-size: 15px !important;
+              line-height: 1.8 !important;
+              color: #1a1a1a !important;
+              font-family: 'Georgia', 'Times New Roman', serif !important;
+            }
+            .workspace-claimpack .ProseMirror p {
+              margin: 0 0 16px 0 !important;
+            }
+            .workspace-claimpack .ProseMirror h2 {
+              font-size: 11px !important;
+              font-weight: 700 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.08em !important;
+              color: #374151 !important;
+              margin: 32px 0 16px 0 !important;
+              font-family: system-ui, -apple-system, sans-serif !important;
+              display: flex !important;
+              align-items: center !important;
+              gap: 8px !important;
+            }
+            .workspace-claimpack .ProseMirror h2::before {
+              content: '—' !important;
+              color: #9ca3af !important;
+              font-weight: 400 !important;
+            }
+            .workspace-claimpack .ProseMirror h3 {
+              font-size: 10px !important;
+              font-weight: 700 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.06em !important;
+              color: #6b7280 !important;
+              margin: 24px 0 12px 0 !important;
+              font-family: system-ui, -apple-system, sans-serif !important;
+            }
+            .workspace-claimpack .ProseMirror h4 {
+              font-size: 14px !important;
+              font-weight: 600 !important;
+              color: #374151 !important;
+              margin: 20px 0 8px 0 !important;
+              font-family: system-ui, -apple-system, sans-serif !important;
+            }
+            .workspace-claimpack .ProseMirror blockquote {
+              border-left: 3px solid #021048 !important;
+              padding-left: 16px !important;
+              margin: 16px 0 !important;
+              color: #374151 !important;
+            }
+            .workspace-claimpack .ProseMirror ul,
+            .workspace-claimpack .ProseMirror ol {
+              margin: 0 0 16px 0 !important;
+              padding-left: 24px !important;
+              font-family: system-ui, -apple-system, sans-serif !important;
+              font-size: 14px !important;
+              line-height: 1.7 !important;
+              color: #374151 !important;
+            }
+            .workspace-claimpack .ProseMirror li {
+              margin-bottom: 6px !important;
+            }
+            .workspace-claimpack .ProseMirror strong {
+              font-weight: 700 !important;
+              color: #111827 !important;
+            }
+            .workspace-claimpack .ProseMirror sup {
+              font-size: 10px !important;
+              color: #9ca3af !important;
+              font-family: system-ui, -apple-system, sans-serif !important;
+            }
+          `}</style>
+          </>
         ) : (
           <div style={{
             padding: 32, textAlign: 'center', color: '#9ca3af',
