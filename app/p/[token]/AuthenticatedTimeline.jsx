@@ -17,6 +17,7 @@ import JiraProjectPicker from '@/components/JiraProjectPicker';
 import RecordsPage from '@/components/RecordsPage';
 import ProjectDashboard from '@/components/ProjectDashboard';
 import ProjectDetails from '@/components/ProjectDetails';
+import WorkspaceView from '@/components/WorkspaceView';
 
 // Hook to fetch step counts and compute gap hint
 function useStepGapHint(token) {
@@ -1305,6 +1306,15 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
               params.set('view', 'details');
               router.push(`/p/${token}?${params.toString()}`, { scroll: false });
             }}
+          />
+        )}
+
+        {/* Workspace Tab Content */}
+        {activeTab === 'workspace' && (
+          <WorkspaceView
+            items={items?.filter(ev => !deletedIds.has(ev.id)) || []}
+            evidenceSteps={evidenceSteps}
+            evidenceActivityTypes={evidenceActivityTypes}
           />
         )}
 
