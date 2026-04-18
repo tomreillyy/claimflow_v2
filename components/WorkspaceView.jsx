@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
+import { SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -238,22 +238,73 @@ function CreateActivityModal({ token, onCreated, onClose }) {
 }
 
 /* ── Per-activity narrative panel ── */
-function ActivityNarrativePanel({ activity, projectId, sections, saveStatus, onSaveStatus }) {
+function ActivityNarrativePanel({ activity, projectId, token, sections, saveStatus, onSaveStatus, onGenerated }) {
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState(null);
   const isAI = activity.source === 'ai';
+
+  // Check if any sections have content
+  const hasContent = ACTIVITY_STEPS.some(({ key }) => {
+    const s = sections[`activity_${activity.id}_${key}`];
+    return s?.content && s.content.replace(/<[^>]*>/g, '').trim().length > 10;
+  });
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setGenError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/projects/${token}/activities/${activity.id}/generate-narrative`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Generation failed');
+      onGenerated?.();
+    } catch (err) {
+      setGenError(err.message);
+      setTimeout(() => setGenError(null), 5000);
+    }
+    setGenerating(false);
+  };
 
   return (
     <div style={{ padding: '28px 36px 36px' }}>
       {/* Activity header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
-          {activity.name}
-        </h1>
-        <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 600, borderRadius: 4, backgroundColor: isAI ? '#ede9fe' : '#ecfdf5', color: isAI ? '#7c3aed' : '#059669' }}>
-          {isAI ? 'AI' : 'Manual'}
-        </span>
-        <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 500, borderRadius: 4, backgroundColor: activity.status === 'adopted' ? '#dcfce7' : '#fef9c3', color: activity.status === 'adopted' ? '#166534' : '#854d0e' }}>
-          {activity.status === 'adopted' ? 'Adopted' : 'Draft'}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
+            {activity.name}
+          </h1>
+          <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 600, borderRadius: 4, backgroundColor: isAI ? '#ede9fe' : '#ecfdf5', color: isAI ? '#7c3aed' : '#059669' }}>
+            {isAI ? 'AI' : 'Manual'}
+          </span>
+          <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 500, borderRadius: 4, backgroundColor: activity.status === 'adopted' ? '#dcfce7' : '#fef9c3', color: activity.status === 'adopted' ? '#166534' : '#854d0e' }}>
+            {activity.status === 'adopted' ? 'Adopted' : 'Draft'}
+          </span>
+        </div>
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          style={{
+            padding: '6px 14px', fontSize: 12, fontWeight: 600,
+            color: 'white', backgroundColor: generating ? '#9ca3af' : NAVY,
+            border: 'none', borderRadius: 6,
+            cursor: generating ? 'not-allowed' : 'pointer',
+            fontFamily: 'inherit',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            flexShrink: 0,
+          }}
+        >
+          {generating ? (
+            'Generating...'
+          ) : (
+            <><span style={{ fontSize: 14 }}>&#10022;</span> {hasContent ? 'Regenerate' : 'Generate narrative'}</>
+          )}
+        </button>
       </div>
 
       {/* Uncertainty */}
@@ -263,11 +314,12 @@ function ActivityNarrativePanel({ activity, projectId, sections, saveStatus, onS
         </p>
       )}
 
-      {/* Save status */}
+      {/* Save status + gen error */}
       <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 28, minHeight: 18 }}>
         {saveStatus === 'saving' && 'Saving...'}
         {saveStatus === 'saved' && <span style={{ color: '#10b981' }}>Saved</span>}
         {saveStatus === 'error' && <span style={{ color: '#ef4444' }}>Save failed</span>}
+        {genError && <span style={{ color: '#ef4444' }}>{genError}</span>}
       </div>
 
       {/* Systematic progression — 6 sections */}
@@ -492,7 +544,6 @@ export default function WorkspaceView({
                 Activities ({activities.length})
               </div>
               {activities.map(act => {
-                const isActTab = activeTab === `activity_${act.id}`;
                 return (
                   <div
                     key={act.id}
@@ -610,8 +661,8 @@ export default function WorkspaceView({
               More ▾
             </button>
             {showMore && (
-              <div style={{
-                position: 'absolute', top: '100%', right: 0, zIndex: 30,
+              <div onClick={e => e.stopPropagation()} style={{
+                position: 'absolute', top: '100%', right: 0, zIndex: 50,
                 backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.1)', overflow: 'hidden', minWidth: 180,
               }}>
@@ -657,9 +708,11 @@ export default function WorkspaceView({
             <ActivityNarrativePanel
               activity={activeActivity}
               projectId={projectId}
+              token={token}
               sections={sections}
               saveStatus={saveStatus}
               onSaveStatus={setSaveStatus}
+              onGenerated={fetchSections}
             />
           ) : (
             (() => {
