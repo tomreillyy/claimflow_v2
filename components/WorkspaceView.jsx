@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import SectionEditor from '@/components/ClaimPackEditor/SectionEditor';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 
 const NAVY = '#021048';
@@ -585,7 +584,7 @@ function findSectionWithText(sections, terms) {
 // Highlight matching text in the ProseMirror DOM
 function highlightInDOM(containerClass, searchText) {
   // Clear previous highlights
-  const container = document.querySelector(`.${containerClass} .ProseMirror`);
+  const container = document.querySelector(`.${containerClass} .claimpack-content`);
   if (!container) return;
 
   // Remove old marks
@@ -857,137 +856,120 @@ function ClaimPackPanel({ token, highlightItem }) {
         </div>
       </div>
 
-      {/* Section editor */}
-      <div className="workspace-claimpack" style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px' }}>
-        {projectId ? (
-          <>
-          <SectionEditor
-            key={activeSection}
-            sectionKey={activeSection}
-            sectionName={SECTION_NAMES[activeSection]}
-            projectId={projectId}
-            token={token}
-            initialContent={sectionData.content || null}
-            aiGenerated={sectionData.ai_generated ?? null}
-            lastEditedAt={sectionData.last_edited_at || null}
-            lastEditedBy={sectionData.last_edited_by || null}
-            onRegenerateClick={() => handleRegenerateSection(activeSection)}
+      {/* Section content (read-only) */}
+      <div className="workspace-claimpack" style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
+        {sectionData.content && sectionData.content.replace(/<[^>]*>/g, '').trim().length > 10 ? (
+          <div
+            className="claimpack-content"
+            dangerouslySetInnerHTML={{ __html: sectionData.content }}
           />
-          <style>{`
-            .workspace-claimpack .section-editor {
-              border: none !important;
-              background: transparent !important;
-              border-radius: 0 !important;
-            }
-            .workspace-claimpack .section-editor .section-body {
-              padding: 0 4px !important;
-            }
-            .workspace-claimpack .ProseMirror {
-              font-size: 15px !important;
-              line-height: 1.8 !important;
-              color: #1a1a1a !important;
-              font-family: 'Georgia', 'Times New Roman', serif !important;
-            }
-            .workspace-claimpack .ProseMirror p {
-              margin: 0 0 16px 0 !important;
-            }
-            .workspace-claimpack .ProseMirror h2 {
-              font-size: 11px !important;
-              font-weight: 700 !important;
-              text-transform: uppercase !important;
-              letter-spacing: 0.08em !important;
-              color: #374151 !important;
-              margin: 32px 0 16px 0 !important;
-              font-family: system-ui, -apple-system, sans-serif !important;
-              display: flex !important;
-              align-items: center !important;
-              gap: 8px !important;
-            }
-            .workspace-claimpack .ProseMirror h2::before {
-              content: '—' !important;
-              color: #9ca3af !important;
-              font-weight: 400 !important;
-            }
-            .workspace-claimpack .ProseMirror h3 {
-              font-size: 10px !important;
-              font-weight: 700 !important;
-              text-transform: uppercase !important;
-              letter-spacing: 0.06em !important;
-              color: #6b7280 !important;
-              margin: 24px 0 12px 0 !important;
-              font-family: system-ui, -apple-system, sans-serif !important;
-            }
-            .workspace-claimpack .ProseMirror h4 {
-              font-size: 14px !important;
-              font-weight: 600 !important;
-              color: #374151 !important;
-              margin: 20px 0 8px 0 !important;
-              font-family: system-ui, -apple-system, sans-serif !important;
-            }
-            .workspace-claimpack .ProseMirror blockquote {
-              border-left: 3px solid #021048 !important;
-              padding-left: 16px !important;
-              margin: 16px 0 !important;
-              color: #374151 !important;
-            }
-            .workspace-claimpack .ProseMirror ul,
-            .workspace-claimpack .ProseMirror ol {
-              margin: 0 0 16px 0 !important;
-              padding-left: 24px !important;
-              font-family: system-ui, -apple-system, sans-serif !important;
-              font-size: 14px !important;
-              line-height: 1.7 !important;
-              color: #374151 !important;
-            }
-            .workspace-claimpack .ProseMirror li {
-              margin-bottom: 6px !important;
-            }
-            .workspace-claimpack .ProseMirror strong {
-              font-weight: 700 !important;
-              color: #111827 !important;
-            }
-            .workspace-claimpack .ProseMirror sup {
-              font-size: 10px !important;
-              color: #9ca3af !important;
-              font-family: system-ui, -apple-system, sans-serif !important;
-            }
-            mark.workspace-highlight {
-              background-color: #dbeafe !important;
-              color: #1e3a5f !important;
-              padding: 2px 0 !important;
-              border-radius: 2px !important;
-              box-shadow: 0 0 0 2px #dbeafe !important;
-              transition: background-color 0.3s !important;
-            }
-          `}</style>
-          </>
         ) : (
           <div style={{
-            padding: 32, textAlign: 'center', color: '#9ca3af',
-            backgroundColor: 'white', border: '1px solid #e5e7eb',
+            padding: 40, textAlign: 'center',
             borderRadius: 8,
           }}>
-            <p style={{ fontSize: 14, fontWeight: 500, margin: '0 0 8px' }}>
-              Generate your claim pack
+            <p style={{ fontSize: 14, color: '#6b7280', fontWeight: 500, margin: '0 0 6px' }}>
+              No content yet
             </p>
-            <p style={{ fontSize: 13, margin: '0 0 16px', lineHeight: 1.5 }}>
-              AI will draft all 9 RDTI sections using your project data, activities, and evidence.
+            <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 16px', lineHeight: 1.5 }}>
+              Generate this section with AI or write it on the full Claim Pack page.
             </p>
-            <button
-              onClick={handleGenerateAll}
-              disabled={isGenerating}
-              style={{
-                padding: '8px 18px', fontSize: 13, fontWeight: 600,
-                color: 'white', backgroundColor: isGenerating ? '#9ca3af' : NAVY,
-                border: 'none', borderRadius: 6,
-                cursor: isGenerating ? 'not-allowed' : 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              {isGenerating ? 'Generating...' : 'Generate All Sections'}
-            </button>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <button
+                onClick={() => handleRegenerateSection(activeSection)}
+                disabled={isGenerating}
+                style={{
+                  padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                  color: 'white', backgroundColor: isGenerating ? '#9ca3af' : NAVY,
+                  border: 'none', borderRadius: 6,
+                  cursor: isGenerating ? 'not-allowed' : 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {isGenerating ? 'Generating...' : 'Generate this section'}
+              </button>
+              <a
+                href={`/p/${token}/pack`}
+                style={{
+                  padding: '8px 16px', fontSize: 13, fontWeight: 500,
+                  color: '#6b7280', backgroundColor: 'white',
+                  border: '1px solid #e5e7eb', borderRadius: 6,
+                  textDecoration: 'none', fontFamily: 'inherit',
+                  display: 'inline-flex', alignItems: 'center',
+                }}
+              >
+                Open editor
+              </a>
+            </div>
           </div>
         )}
+
+        <style>{`
+          .claimpack-content {
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            line-height: 1.75;
+            color: #374151;
+          }
+          .claimpack-content p {
+            margin: 0 0 12px 0;
+          }
+          .claimpack-content p:last-child {
+            margin-bottom: 0;
+          }
+          .claimpack-content h2 {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #374151;
+            margin: 28px 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .claimpack-content h2::before {
+            content: '—';
+            color: #9ca3af;
+            font-weight: 400;
+          }
+          .claimpack-content h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 20px 0 8px 0;
+          }
+          .claimpack-content h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            margin: 16px 0 6px 0;
+          }
+          .claimpack-content ul,
+          .claimpack-content ol {
+            margin: 0 0 12px 0;
+            padding-left: 20px;
+          }
+          .claimpack-content li {
+            margin-bottom: 4px;
+          }
+          .claimpack-content strong {
+            font-weight: 600;
+            color: #111827;
+          }
+          .claimpack-content blockquote {
+            border-left: 3px solid #021048;
+            padding-left: 14px;
+            margin: 12px 0;
+            color: #374151;
+          }
+          mark.workspace-highlight {
+            background-color: #dbeafe;
+            color: #1e3a5f;
+            padding: 1px 2px;
+            border-radius: 2px;
+          }
+        `}</style>
       </div>
     </div>
   );
