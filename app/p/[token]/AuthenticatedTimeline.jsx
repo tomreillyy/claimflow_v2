@@ -1274,6 +1274,9 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
             items={items?.filter(ev => !deletedIds.has(ev.id)) || []}
             evidenceSteps={evidenceSteps}
             evidenceActivityTypes={evidenceActivityTypes}
+            activities={coreActivities}
+            token={token}
+            onActivitiesChange={(updated) => setCoreActivities(updated)}
           />
         )}
 
