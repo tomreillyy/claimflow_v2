@@ -1250,23 +1250,25 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
           </div>
         )}
 
-        {/* Project title and action buttons */}
-        <div style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 16,
-          marginBottom: 24
-        }}>
-          <h1 style={{
-            fontSize: 22,
-            fontWeight: 600,
-            color: '#1a1a1a',
-            margin: 0
-          }}>{project.name}</h1>
-        </div>
+        {/* Project title and action buttons — hidden on workspace */}
+        {activeTab !== 'workspace' && (
+          <div style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 16,
+            marginBottom: 24
+          }}>
+            <h1 style={{
+              fontSize: 22,
+              fontWeight: 600,
+              color: '#1a1a1a',
+              margin: 0
+            }}>{project.name}</h1>
+          </div>
+        )}
 
         {/* Workspace Tab Content — full width, outside maxWidth container */}
         {activeTab === 'workspace' && (

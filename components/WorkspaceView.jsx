@@ -541,7 +541,104 @@ function getSectionStatus(section) {
   return 'done';
 }
 
-function ClaimPackPanel({ token }) {
+// Extract searchable keywords from evidence/activity
+function getSearchTerms(item) {
+  if (!item) return [];
+  // For activities, use the name
+  if (item._type === 'activity') {
+    return [item.name].filter(Boolean);
+  }
+  // For evidence, extract first sentence or meaningful snippet
+  const text = (item.content || '').trim();
+  if (!text) return [];
+  // Take first sentence (up to period, question mark, or newline)
+  const firstSentence = text.split(/[.\n?!]/)[0]?.trim();
+  const terms = [];
+  if (firstSentence && firstSentence.length > 15) {
+    // Use meaningful phrases (first 80 chars, split into chunks)
+    const words = firstSentence.split(/\s+/);
+    // Try 5-word phrases for better matching
+    for (let i = 0; i <= words.length - 4; i++) {
+      terms.push(words.slice(i, i + 4).join(' '));
+    }
+  }
+  // Also try the author email as a fallback
+  if (item.author_email) terms.push(item.author_email);
+  return terms;
+}
+
+// Find which section contains matching text
+function findSectionWithText(sections, terms) {
+  for (const key of SECTIONS_ORDER) {
+    const content = sections[key]?.content;
+    if (!content) continue;
+    const plain = content.replace(/<[^>]*>/g, '').toLowerCase();
+    for (const term of terms) {
+      if (plain.includes(term.toLowerCase())) {
+        return { sectionKey: key, matchedTerm: term };
+      }
+    }
+  }
+  return null;
+}
+
+// Highlight matching text in the ProseMirror DOM
+function highlightInDOM(containerClass, searchText) {
+  // Clear previous highlights
+  const container = document.querySelector(`.${containerClass} .ProseMirror`);
+  if (!container) return;
+
+  // Remove old marks
+  container.querySelectorAll('mark.workspace-highlight').forEach(el => {
+    const parent = el.parentNode;
+    parent.replaceChild(document.createTextNode(el.textContent), el);
+    parent.normalize();
+  });
+
+  if (!searchText) return;
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const searchLower = searchText.toLowerCase();
+  const nodesToProcess = [];
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (node.textContent.toLowerCase().includes(searchLower)) {
+      nodesToProcess.push(node);
+    }
+  }
+
+  let firstHighlight = null;
+  for (const node of nodesToProcess) {
+    const text = node.textContent;
+    const idx = text.toLowerCase().indexOf(searchLower);
+    if (idx === -1) continue;
+
+    const before = document.createTextNode(text.slice(0, idx));
+    const mark = document.createElement('mark');
+    mark.className = 'workspace-highlight';
+    mark.textContent = text.slice(idx, idx + searchText.length);
+    const after = document.createTextNode(text.slice(idx + searchText.length));
+
+    const parent = node.parentNode;
+    parent.insertBefore(before, node);
+    parent.insertBefore(mark, node);
+    parent.insertBefore(after, node);
+    parent.removeChild(node);
+
+    if (!firstHighlight) firstHighlight = mark;
+    break; // Only highlight first match
+  }
+
+  // Scroll to highlight
+  if (firstHighlight) {
+    setTimeout(() => {
+      firstHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+}
+
+function ClaimPackPanel({ token, highlightItem }) {
   const [sections, setSections] = useState({});
   const [projectId, setProjectId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -549,6 +646,7 @@ function ClaimPackPanel({ token }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState(null);
   const [genSuccess, setGenSuccess] = useState(null);
+  const [highlightTerm, setHighlightTerm] = useState(null);
 
   const fetchSections = useCallback(async () => {
     try {
@@ -566,6 +664,25 @@ function ClaimPackPanel({ token }) {
     }
     setLoading(false);
   }, [token]);
+
+  // Handle highlight when user clicks item on left panel
+  useEffect(() => {
+    if (!highlightItem || Object.keys(sections).length === 0) return;
+
+    const terms = getSearchTerms(highlightItem);
+    const match = findSectionWithText(sections, terms);
+
+    if (match) {
+      setActiveSection(match.sectionKey);
+      setHighlightTerm(match.matchedTerm);
+      // Delay highlight to let SectionEditor mount with new key
+      setTimeout(() => {
+        highlightInDOM('workspace-claimpack', match.matchedTerm);
+      }, 300);
+    } else {
+      setHighlightTerm(null);
+    }
+  }, [highlightItem, sections]);
 
   useEffect(() => { fetchSections(); }, [fetchSections]);
 
@@ -834,6 +951,14 @@ function ClaimPackPanel({ token }) {
               color: #9ca3af !important;
               font-family: system-ui, -apple-system, sans-serif !important;
             }
+            mark.workspace-highlight {
+              background-color: #dbeafe !important;
+              color: #1e3a5f !important;
+              padding: 2px 0 !important;
+              border-radius: 2px !important;
+              box-shadow: 0 0 0 2px #dbeafe !important;
+              transition: background-color 0.3s !important;
+            }
           `}</style>
           </>
         ) : (
@@ -883,6 +1008,7 @@ export default function WorkspaceView({
   const [expandedActivity, setExpandedActivity] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [highlightItem, setHighlightItem] = useState(null);
 
   const handleActivityCreated = (newActivity) => {
     if (onActivitiesChange) {
@@ -966,8 +1092,15 @@ export default function WorkspaceView({
                   activity={act}
                   token={token}
                   expanded={expandedActivity === act.id}
-                  onToggle={() => setExpandedActivity(prev => prev === act.id ? null : act.id)}
-                  onSelect={(evidenceId) => setSelectedId(evidenceId)}
+                  onToggle={() => {
+                    setExpandedActivity(prev => prev === act.id ? null : act.id);
+                    setHighlightItem({ ...act, _type: 'activity', _ts: Date.now() });
+                  }}
+                  onSelect={(evidenceId) => {
+                    setSelectedId(evidenceId);
+                    const ev = items.find(e => e.id === evidenceId);
+                    if (ev) setHighlightItem({ ...ev, _type: 'evidence', _ts: Date.now() });
+                  }}
                 />
               ))}
             </div>
@@ -993,7 +1126,7 @@ export default function WorkspaceView({
                     evidenceSteps={evidenceSteps}
                     evidenceActivityTypes={evidenceActivityTypes}
                     selected={selectedId === ev.id}
-                    onClick={() => setSelectedId(ev.id)}
+                    onClick={() => { setSelectedId(ev.id); setHighlightItem({ ...ev, _type: 'evidence', _ts: Date.now() }); }}
                   />
                 ))
               ) : (
@@ -1028,7 +1161,7 @@ export default function WorkspaceView({
       </div>
 
       {/* ── Right panel — Claim Pack ── */}
-      <ClaimPackPanel token={token} />
+      <ClaimPackPanel token={token} highlightItem={highlightItem} />
 
       {/* Create modal */}
       {showCreateModal && (
