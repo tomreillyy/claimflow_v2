@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import SectionEditor from '@/components/ClaimPackEditor/SectionEditor';
+import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 
 const NAVY = '#021048';
 const STAGES = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
@@ -507,6 +509,284 @@ function CreateActivityModal({ token, onCreated, onClose }) {
   );
 }
 
+/* ── Claim Pack Panel (right side) ── */
+
+const SECTIONS_ORDER = [
+  SECTION_KEYS.PROJECT_OVERVIEW,
+  SECTION_KEYS.CORE_ACTIVITIES,
+  SECTION_KEYS.SUPPORTING_ACTIVITIES,
+  SECTION_KEYS.EVIDENCE_INDEX,
+  SECTION_KEYS.FINANCIALS,
+  SECTION_KEYS.RD_BOUNDARY,
+  SECTION_KEYS.OVERSEAS_CONTRACTED,
+  SECTION_KEYS.REGISTRATION_TIEOUT,
+  SECTION_KEYS.ATTESTATIONS,
+];
+
+const SHORT_NAMES = {
+  [SECTION_KEYS.PROJECT_OVERVIEW]: 'Overview',
+  [SECTION_KEYS.CORE_ACTIVITIES]: 'Core Activities',
+  [SECTION_KEYS.SUPPORTING_ACTIVITIES]: 'Supporting',
+  [SECTION_KEYS.EVIDENCE_INDEX]: 'Evidence Index',
+  [SECTION_KEYS.FINANCIALS]: 'Financials',
+  [SECTION_KEYS.RD_BOUNDARY]: 'R&D Boundary',
+  [SECTION_KEYS.OVERSEAS_CONTRACTED]: 'Overseas',
+  [SECTION_KEYS.REGISTRATION_TIEOUT]: 'Registration',
+  [SECTION_KEYS.ATTESTATIONS]: 'Attestations',
+};
+
+function getSectionStatus(section) {
+  if (!section || !section.content || section.content.replace(/<[^>]*>/g, '').trim().length < 10) return 'empty';
+  if (section.ai_generated) return 'draft';
+  return 'done';
+}
+
+function ClaimPackPanel({ token }) {
+  const [sections, setSections] = useState({});
+  const [projectId, setProjectId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState(SECTION_KEYS.PROJECT_OVERVIEW);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [genError, setGenError] = useState(null);
+  const [genSuccess, setGenSuccess] = useState(null);
+
+  const fetchSections = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/projects/${token}/claim-pack/sections`, {
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProjectId(data.projectId);
+        setSections(data.sections || {});
+      }
+    } catch (err) {
+      console.error('Failed to fetch claim pack sections:', err);
+    }
+    setLoading(false);
+  }, [token]);
+
+  useEffect(() => { fetchSections(); }, [fetchSections]);
+
+  const completedCount = SECTIONS_ORDER.filter(k => getSectionStatus(sections[k]) !== 'empty').length;
+
+  const handleGenerateAll = async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    setGenError(null);
+    setGenSuccess(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/projects/${token}/claim-pack/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Generation failed');
+      setGenSuccess(`${data.generated.length} section${data.generated.length !== 1 ? 's' : ''} generated`);
+      await fetchSections();
+      setTimeout(() => setGenSuccess(null), 4000);
+    } catch (err) {
+      setGenError(err.message);
+      setTimeout(() => setGenError(null), 5000);
+    }
+    setIsGenerating(false);
+  };
+
+  const handleRegenerateSection = async (sectionKey) => {
+    setIsGenerating(true);
+    setGenError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/projects/${token}/claim-pack/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ regenerate_sections: [sectionKey], force: true }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Generation failed');
+      await fetchSections();
+    } catch (err) {
+      setGenError(err.message);
+      setTimeout(() => setGenError(null), 5000);
+    }
+    setIsGenerating(false);
+  };
+
+  const sectionData = sections[activeSection] || {};
+  const activeStatus = getSectionStatus(sectionData);
+
+  if (loading) {
+    return (
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minWidth: 0, backgroundColor: '#fafbfc',
+      }}>
+        <div style={{ textAlign: 'center', color: '#9ca3af' }}>
+          <p style={{ fontSize: 13, margin: 0 }}>Loading claim pack...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column',
+      minWidth: 0, backgroundColor: '#fafbfc',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 20px 0',
+        flexShrink: 0,
+      }}>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginBottom: 12,
+        }}>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>
+              Claim Pack
+            </h2>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0' }}>
+              {completedCount} of {SECTIONS_ORDER.length} sections done
+            </p>
+          </div>
+          <button
+            onClick={handleGenerateAll}
+            disabled={isGenerating}
+            style={{
+              padding: '6px 14px', fontSize: 12, fontWeight: 600,
+              color: 'white',
+              backgroundColor: isGenerating ? '#9ca3af' : NAVY,
+              border: 'none', borderRadius: 6,
+              cursor: isGenerating ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {isGenerating ? 'Generating...' : completedCount === 0 ? 'Generate All' : 'Regenerate All'}
+          </button>
+        </div>
+
+        {/* Feedback banners */}
+        {genError && (
+          <div style={{
+            padding: '8px 12px', marginBottom: 10,
+            backgroundColor: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: 6, fontSize: 12, color: '#991b1b',
+          }}>
+            {genError}
+          </div>
+        )}
+        {genSuccess && (
+          <div style={{
+            padding: '8px 12px', marginBottom: 10,
+            backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
+            borderRadius: 6, fontSize: 12, color: '#166534',
+          }}>
+            {genSuccess}
+          </div>
+        )}
+
+        {/* Section tabs */}
+        <div style={{
+          display: 'flex', gap: 3, overflowX: 'auto',
+          paddingBottom: 12,
+          scrollbarWidth: 'none',
+        }}>
+          {SECTIONS_ORDER.map(key => {
+            const status = getSectionStatus(sections[key]);
+            const isActive = activeSection === key;
+            const dotColor = status === 'done' ? '#10b981' : status === 'draft' ? '#f59e0b' : '#d1d5db';
+
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveSection(key)}
+                style={{
+                  padding: '5px 10px',
+                  fontSize: 11,
+                  fontWeight: isActive ? 600 : 500,
+                  color: isActive ? 'white' : '#6b7280',
+                  backgroundColor: isActive ? NAVY : 'white',
+                  border: `1px solid ${isActive ? NAVY : '#e5e7eb'}`,
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  flexShrink: 0,
+                  transition: 'all 0.12s',
+                }}
+              >
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  backgroundColor: isActive ? 'rgba(255,255,255,0.6)' : dotColor,
+                  flexShrink: 0,
+                }} />
+                {SHORT_NAMES[key]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Section editor */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 20px' }}>
+        {projectId ? (
+          <SectionEditor
+            key={activeSection}
+            sectionKey={activeSection}
+            sectionName={SECTION_NAMES[activeSection]}
+            projectId={projectId}
+            token={token}
+            initialContent={sectionData.content || null}
+            aiGenerated={sectionData.ai_generated ?? null}
+            lastEditedAt={sectionData.last_edited_at || null}
+            lastEditedBy={sectionData.last_edited_by || null}
+            onRegenerateClick={() => handleRegenerateSection(activeSection)}
+          />
+        ) : (
+          <div style={{
+            padding: 32, textAlign: 'center', color: '#9ca3af',
+            backgroundColor: 'white', border: '1px solid #e5e7eb',
+            borderRadius: 8,
+          }}>
+            <p style={{ fontSize: 14, fontWeight: 500, margin: '0 0 8px' }}>
+              Generate your claim pack
+            </p>
+            <p style={{ fontSize: 13, margin: '0 0 16px', lineHeight: 1.5 }}>
+              AI will draft all 9 RDTI sections using your project data, activities, and evidence.
+            </p>
+            <button
+              onClick={handleGenerateAll}
+              disabled={isGenerating}
+              style={{
+                padding: '8px 18px', fontSize: 13, fontWeight: 600,
+                color: 'white', backgroundColor: isGenerating ? '#9ca3af' : NAVY,
+                border: 'none', borderRadius: 6,
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {isGenerating ? 'Generating...' : 'Generate All Sections'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    Main WorkspaceView
    ═══════════════════════════════════════════════════════════ */
@@ -666,18 +946,8 @@ export default function WorkspaceView({
         </div>
       </div>
 
-      {/* ── Right panel — Empty for now ── */}
-      <div style={{
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minWidth: 0, backgroundColor: '#fafbfc',
-      }}>
-        <div style={{ textAlign: 'center', color: '#9ca3af' }}>
-          <p style={{ fontSize: 14, margin: 0, fontWeight: 500 }}>Workspace</p>
-          <p style={{ fontSize: 13, margin: '4px 0 0', color: '#c0c5ce' }}>
-            Select an item to get started
-          </p>
-        </div>
-      </div>
+      {/* ── Right panel — Claim Pack ── */}
+      <ClaimPackPanel token={token} />
 
       {/* Create modal */}
       {showCreateModal && (
