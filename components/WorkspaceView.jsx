@@ -280,31 +280,40 @@ function CreateActivityModal({ token, onCreated, onClose }) {
   );
 }
 
-/* ── Loading overlay for generation ── */
-function GeneratingOverlay() {
+/* ── Organic blob loader ── */
+function BlobLoader() {
   return (
     <div style={{
       position: 'absolute', inset: 0, zIndex: 10,
-      backgroundColor: 'rgba(255,255,255,0.85)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 16,
-      backdropFilter: 'blur(2px)',
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <div className="gen-spinner" />
-      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>
-        Generating with AI...
-      </div>
-      <div style={{ fontSize: 12, color: '#9ca3af' }}>
-        Analysing evidence and writing narrative
-      </div>
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle className="blob-main" cx="24" cy="24" r="10" fill={NAVY} />
+        <circle className="blob-orbit1" cx="24" cy="8" r="4" fill={NAVY} opacity="0.5" />
+        <circle className="blob-orbit2" cx="24" cy="40" r="3" fill={NAVY} opacity="0.3" />
+      </svg>
       <style>{`
-        .gen-spinner {
-          width: 36px; height: 36px; border-radius: 50%;
-          border: 3px solid #e5e7eb;
-          border-top-color: ${NAVY};
-          animation: gen-spin 0.8s linear infinite;
+        .blob-main {
+          animation: blob-pulse 1.4s ease-in-out infinite;
+          transform-origin: center;
         }
-        @keyframes gen-spin { to { transform: rotate(360deg); } }
+        .blob-orbit1 {
+          animation: blob-orbit 1.4s ease-in-out infinite;
+          transform-origin: 24px 24px;
+        }
+        .blob-orbit2 {
+          animation: blob-orbit 1.4s ease-in-out infinite 0.7s;
+          transform-origin: 24px 24px;
+        }
+        @keyframes blob-pulse {
+          0%, 100% { r: 10; }
+          50% { r: 13; }
+        }
+        @keyframes blob-orbit {
+          0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.5; }
+          50% { transform: rotate(180deg) scale(0.6); opacity: 0.2; }
+        }
       `}</style>
     </div>
   );
@@ -345,7 +354,7 @@ function ActivityNarrativePanel({ activity, projectId, token, sections, saveStat
 
   return (
     <div style={{ padding: '28px 36px 36px', position: 'relative', minHeight: '100%' }}>
-      {generating && <GeneratingOverlay />}
+      {generating && <BlobLoader />}
 
       {/* Activity header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4, gap: 10 }}>
@@ -737,13 +746,14 @@ export default function WorkspaceView({
         {/* Tab bar */}
         <div style={{
           display: 'flex', alignItems: 'center', borderBottom: '1px solid #f0f0f0',
-          padding: '0 20px', flexShrink: 0, gap: 0,
+          padding: '0 12px', flexShrink: 0, gap: 0,
+          overflowX: 'auto', scrollbarWidth: 'none',
         }}>
           {/* Overview tab */}
           <button
             onClick={() => { setActiveTab('project_overview'); setShowAllEvidence(false); }}
             style={{
-              padding: '10px 14px', fontSize: 13,
+              padding: '10px 12px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
               fontWeight: activeTab === 'project_overview' ? 600 : 400,
               color: activeTab === 'project_overview' ? '#111827' : '#9ca3af',
               backgroundColor: 'transparent', border: 'none',
@@ -777,8 +787,9 @@ export default function WorkspaceView({
               <div onClick={e => e.stopPropagation()} style={{
                 position: 'absolute', top: '100%', left: 0, zIndex: 50,
                 backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 260,
-                maxHeight: 320, overflowY: 'auto',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
+                width: 280, maxWidth: 'calc(100vw - 60px)',
+                maxHeight: 360, overflowY: 'auto',
               }}>
                 {activities.map((act, i) => (
                   <button
@@ -827,13 +838,12 @@ export default function WorkspaceView({
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setShowAllEvidence(false); }}
               style={{
-                padding: '10px 14px', fontSize: 13,
+                padding: '10px 12px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
                 fontWeight: activeTab === tab.key ? 600 : 400,
                 color: activeTab === tab.key ? '#111827' : '#9ca3af',
                 backgroundColor: 'transparent', border: 'none',
                 borderBottom: `2px solid ${activeTab === tab.key ? '#111827' : 'transparent'}`,
                 cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
-                whiteSpace: 'nowrap',
               }}
             >
               {tab.label}
