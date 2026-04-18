@@ -1237,7 +1237,7 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
         <main style={{
           flex: 1,
           minWidth: 0,
-          padding: activeTab === 'workspace' ? '0' : '40px 48px'
+          padding: activeTab === 'workspace' ? '16px 16px 0' : '40px 48px'
         }}>
         {/* Consultant breadcrumb */}
         {isConsultant && consultantBreadcrumb && (
