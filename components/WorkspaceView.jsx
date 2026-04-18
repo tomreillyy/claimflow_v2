@@ -1022,8 +1022,9 @@ export default function WorkspaceView({
     <div style={{ display: 'flex', gap: 0, height: 'calc(100vh - 160px)', minHeight: 500 }}>
       {/* ── Left panel ── */}
       <div style={{
-        flex: 1, borderRight: '1px solid #e5e5e5',
-        display: 'flex', flexDirection: 'column', minWidth: 0,
+        width: 360, minWidth: 300, flexShrink: 0,
+        borderRight: '1px solid #e5e5e5',
+        display: 'flex', flexDirection: 'column',
         backgroundColor: 'white',
       }}>
         {/* Header */}
