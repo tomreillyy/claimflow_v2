@@ -433,7 +433,7 @@ export default function WorkspaceView({
 
   return (
     <div style={{ display: 'flex', gap: 0, height: 'calc(100vh - 120px)', minHeight: 500 }}>
-      {/* ── Left panel: Evidence ── */}
+      {/* ── Left panel ── */}
       <div style={{
         width: 340, minWidth: 280, flexShrink: 0, borderRight: '1px solid #e5e5e5',
         display: 'flex', flexDirection: 'column', backgroundColor: 'white',
@@ -442,14 +442,30 @@ export default function WorkspaceView({
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>
-              Evidence
+              {isActivityTab ? 'Evidence' : 'Activities & Evidence'}
               {isActivityTab && !showAllEvidence && (
                 <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: 6, fontSize: 12 }}>
                   for {activeActivity.name}
                 </span>
               )}
             </h2>
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>{filteredEvidence.length} items</span>
+            {!isActivityTab && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                style={{
+                  padding: '4px 10px', fontSize: 12, fontWeight: 500,
+                  color: '#374151', backgroundColor: 'white',
+                  border: '1px solid #e5e7eb', borderRadius: 5,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                <span style={{ fontSize: 13, lineHeight: 1 }}>+</span> New
+              </button>
+            )}
+            {isActivityTab && (
+              <span style={{ fontSize: 12, color: '#9ca3af' }}>{filteredEvidence.length} items</span>
+            )}
           </div>
           {isActivityTab && (
             <button
@@ -464,8 +480,70 @@ export default function WorkspaceView({
           )}
         </div>
 
-        {/* Evidence list */}
+        {/* Content */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
+          {/* Activities list — shown on project-level tabs */}
+          {!isActivityTab && activities.length > 0 && (
+            <div>
+              <div style={{
+                padding: '10px 16px 4px', fontSize: 11, fontWeight: 700,
+                color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em',
+              }}>
+                Activities ({activities.length})
+              </div>
+              {activities.map(act => {
+                const isActTab = activeTab === `activity_${act.id}`;
+                return (
+                  <div
+                    key={act.id}
+                    onClick={() => { setActiveTab(`activity_${act.id}`); setShowAllEvidence(false); }}
+                    style={{
+                      padding: '10px 16px', borderBottom: '1px solid #f0f0f0',
+                      cursor: 'pointer', transition: 'background-color 0.12s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fafbfc'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {act.name}
+                      </span>
+                      <span style={{
+                        padding: '1px 5px', fontSize: 10, fontWeight: 600, borderRadius: 3, flexShrink: 0,
+                        backgroundColor: act.source === 'ai' ? '#ede9fe' : '#ecfdf5',
+                        color: act.source === 'ai' ? '#7c3aed' : '#059669',
+                      }}>
+                        {act.source === 'ai' ? 'AI' : 'Manual'}
+                      </span>
+                      <span style={{
+                        padding: '1px 5px', fontSize: 10, fontWeight: 500, borderRadius: 3, flexShrink: 0,
+                        backgroundColor: act.status === 'adopted' ? '#dcfce7' : '#fef9c3',
+                        color: act.status === 'adopted' ? '#166534' : '#854d0e',
+                      }}>
+                        {act.status === 'adopted' ? 'Adopted' : 'Draft'}
+                      </span>
+                    </div>
+                    {act.uncertainty && (
+                      <p style={{
+                        fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.4,
+                        overflow: 'hidden', textOverflow: 'ellipsis',
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      }}>
+                        {act.uncertainty}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Divider between activities and evidence */}
+              <div style={{ padding: '10px 16px 4px', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Evidence ({items.length})
+              </div>
+            </div>
+          )}
+
+          {/* Evidence list */}
           {filteredEvidence.length > 0 ? (
             filteredEvidence.map(ev => (
               <EvidenceRow
