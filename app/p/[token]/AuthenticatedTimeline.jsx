@@ -1237,7 +1237,7 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
         <main style={{
           flex: 1,
           minWidth: 0,
-          padding: '40px 48px'
+          padding: activeTab === 'workspace' ? '0' : '40px 48px'
         }}>
         {/* Consultant breadcrumb */}
         {isConsultant && consultantBreadcrumb && (
@@ -1267,6 +1267,15 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
             margin: 0
           }}>{project.name}</h1>
         </div>
+
+        {/* Workspace Tab Content — full width, outside maxWidth container */}
+        {activeTab === 'workspace' && (
+          <WorkspaceView
+            items={items?.filter(ev => !deletedIds.has(ev.id)) || []}
+            evidenceSteps={evidenceSteps}
+            evidenceActivityTypes={evidenceActivityTypes}
+          />
+        )}
 
         {/* Main content */}
         <div style={{
@@ -1306,15 +1315,6 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
               params.set('view', 'details');
               router.push(`/p/${token}?${params.toString()}`, { scroll: false });
             }}
-          />
-        )}
-
-        {/* Workspace Tab Content */}
-        {activeTab === 'workspace' && (
-          <WorkspaceView
-            items={items?.filter(ev => !deletedIds.has(ev.id)) || []}
-            evidenceSteps={evidenceSteps}
-            evidenceActivityTypes={evidenceActivityTypes}
           />
         )}
 
