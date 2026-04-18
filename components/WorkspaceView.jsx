@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { marked } from 'marked';
@@ -680,10 +680,12 @@ function normaliseContent(raw) {
   return marked.parse(trimmed, { breaks: false });
 }
 
-/* ── Inline Section Editor with bubble toolbar ── */
+/* ── Inline Section Editor with floating toolbar ── */
 function InlineSectionEditor({ sectionKey, projectId, token, initialContent, onSaveStatus }) {
   const [saveTimer, setSaveTimer] = useState(null);
+  const [toolbarPos, setToolbarPos] = useState(null);
   const isDirtyRef = useRef(false);
+  const wrapperRef = useRef(null);
 
   const editor = useEditor({
     extensions: [
@@ -701,10 +703,38 @@ function InlineSectionEditor({ sectionKey, projectId, token, initialContent, onS
       const timer = setTimeout(() => handleSave(html), 2000);
       setSaveTimer(timer);
     },
-    onSelectionUpdate: () => {
+    onSelectionUpdate: ({ editor }) => {
       isDirtyRef.current = true;
+      // Show toolbar when text is selected
+      const { from, to } = editor.state.selection;
+      if (from === to) {
+        setToolbarPos(null);
+        return;
+      }
+      // Get selection coordinates
+      const domSelection = window.getSelection();
+      if (!domSelection || domSelection.rangeCount === 0) return;
+      const range = domSelection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const wrapperRect = wrapperRef.current?.getBoundingClientRect();
+      if (!wrapperRect || rect.width === 0) return;
+      setToolbarPos({
+        top: rect.top - wrapperRect.top - 44,
+        left: rect.left - wrapperRect.left + rect.width / 2,
+      });
     },
   });
+
+  // Hide toolbar on click outside or blur
+  useEffect(() => {
+    const hide = () => setTimeout(() => {
+      if (editor && editor.state.selection.from === editor.state.selection.to) {
+        setToolbarPos(null);
+      }
+    }, 200);
+    document.addEventListener('mousedown', hide);
+    return () => document.removeEventListener('mousedown', hide);
+  }, [editor]);
 
   useEffect(() => {
     const normalised = normaliseContent(initialContent);
@@ -740,7 +770,7 @@ function InlineSectionEditor({ sectionKey, projectId, token, initialContent, onS
 
   const ToolbarBtn = ({ label, title, action, active, style: extra = {} }) => (
     <button
-      onClick={action}
+      onMouseDown={e => { e.preventDefault(); action(); }}
       title={title}
       style={{
         padding: '4px 8px', minWidth: 28,
@@ -758,38 +788,43 @@ function InlineSectionEditor({ sectionKey, projectId, token, initialContent, onS
   );
 
   return (
-    <div className="workspace-inline-editor">
-      {editor && (
-        <BubbleMenu
-          editor={editor}
-          tippyOptions={{ duration: 150, placement: 'top' }}
-        >
-          <div style={{
+    <div className="workspace-inline-editor" ref={wrapperRef} style={{ position: 'relative' }}>
+      {/* Floating toolbar */}
+      {toolbarPos && (
+        <div
+          onMouseDown={e => e.preventDefault()}
+          style={{
+            position: 'absolute',
+            top: toolbarPos.top,
+            left: toolbarPos.left,
+            transform: 'translateX(-50%)',
+            zIndex: 20,
             display: 'flex', alignItems: 'center', gap: 2,
             backgroundColor: '#1a1a1a', borderRadius: 8,
             padding: '4px 6px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-          }}>
-            <ToolbarBtn label="B" title="Bold" action={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} style={{ fontWeight: 800 }} />
-            <ToolbarBtn label="I" title="Italic" action={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} style={{ fontStyle: 'italic' }} />
-            <ToolbarBtn label="H2" title="Heading" action={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} style={{ fontSize: 11 }} />
-            <div style={{ width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
-            <button
-              onClick={() => {/* placeholder for rewrite */}}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px',
-                backgroundColor: NAVY,
-                color: 'white',
-                border: 'none', borderRadius: 5,
-                fontSize: 12, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'system-ui',
-              }}
-            >
-              <span style={{ fontSize: 14 }}>&#10022;</span> Rewrite
-            </button>
-          </div>
-        </BubbleMenu>
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <ToolbarBtn label="B" title="Bold" action={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} style={{ fontWeight: 800 }} />
+          <ToolbarBtn label="I" title="Italic" action={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} style={{ fontStyle: 'italic' }} />
+          <ToolbarBtn label="H2" title="Heading" action={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} style={{ fontSize: 11 }} />
+          <div style={{ width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
+          <button
+            onMouseDown={e => { e.preventDefault(); /* placeholder for rewrite */ }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 10px',
+              backgroundColor: NAVY,
+              color: 'white',
+              border: 'none', borderRadius: 5,
+              fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'system-ui',
+            }}
+          >
+            <span style={{ fontSize: 14 }}>&#10022;</span> Rewrite
+          </button>
+        </div>
       )}
       <EditorContent editor={editor} />
     </div>
