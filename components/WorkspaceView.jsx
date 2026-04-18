@@ -1,7 +1,11 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
+import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import { marked } from 'marked';
 
 const NAVY = '#021048';
 const STAGES = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
@@ -637,6 +641,130 @@ function highlightInDOM(containerClass, searchText) {
   }
 }
 
+/* ── Normalise content (markdown → HTML if needed) ── */
+function normaliseContent(raw) {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('<')) return trimmed;
+  return marked.parse(trimmed, { breaks: false });
+}
+
+/* ── Inline Section Editor with bubble toolbar ── */
+function InlineSectionEditor({ sectionKey, projectId, token, initialContent, onSaveStatus }) {
+  const [saveTimer, setSaveTimer] = useState(null);
+  const isDirtyRef = useRef(false);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [2, 3, 4] } }),
+      Placeholder.configure({
+        placeholder: 'Start typing or generate this section with AI...',
+      }),
+    ],
+    content: normaliseContent(initialContent),
+    editable: true,
+    onUpdate: ({ editor }) => {
+      if (!isDirtyRef.current) return;
+      const html = editor.getHTML();
+      if (saveTimer) clearTimeout(saveTimer);
+      const timer = setTimeout(() => handleSave(html), 2000);
+      setSaveTimer(timer);
+    },
+    onSelectionUpdate: () => {
+      isDirtyRef.current = true;
+    },
+  });
+
+  useEffect(() => {
+    const normalised = normaliseContent(initialContent);
+    if (editor && normalised) {
+      editor.commands.setContent(normalised);
+      isDirtyRef.current = false;
+    }
+  }, [initialContent, sectionKey]);
+
+  const handleSave = useCallback(async (contentToSave) => {
+    if (!contentToSave || contentToSave === '<p></p>') return;
+    onSaveStatus?.('saving');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+      const res = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ content: contentToSave }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      onSaveStatus?.('saved');
+      setTimeout(() => onSaveStatus?.(''), 2000);
+    } catch {
+      onSaveStatus?.('error');
+    }
+  }, [projectId, sectionKey, onSaveStatus]);
+
+  if (!editor) return null;
+
+  const ToolbarBtn = ({ label, title, action, active, style: extra = {} }) => (
+    <button
+      onClick={action}
+      title={title}
+      style={{
+        padding: '4px 8px', minWidth: 28,
+        backgroundColor: active ? 'white' : 'transparent',
+        color: active ? '#111' : 'rgba(255,255,255,0.9)',
+        border: 'none', borderRadius: 4,
+        fontSize: 13, fontWeight: 600,
+        cursor: 'pointer', fontFamily: 'system-ui',
+        lineHeight: 1.2,
+        ...extra,
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="workspace-inline-editor">
+      {editor && (
+        <BubbleMenu
+          editor={editor}
+          tippyOptions={{ duration: 150, placement: 'top' }}
+        >
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 2,
+            backgroundColor: '#1a1a1a', borderRadius: 8,
+            padding: '4px 6px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          }}>
+            <ToolbarBtn label="B" title="Bold" action={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} style={{ fontWeight: 800 }} />
+            <ToolbarBtn label="I" title="Italic" action={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} style={{ fontStyle: 'italic' }} />
+            <ToolbarBtn label="H2" title="Heading" action={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} style={{ fontSize: 11 }} />
+            <div style={{ width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
+            <button
+              onClick={() => {/* placeholder for rewrite */}}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px',
+                backgroundColor: NAVY,
+                color: 'white',
+                border: 'none', borderRadius: 5,
+                fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'system-ui',
+              }}
+            >
+              <span style={{ fontSize: 14 }}>&#10022;</span> Rewrite
+            </button>
+          </div>
+        </BubbleMenu>
+      )}
+      <EditorContent editor={editor} />
+    </div>
+  );
+}
+
 function ClaimPackPanel({ token, highlightItem }) {
   const [sections, setSections] = useState({});
   const [projectId, setProjectId] = useState(null);
@@ -646,6 +774,7 @@ function ClaimPackPanel({ token, highlightItem }) {
   const [genError, setGenError] = useState(null);
   const [genSuccess, setGenSuccess] = useState(null);
   const [highlightTerm, setHighlightTerm] = useState(null);
+  const [saveStatus, setSaveStatus] = useState('');
 
   const fetchSections = useCallback(async () => {
     try {
@@ -849,7 +978,7 @@ function ClaimPackPanel({ token, highlightItem }) {
         })}
       </div>
 
-      {/* Section content (read-only) */}
+      {/* Section content (inline editable) */}
       <div className="workspace-claimpack" style={{ flex: 1, overflowY: 'auto', padding: '28px 36px 36px' }}>
         {/* Section title */}
         <h1 style={{
@@ -860,81 +989,70 @@ function ClaimPackPanel({ token, highlightItem }) {
           {SECTION_NAMES[activeSection]}
         </h1>
 
-        {/* Edited metadata */}
-        {sectionData.last_edited_at && (
-          <p style={{
-            fontSize: 13, color: '#9ca3af', margin: '0 0 24px',
-          }}>
-            {sectionData.ai_generated !== false ? 'AI draft' : 'Edited'}{' '}
-            {new Date(sectionData.last_edited_at).toLocaleDateString('en-AU', {
-              day: 'numeric', month: 'long', year: 'numeric',
-            })}
-          </p>
-        )}
-        {!sectionData.last_edited_at && (
-          <div style={{ marginBottom: 24 }} />
-        )}
+        {/* Edited metadata + save status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+          {sectionData.last_edited_at && (
+            <span style={{ fontSize: 13, color: '#9ca3af' }}>
+              {sectionData.ai_generated !== false ? 'AI draft' : 'Edited'}{' '}
+              {new Date(sectionData.last_edited_at).toLocaleDateString('en-AU', {
+                day: 'numeric', month: 'long', year: 'numeric',
+              })}
+            </span>
+          )}
+          {saveStatus === 'saving' && <span style={{ fontSize: 12, color: '#9ca3af' }}>Saving...</span>}
+          {saveStatus === 'saved' && <span style={{ fontSize: 12, color: '#10b981' }}>Saved</span>}
+          {saveStatus === 'error' && <span style={{ fontSize: 12, color: '#ef4444' }}>Save failed</span>}
+        </div>
 
-        {sectionData.content && sectionData.content.replace(/<[^>]*>/g, '').trim().length > 10 ? (
-          <div
-            className="claimpack-content"
-            dangerouslySetInnerHTML={{ __html: sectionData.content }}
+        {projectId ? (
+          <InlineSectionEditor
+            key={activeSection}
+            sectionKey={activeSection}
+            projectId={projectId}
+            token={token}
+            initialContent={sectionData.content || null}
+            onSaveStatus={setSaveStatus}
           />
         ) : (
-          <div style={{
-            padding: 40, textAlign: 'center',
-            borderRadius: 8,
-          }}>
+          <div style={{ padding: 40, textAlign: 'center' }}>
             <p style={{ fontSize: 14, color: '#6b7280', fontWeight: 500, margin: '0 0 6px' }}>
               No content yet
             </p>
             <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 16px', lineHeight: 1.5 }}>
-              Generate this section with AI or write it on the full Claim Pack page.
+              Generate this section with AI to get started.
             </p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              <button
-                onClick={() => handleRegenerateSection(activeSection)}
-                disabled={isGenerating}
-                style={{
-                  padding: '8px 16px', fontSize: 13, fontWeight: 600,
-                  color: 'white', backgroundColor: isGenerating ? '#9ca3af' : NAVY,
-                  border: 'none', borderRadius: 6,
-                  cursor: isGenerating ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                {isGenerating ? 'Generating...' : 'Generate this section'}
-              </button>
-              <a
-                href={`/p/${token}/pack`}
-                style={{
-                  padding: '8px 16px', fontSize: 13, fontWeight: 500,
-                  color: '#6b7280', backgroundColor: 'white',
-                  border: '1px solid #e5e7eb', borderRadius: 6,
-                  textDecoration: 'none', fontFamily: 'inherit',
-                  display: 'inline-flex', alignItems: 'center',
-                }}
-              >
-                Open editor
-              </a>
-            </div>
+            <button
+              onClick={handleGenerateAll}
+              disabled={isGenerating}
+              style={{
+                padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                color: 'white', backgroundColor: isGenerating ? '#9ca3af' : NAVY,
+                border: 'none', borderRadius: 6,
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {isGenerating ? 'Generating...' : 'Generate All Sections'}
+            </button>
           </div>
         )}
 
         <style>{`
-          .claimpack-content {
+          .workspace-inline-editor .ProseMirror {
+            outline: none;
             font-family: system-ui, -apple-system, sans-serif;
             font-size: 16px;
             line-height: 1.8;
             color: #1a1a1a;
+            min-height: 200px;
           }
-          .claimpack-content p {
+          .workspace-inline-editor .ProseMirror p {
             margin: 0 0 16px 0;
           }
-          .claimpack-content p:last-child {
+          .workspace-inline-editor .ProseMirror p:last-child {
             margin-bottom: 0;
           }
-          .claimpack-content h2 {
+          .workspace-inline-editor .ProseMirror h2 {
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
@@ -945,40 +1063,49 @@ function ClaimPackPanel({ token, highlightItem }) {
             align-items: center;
             gap: 8px;
           }
-          .claimpack-content h2::before {
+          .workspace-inline-editor .ProseMirror h2::before {
             content: '—';
             color: #9ca3af;
             font-weight: 400;
           }
-          .claimpack-content h3 {
+          .workspace-inline-editor .ProseMirror h3 {
             font-size: 13px;
             font-weight: 600;
             color: #1f2937;
             margin: 20px 0 8px 0;
           }
-          .claimpack-content h4 {
+          .workspace-inline-editor .ProseMirror h4 {
             font-size: 12px;
             font-weight: 600;
             color: #374151;
             margin: 16px 0 6px 0;
           }
-          .claimpack-content ul,
-          .claimpack-content ol {
+          .workspace-inline-editor .ProseMirror ul,
+          .workspace-inline-editor .ProseMirror ol {
             margin: 0 0 12px 0;
             padding-left: 20px;
           }
-          .claimpack-content li {
+          .workspace-inline-editor .ProseMirror li {
             margin-bottom: 4px;
           }
-          .claimpack-content strong {
+          .workspace-inline-editor .ProseMirror strong {
             font-weight: 600;
             color: #111827;
           }
-          .claimpack-content blockquote {
+          .workspace-inline-editor .ProseMirror blockquote {
             border-left: 3px solid #021048;
             padding-left: 14px;
             margin: 12px 0;
             color: #374151;
+          }
+          .workspace-inline-editor .ProseMirror p.is-editor-empty:first-child::before {
+            content: attr(data-placeholder);
+            float: left;
+            color: #d1d5db;
+            pointer-events: none;
+            height: 0;
+            font-style: italic;
+            font-size: 15px;
           }
           mark.workspace-highlight {
             background-color: #dbeafe;

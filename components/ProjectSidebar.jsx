@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 const NAVY = '#021048';
-const W = 230;
+const W = 210;
 
 function currentFY() {
   const now = new Date();
@@ -124,17 +124,17 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       <button
         onClick={() => go(viewKey)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 14,
+          display: 'flex', alignItems: 'center', gap: 12,
           width: '100%', textAlign: 'left',
-          padding: '11px 18px', fontSize: 15,
+          padding: '7px 14px', fontSize: 13,
           fontWeight: active ? 600 : 400,
           color: active ? '#111827' : '#6b7280',
           background: active ? '#f3f4f6' : 'transparent',
           border: 'none',
-          borderRadius: 10,
+          borderRadius: 8,
           cursor: 'pointer', fontFamily: 'inherit',
           transition: 'all 0.12s',
-          margin: '1px 10px',
+          margin: '1px 8px',
         }}
         onMouseEnter={e => {
           if (!active) {
@@ -165,21 +165,21 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
 
       {/* Project identity */}
       <div style={{
-        padding: '20px 18px 18px', display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 16px 10px', display: 'flex', alignItems: 'center', gap: 10,
         borderBottom: '1px solid #f0f0f0',
       }}>
         <div style={{
-          width: 40, height: 40, borderRadius: '50%',
+          width: 32, height: 32, borderRadius: '50%',
           backgroundColor: NAVY,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'white', fontSize: 14, fontWeight: 700,
+          color: 'white', fontSize: 12, fontWeight: 700,
           flexShrink: 0,
         }}>
           {initials}
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{
-            fontSize: 16, fontWeight: 700, color: '#111827',
+            fontSize: 14, fontWeight: 700, color: '#111827',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {projectName || 'Your project'}
@@ -193,7 +193,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       {/* Progress */}
       {total > 0 && (
         <div style={{
-          padding: '12px 18px',
+          padding: '8px 16px',
           borderBottom: '1px solid #f0f0f0',
         }}>
           <div style={{ display: 'flex', gap: 3, marginBottom: 6 }}>
@@ -220,7 +220,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       )}
 
       {/* Nav */}
-      <nav style={{ padding: '8px 0', flex: 1, overflowY: 'auto' }}>
+      <nav style={{ padding: '4px 0', flex: 1, overflowY: 'auto' }}>
         <NavItem label="Dashboard"       viewKey="dashboard"  icon={NAV_ICONS.dashboard} />
         <NavItem label="Workspace"       viewKey="workspace"  icon={NAV_ICONS.workspace} />
         <NavItem label="Project Details"  viewKey="details"    icon={NAV_ICONS.details} />
@@ -228,7 +228,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
         <NavItem label="Costs"            viewKey="costs"      icon={NAV_ICONS.costs} />
         <NavItem label="Claim Pack"       viewKey="pack-link"  icon={NAV_ICONS.pack} />
 
-        <div style={{ margin: '8px 18px', borderTop: '1px solid #f0f0f0' }} />
+        <div style={{ margin: '6px 14px', borderTop: '1px solid #f0f0f0' }} />
 
         <NavItem label="Evidence"        viewKey="timeline"   icon={NAV_ICONS.timeline} />
         <NavItem label="Project Team"    viewKey="team"       icon={NAV_ICONS.team} />
