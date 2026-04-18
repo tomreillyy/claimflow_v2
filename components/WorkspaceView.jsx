@@ -273,9 +273,14 @@ function ActivityRow({ activity, token, expanded, onToggle, onSelect }) {
 
       {/* Expanded: evidence within activity */}
       {expanded && (
-        <div style={{ backgroundColor: '#fafbfc', borderTop: '1px solid #f0f0f0' }}>
+        <div style={{
+          backgroundColor: '#f8f9fd',
+          borderTop: '1px solid #e8eaf2',
+          borderLeft: `3px solid ${NAVY}15`,
+          marginLeft: 14,
+        }}>
           {loading ? (
-            <div style={{ padding: '16px 40px', fontSize: 12, color: '#9ca3af' }}>
+            <div style={{ padding: '16px 28px', fontSize: 12, color: '#9ca3af' }}>
               Loading evidence...
             </div>
           ) : evidence.length > 0 ? (
@@ -284,12 +289,12 @@ function ActivityRow({ activity, token, expanded, onToggle, onSelect }) {
                 key={ev.id}
                 onClick={() => onSelect(ev.id)}
                 style={{
-                  padding: '8px 16px 8px 40px',
-                  borderBottom: '1px solid #f0f0f0',
+                  padding: '8px 16px 8px 28px',
+                  borderBottom: '1px solid #eceef5',
                   cursor: 'pointer',
                   transition: 'background-color 0.1s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f4ff'}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#eef0f9'}
                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <div style={{
@@ -333,7 +338,7 @@ function ActivityRow({ activity, token, expanded, onToggle, onSelect }) {
               </div>
             ))
           ) : (
-            <div style={{ padding: '12px 40px', fontSize: 12, color: '#9ca3af' }}>
+            <div style={{ padding: '12px 28px', fontSize: 12, color: '#9ca3af' }}>
               No evidence linked yet
             </div>
           )}
