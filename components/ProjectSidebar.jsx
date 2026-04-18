@@ -3,26 +3,64 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 const NAVY = '#021048';
-const W = 220;
+const W = 230;
 
-// Australian FY: ends 30 June, so March 2026 → FY2026
 function currentFY() {
   const now = new Date();
   return now.getMonth() < 6 ? now.getFullYear() : now.getFullYear() + 1;
 }
 
-// Simple icon components (inline SVG-like spans)
-const ICONS = {
-  dashboard:    '◫',
-  workspace:    '⬡',
-  details:      '☰',
-  activities:   '◉',
-  costs:        '◎',
-  pack:         '▤',
-  timeline:     '◷',
-  team:         '⊡',
-  knowledge:    '▧',
-  records:      '⬢',
+const NAV_ICONS = {
+  dashboard: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  ),
+  workspace: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="12" y1="3" x2="12" y2="21" />
+    </svg>
+  ),
+  details: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="14" y2="18" />
+    </svg>
+  ),
+  activities: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+    </svg>
+  ),
+  costs: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" /><path d="M12 7v10M9 10h6M9 14h4" />
+    </svg>
+  ),
+  pack: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="14" y2="17" />
+    </svg>
+  ),
+  timeline: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
+    </svg>
+  ),
+  team: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  ),
+  knowledge: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" /><polyline points="13 2 13 9 20 9" />
+    </svg>
+  ),
+  records: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="18" rx="2" /><line x1="8" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="16" y2="21" /><line x1="2" y1="9" x2="22" y2="9" /><line x1="2" y1="15" x2="22" y2="15" />
+    </svg>
+  ),
 };
 
 export default function ProjectSidebar({ token, projectName, stepperData = [] }) {
@@ -48,6 +86,11 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
   }, []);
 
   const go = (key) => {
+    if (key === 'pack-link') {
+      router.push(`/p/${token}/pack`);
+      if (isMobile) setMobileOpen(false);
+      return;
+    }
     const p = new URLSearchParams(searchParams.toString());
     key === 'dashboard' ? p.delete('view') : p.set('view', key);
     const qs = p.toString();
@@ -64,45 +107,9 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
   const total    = stepperData.length;
   const nextStep = stepperData.find(s => !s.complete);
 
-  const isActive = (key) => isMain && currentView === key;
-
-  const NavBtn = ({ label, viewKey, icon }) => {
-    const active = isActive(viewKey);
-    return (
-      <button
-        onClick={() => go(viewKey)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          width: '100%', textAlign: 'left',
-          padding: '9px 20px', fontSize: 13,
-          fontWeight: active ? 600 : 400,
-          color: active ? 'white' : 'rgba(255,255,255,0.55)',
-          background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
-          border: 'none',
-          borderLeft: `3px solid ${active ? 'white' : 'transparent'}`,
-          cursor: 'pointer', fontFamily: 'inherit',
-          transition: 'all 0.12s',
-          letterSpacing: '0.01em',
-        }}
-        onMouseEnter={e => {
-          if (!active) {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-          }
-        }}
-        onMouseLeave={e => {
-          if (!active) {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
-            e.currentTarget.style.background = 'transparent';
-          }
-        }}
-      >
-        <span style={{ fontSize: 14, width: 16, textAlign: 'center', opacity: active ? 1 : 0.5 }}>
-          {icon}
-        </span>
-        {label}
-      </button>
-    );
+  const isActiveKey = (key) => {
+    if (key === 'pack-link') return pathname === `/p/${token}/pack`;
+    return isMain && currentView === key;
   };
 
   const initials = (projectName || 'P')
@@ -111,144 +118,38 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
     .map(w => w[0]?.toUpperCase())
     .join('');
 
-  const body = (
-    <div style={{ width: W, display: 'flex', flexDirection: 'column', height: '100%', background: NAVY }}>
-
-      {/* Project identity */}
-      <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: 8,
-          backgroundColor: 'rgba(255,255,255,0.12)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'white', fontSize: 13, fontWeight: 700,
-          flexShrink: 0,
-        }}>
-          {initials}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{
-            fontSize: 14, fontWeight: 600, color: 'white',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {projectName || 'Your project'}
-          </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
-            FY{currentFY()} · R&D claim
-          </div>
-        </div>
-      </div>
-
-      {/* Progress */}
-      {total > 0 && (
-        <div style={{
-          padding: '0 20px 14px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          marginBottom: 6,
-        }}>
-          <div style={{ display: 'flex', gap: 3, marginBottom: 6 }}>
-            {stepperData.map((step, i) => (
-              <button
-                key={i}
-                onClick={() => goStep(step)}
-                title={step.title}
-                style={{
-                  flex: 1, height: 3, borderRadius: 2,
-                  background: step.complete ? '#16a34a' : 'rgba(255,255,255,0.12)',
-                  border: 'none', padding: 0, cursor: 'pointer',
-                  transition: 'background 0.2s',
-                }}
-              />
-            ))}
-          </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-            {done === total
-              ? 'All steps complete'
-              : `${done} of ${total} steps complete`}
-          </div>
-          {nextStep && (
-            <button
-              onClick={() => goStep(nextStep)}
-              style={{
-                display: 'block', marginTop: 4, fontSize: 11,
-                color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none',
-                cursor: 'pointer', padding: 0, textAlign: 'left',
-                fontFamily: 'inherit', fontWeight: 500,
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = 'white'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
-            >
-              Next: {nextStep.title} →
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Nav */}
-      <nav style={{ padding: '4px 0', flex: 1, overflowY: 'auto' }}>
-        <NavBtn label="Dashboard"       viewKey="dashboard"  icon={ICONS.dashboard} />
-        <NavBtn label="Workspace"       viewKey="workspace"  icon={ICONS.workspace} />
-        <NavBtn label="Project Details"  viewKey="details"    icon={ICONS.details} />
-        <NavBtn label="Activities"       viewKey="activities" icon={ICONS.activities} />
-        <NavBtn label="Costs"            viewKey="costs"      icon={ICONS.costs} />
-        <NavBtn label="Claim Pack"       viewKey="pack-link"  icon={ICONS.pack} />
-
-        <div style={{ margin: '8px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }} />
-
-        <NavBtn label="Evidence"        viewKey="timeline"   icon={ICONS.timeline} />
-        <NavBtn label="Project Team"    viewKey="team"       icon={ICONS.team} />
-        <NavBtn label="Documents"       viewKey="knowledge"  icon={ICONS.knowledge} />
-        <NavBtn label="Integrations"    viewKey="records"    icon={ICONS.records} />
-      </nav>
-    </div>
-  );
-
-  // Claim Pack link override — it's an <a> to a separate page
-  // We override the NavBtn click for 'pack-link' in go()
-  const originalGo = go;
-  const goWithPackOverride = (key) => {
-    if (key === 'pack-link') {
-      router.push(`/p/${token}/pack`);
-      if (isMobile) setMobileOpen(false);
-      return;
-    }
-    originalGo(key);
-  };
-
-  // Re-wrap NavBtn to use the override
-  const NavBtnWrapped = ({ label, viewKey, icon }) => {
-    const active = viewKey === 'pack-link'
-      ? pathname === `/p/${token}/pack`
-      : isActive(viewKey);
+  const NavItem = ({ label, viewKey, icon }) => {
+    const active = isActiveKey(viewKey);
     return (
       <button
-        onClick={() => goWithPackOverride(viewKey)}
+        onClick={() => go(viewKey)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 10,
+          display: 'flex', alignItems: 'center', gap: 14,
           width: '100%', textAlign: 'left',
-          padding: '9px 20px', fontSize: 13,
+          padding: '11px 18px', fontSize: 15,
           fontWeight: active ? 600 : 400,
-          color: active ? 'white' : 'rgba(255,255,255,0.55)',
-          background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
+          color: active ? '#111827' : '#6b7280',
+          background: active ? '#f3f4f6' : 'transparent',
           border: 'none',
-          borderLeft: `3px solid ${active ? 'white' : 'transparent'}`,
+          borderRadius: 10,
           cursor: 'pointer', fontFamily: 'inherit',
           transition: 'all 0.12s',
-          letterSpacing: '0.01em',
+          margin: '1px 10px',
         }}
         onMouseEnter={e => {
           if (!active) {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.color = '#111827';
+            e.currentTarget.style.background = '#f9fafb';
           }
         }}
         onMouseLeave={e => {
           if (!active) {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+            e.currentTarget.style.color = '#6b7280';
             e.currentTarget.style.background = 'transparent';
           }
         }}
       >
-        <span style={{ fontSize: 14, width: 16, textAlign: 'center', opacity: active ? 1 : 0.5 }}>
+        <span style={{ color: active ? '#374151' : '#9ca3af', display: 'flex', flexShrink: 0 }}>
           {icon}
         </span>
         {label}
@@ -256,28 +157,34 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
     );
   };
 
-  const bodyFinal = (
-    <div style={{ width: W, display: 'flex', flexDirection: 'column', height: '100%', background: NAVY }}>
+  const sidebar = (
+    <div style={{
+      width: W, display: 'flex', flexDirection: 'column', height: '100%',
+      background: 'white', borderRight: '1px solid #f0f0f0',
+    }}>
 
       {/* Project identity */}
-      <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{
+        padding: '20px 18px 18px', display: 'flex', alignItems: 'center', gap: 12,
+        borderBottom: '1px solid #f0f0f0',
+      }}>
         <div style={{
-          width: 34, height: 34, borderRadius: 8,
-          backgroundColor: 'rgba(255,255,255,0.12)',
+          width: 40, height: 40, borderRadius: '50%',
+          backgroundColor: NAVY,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'white', fontSize: 13, fontWeight: 700,
+          color: 'white', fontSize: 14, fontWeight: 700,
           flexShrink: 0,
         }}>
           {initials}
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{
-            fontSize: 14, fontWeight: 600, color: 'white',
+            fontSize: 16, fontWeight: 700, color: '#111827',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {projectName || 'Your project'}
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
+          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>
             FY{currentFY()} · R&D claim
           </div>
         </div>
@@ -286,9 +193,8 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       {/* Progress */}
       {total > 0 && (
         <div style={{
-          padding: '0 20px 14px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          marginBottom: 6,
+          padding: '12px 18px',
+          borderBottom: '1px solid #f0f0f0',
         }}>
           <div style={{ display: 'flex', gap: 3, marginBottom: 6 }}>
             {stepperData.map((step, i) => (
@@ -298,51 +204,36 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
                 title={step.title}
                 style={{
                   flex: 1, height: 3, borderRadius: 2,
-                  background: step.complete ? '#16a34a' : 'rgba(255,255,255,0.12)',
+                  background: step.complete ? '#16a34a' : '#e5e7eb',
                   border: 'none', padding: 0, cursor: 'pointer',
                   transition: 'background 0.2s',
                 }}
               />
             ))}
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+          <div style={{ fontSize: 11, color: '#9ca3af' }}>
             {done === total
               ? 'All steps complete'
-              : `${done} of ${total} steps complete`}
+              : `${done} of ${total} steps`}
           </div>
-          {nextStep && (
-            <button
-              onClick={() => goStep(nextStep)}
-              style={{
-                display: 'block', marginTop: 4, fontSize: 11,
-                color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none',
-                cursor: 'pointer', padding: 0, textAlign: 'left',
-                fontFamily: 'inherit', fontWeight: 500,
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = 'white'}
-              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
-            >
-              Next: {nextStep.title} →
-            </button>
-          )}
         </div>
       )}
 
       {/* Nav */}
-      <nav style={{ padding: '4px 0', flex: 1, overflowY: 'auto' }}>
-        <NavBtnWrapped label="Dashboard"       viewKey="dashboard"  icon={ICONS.dashboard} />
-        <NavBtnWrapped label="Workspace"       viewKey="workspace"  icon={ICONS.workspace} />
-        <NavBtnWrapped label="Project Details"  viewKey="details"    icon={ICONS.details} />
-        <NavBtnWrapped label="Activities"       viewKey="activities" icon={ICONS.activities} />
-        <NavBtnWrapped label="Costs"            viewKey="costs"      icon={ICONS.costs} />
-        <NavBtnWrapped label="Claim Pack"       viewKey="pack-link"  icon={ICONS.pack} />
+      <nav style={{ padding: '8px 0', flex: 1, overflowY: 'auto' }}>
+        <NavItem label="Dashboard"       viewKey="dashboard"  icon={NAV_ICONS.dashboard} />
+        <NavItem label="Workspace"       viewKey="workspace"  icon={NAV_ICONS.workspace} />
+        <NavItem label="Project Details"  viewKey="details"    icon={NAV_ICONS.details} />
+        <NavItem label="Activities"       viewKey="activities" icon={NAV_ICONS.activities} />
+        <NavItem label="Costs"            viewKey="costs"      icon={NAV_ICONS.costs} />
+        <NavItem label="Claim Pack"       viewKey="pack-link"  icon={NAV_ICONS.pack} />
 
-        <div style={{ margin: '8px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+        <div style={{ margin: '8px 18px', borderTop: '1px solid #f0f0f0' }} />
 
-        <NavBtnWrapped label="Evidence"        viewKey="timeline"   icon={ICONS.timeline} />
-        <NavBtnWrapped label="Project Team"    viewKey="team"       icon={ICONS.team} />
-        <NavBtnWrapped label="Documents"       viewKey="knowledge"  icon={ICONS.knowledge} />
-        <NavBtnWrapped label="Integrations"    viewKey="records"    icon={ICONS.records} />
+        <NavItem label="Evidence"        viewKey="timeline"   icon={NAV_ICONS.timeline} />
+        <NavItem label="Project Team"    viewKey="team"       icon={NAV_ICONS.team} />
+        <NavItem label="Documents"       viewKey="knowledge"  icon={NAV_ICONS.knowledge} />
+        <NavItem label="Integrations"    viewKey="records"    icon={NAV_ICONS.records} />
       </nav>
     </div>
   );
@@ -370,10 +261,10 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
             <aside style={{
               position: 'fixed', top: 56, left: 0, zIndex: 35,
               width: W, height: 'calc(100vh - 56px)',
-              background: NAVY,
+              background: 'white',
               overflowY: 'auto',
             }}>
-              {bodyFinal}
+              {sidebar}
             </aside>
             <div
               onClick={() => setMobileOpen(false)}
@@ -392,13 +283,14 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
   return (
     <aside style={{
       width: W, minWidth: W, flexShrink: 0,
-      backgroundColor: NAVY,
+      backgroundColor: 'white',
+      borderRight: '1px solid #f0f0f0',
       height: 'calc(100vh - 56px)',
       position: 'sticky', top: 56,
       overflowY: 'auto',
       display: 'flex', flexDirection: 'column',
     }}>
-      {bodyFinal}
+      {sidebar}
     </aside>
   );
 }
