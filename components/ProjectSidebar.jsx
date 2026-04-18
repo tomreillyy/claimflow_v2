@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 const NAVY = '#021048';
-const W = 204;
+const W = 220;
 
 // Australian FY: ends 30 June, so March 2026 → FY2026
 function currentFY() {
@@ -11,6 +11,19 @@ function currentFY() {
   return now.getMonth() < 6 ? now.getFullYear() : now.getFullYear() + 1;
 }
 
+// Simple icon components (inline SVG-like spans)
+const ICONS = {
+  dashboard:    '◫',
+  workspace:    '⬡',
+  details:      '☰',
+  activities:   '◉',
+  costs:        '◎',
+  pack:         '▤',
+  timeline:     '◷',
+  team:         '⊡',
+  knowledge:    '▧',
+  records:      '⬢',
+};
 
 export default function ProjectSidebar({ token, projectName, stepperData = [] }) {
   const searchParams = useSearchParams();
@@ -53,75 +66,116 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
 
   const isActive = (key) => isMain && currentView === key;
 
-  const NavBtn = ({ label, viewKey }) => {
+  const NavBtn = ({ label, viewKey, icon }) => {
     const active = isActive(viewKey);
     return (
       <button
         onClick={() => go(viewKey)}
         style={{
-          display: 'block', width: '100%', textAlign: 'left',
-          padding: '8px 16px', fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 10,
+          width: '100%', textAlign: 'left',
+          padding: '9px 20px', fontSize: 13,
           fontWeight: active ? 600 : 400,
-          color: active ? NAVY : '#374151',
-          background: active ? '#eef2ff' : 'none',
+          color: active ? 'white' : 'rgba(255,255,255,0.55)',
+          background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
           border: 'none',
-          borderLeft: `3px solid ${active ? NAVY : 'transparent'}`,
+          borderLeft: `3px solid ${active ? 'white' : 'transparent'}`,
           cursor: 'pointer', fontFamily: 'inherit',
+          transition: 'all 0.12s',
+          letterSpacing: '0.01em',
+        }}
+        onMouseEnter={e => {
+          if (!active) {
+            e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+          }
+        }}
+        onMouseLeave={e => {
+          if (!active) {
+            e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+            e.currentTarget.style.background = 'transparent';
+          }
         }}
       >
+        <span style={{ fontSize: 14, width: 16, textAlign: 'center', opacity: active ? 1 : 0.5 }}>
+          {icon}
+        </span>
         {label}
       </button>
     );
   };
 
-  const body = (
-    <div style={{ width: W, display: 'flex', flexDirection: 'column', height: '100%' }}>
+  const initials = (projectName || 'P')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase())
+    .join('');
 
-      {/* Project name */}
-      <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid #f0f0f0' }}>
+  const body = (
+    <div style={{ width: W, display: 'flex', flexDirection: 'column', height: '100%', background: NAVY }}>
+
+      {/* Project identity */}
+      <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
-          fontSize: 13, fontWeight: 600, color: '#111827',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          width: 34, height: 34, borderRadius: 8,
+          backgroundColor: 'rgba(255,255,255,0.12)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'white', fontSize: 13, fontWeight: 700,
+          flexShrink: 0,
         }}>
-          {projectName || 'Your project'}
+          {initials}
         </div>
-        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-          FY{currentFY()} · R&D claim
+        <div style={{ minWidth: 0 }}>
+          <div style={{
+            fontSize: 14, fontWeight: 600, color: 'white',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {projectName || 'Your project'}
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
+            FY{currentFY()} · R&D claim
+          </div>
         </div>
       </div>
 
       {/* Progress */}
       {total > 0 && (
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0' }}>
-          <div style={{ display: 'flex', gap: 3, marginBottom: 7 }}>
+        <div style={{
+          padding: '0 20px 14px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          marginBottom: 6,
+        }}>
+          <div style={{ display: 'flex', gap: 3, marginBottom: 6 }}>
             {stepperData.map((step, i) => (
               <button
                 key={i}
                 onClick={() => goStep(step)}
                 title={step.title}
                 style={{
-                  flex: 1, height: 4, borderRadius: 2,
-                  background: step.complete ? '#16a34a' : '#e5e7eb',
+                  flex: 1, height: 3, borderRadius: 2,
+                  background: step.complete ? '#16a34a' : 'rgba(255,255,255,0.12)',
                   border: 'none', padding: 0, cursor: 'pointer',
                   transition: 'background 0.2s',
                 }}
               />
             ))}
           </div>
-          <div style={{ fontSize: 11, color: '#6b7280' }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
             {done === total
-              ? 'All steps complete — ready to submit'
+              ? 'All steps complete'
               : `${done} of ${total} steps complete`}
           </div>
           {nextStep && (
             <button
               onClick={() => goStep(nextStep)}
               style={{
-                display: 'block', marginTop: 6, fontSize: 11,
-                color: NAVY, background: 'none', border: 'none',
+                display: 'block', marginTop: 4, fontSize: 11,
+                color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none',
                 cursor: 'pointer', padding: 0, textAlign: 'left',
                 fontFamily: 'inherit', fontWeight: 500,
               }}
+              onMouseEnter={e => e.currentTarget.style.color = 'white'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
             >
               Next: {nextStep.title} →
             </button>
@@ -130,31 +184,165 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       )}
 
       {/* Nav */}
-      <nav style={{ padding: '6px 0', flex: 1, overflowY: 'auto' }}>
-        <NavBtn label="Dashboard"       viewKey="dashboard" />
-        <NavBtn label="Workspace"      viewKey="workspace" />
-        <NavBtn label="Project Details" viewKey="details"   />
-        <NavBtn label="Activities"      viewKey="activities" />
-        <NavBtn label="Costs"      viewKey="costs" />
-        <a
-          href={`/p/${token}/pack`}
-          style={{
-            display: 'block', padding: '8px 16px', fontSize: 13,
-            color: '#374151', textDecoration: 'none', fontFamily: 'inherit',
-            borderLeft: '3px solid transparent',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = NAVY; e.currentTarget.style.background = 'rgba(0,0,0,0.02)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}
-        >
-          Claim Pack
-        </a>
+      <nav style={{ padding: '4px 0', flex: 1, overflowY: 'auto' }}>
+        <NavBtn label="Dashboard"       viewKey="dashboard"  icon={ICONS.dashboard} />
+        <NavBtn label="Workspace"       viewKey="workspace"  icon={ICONS.workspace} />
+        <NavBtn label="Project Details"  viewKey="details"    icon={ICONS.details} />
+        <NavBtn label="Activities"       viewKey="activities" icon={ICONS.activities} />
+        <NavBtn label="Costs"            viewKey="costs"      icon={ICONS.costs} />
+        <NavBtn label="Claim Pack"       viewKey="pack-link"  icon={ICONS.pack} />
 
-        <div style={{ margin: '6px 16px', borderTop: '1px solid #f0f0f0' }} />
+        <div style={{ margin: '8px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }} />
 
-        <NavBtn label="Evidence"       viewKey="timeline"  />
-        <NavBtn label="Project Team"   viewKey="team"      />
-        <NavBtn label="Documents"      viewKey="knowledge" />
-        <NavBtn label="Integrations"   viewKey="records"   />
+        <NavBtn label="Evidence"        viewKey="timeline"   icon={ICONS.timeline} />
+        <NavBtn label="Project Team"    viewKey="team"       icon={ICONS.team} />
+        <NavBtn label="Documents"       viewKey="knowledge"  icon={ICONS.knowledge} />
+        <NavBtn label="Integrations"    viewKey="records"    icon={ICONS.records} />
+      </nav>
+    </div>
+  );
+
+  // Claim Pack link override — it's an <a> to a separate page
+  // We override the NavBtn click for 'pack-link' in go()
+  const originalGo = go;
+  const goWithPackOverride = (key) => {
+    if (key === 'pack-link') {
+      router.push(`/p/${token}/pack`);
+      if (isMobile) setMobileOpen(false);
+      return;
+    }
+    originalGo(key);
+  };
+
+  // Re-wrap NavBtn to use the override
+  const NavBtnWrapped = ({ label, viewKey, icon }) => {
+    const active = viewKey === 'pack-link'
+      ? pathname === `/p/${token}/pack`
+      : isActive(viewKey);
+    return (
+      <button
+        onClick={() => goWithPackOverride(viewKey)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          width: '100%', textAlign: 'left',
+          padding: '9px 20px', fontSize: 13,
+          fontWeight: active ? 600 : 400,
+          color: active ? 'white' : 'rgba(255,255,255,0.55)',
+          background: active ? 'rgba(255,255,255,0.08)' : 'transparent',
+          border: 'none',
+          borderLeft: `3px solid ${active ? 'white' : 'transparent'}`,
+          cursor: 'pointer', fontFamily: 'inherit',
+          transition: 'all 0.12s',
+          letterSpacing: '0.01em',
+        }}
+        onMouseEnter={e => {
+          if (!active) {
+            e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+          }
+        }}
+        onMouseLeave={e => {
+          if (!active) {
+            e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+            e.currentTarget.style.background = 'transparent';
+          }
+        }}
+      >
+        <span style={{ fontSize: 14, width: 16, textAlign: 'center', opacity: active ? 1 : 0.5 }}>
+          {icon}
+        </span>
+        {label}
+      </button>
+    );
+  };
+
+  const bodyFinal = (
+    <div style={{ width: W, display: 'flex', flexDirection: 'column', height: '100%', background: NAVY }}>
+
+      {/* Project identity */}
+      <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: 8,
+          backgroundColor: 'rgba(255,255,255,0.12)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'white', fontSize: 13, fontWeight: 700,
+          flexShrink: 0,
+        }}>
+          {initials}
+        </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{
+            fontSize: 14, fontWeight: 600, color: 'white',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {projectName || 'Your project'}
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
+            FY{currentFY()} · R&D claim
+          </div>
+        </div>
+      </div>
+
+      {/* Progress */}
+      {total > 0 && (
+        <div style={{
+          padding: '0 20px 14px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          marginBottom: 6,
+        }}>
+          <div style={{ display: 'flex', gap: 3, marginBottom: 6 }}>
+            {stepperData.map((step, i) => (
+              <button
+                key={i}
+                onClick={() => goStep(step)}
+                title={step.title}
+                style={{
+                  flex: 1, height: 3, borderRadius: 2,
+                  background: step.complete ? '#16a34a' : 'rgba(255,255,255,0.12)',
+                  border: 'none', padding: 0, cursor: 'pointer',
+                  transition: 'background 0.2s',
+                }}
+              />
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+            {done === total
+              ? 'All steps complete'
+              : `${done} of ${total} steps complete`}
+          </div>
+          {nextStep && (
+            <button
+              onClick={() => goStep(nextStep)}
+              style={{
+                display: 'block', marginTop: 4, fontSize: 11,
+                color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none',
+                cursor: 'pointer', padding: 0, textAlign: 'left',
+                fontFamily: 'inherit', fontWeight: 500,
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = 'white'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}
+            >
+              Next: {nextStep.title} →
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Nav */}
+      <nav style={{ padding: '4px 0', flex: 1, overflowY: 'auto' }}>
+        <NavBtnWrapped label="Dashboard"       viewKey="dashboard"  icon={ICONS.dashboard} />
+        <NavBtnWrapped label="Workspace"       viewKey="workspace"  icon={ICONS.workspace} />
+        <NavBtnWrapped label="Project Details"  viewKey="details"    icon={ICONS.details} />
+        <NavBtnWrapped label="Activities"       viewKey="activities" icon={ICONS.activities} />
+        <NavBtnWrapped label="Costs"            viewKey="costs"      icon={ICONS.costs} />
+        <NavBtnWrapped label="Claim Pack"       viewKey="pack-link"  icon={ICONS.pack} />
+
+        <div style={{ margin: '8px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+
+        <NavBtnWrapped label="Evidence"        viewKey="timeline"   icon={ICONS.timeline} />
+        <NavBtnWrapped label="Project Team"    viewKey="team"       icon={ICONS.team} />
+        <NavBtnWrapped label="Documents"       viewKey="knowledge"  icon={ICONS.knowledge} />
+        <NavBtnWrapped label="Integrations"    viewKey="records"    icon={ICONS.records} />
       </nav>
     </div>
   );
@@ -182,10 +370,10 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
             <aside style={{
               position: 'fixed', top: 56, left: 0, zIndex: 35,
               width: W, height: 'calc(100vh - 56px)',
-              background: 'white', borderRight: '1px solid #e5e5e5',
+              background: NAVY,
               overflowY: 'auto',
             }}>
-              {body}
+              {bodyFinal}
             </aside>
             <div
               onClick={() => setMobileOpen(false)}
@@ -204,14 +392,13 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
   return (
     <aside style={{
       width: W, minWidth: W, flexShrink: 0,
-      borderRight: '1px solid #e5e5e5',
-      backgroundColor: 'white',
+      backgroundColor: NAVY,
       height: 'calc(100vh - 56px)',
       position: 'sticky', top: 56,
       overflowY: 'auto',
       display: 'flex', flexDirection: 'column',
     }}>
-      {body}
+      {bodyFinal}
     </aside>
   );
 }
