@@ -224,10 +224,10 @@ function ActivityRow({ activity, token, expanded, onToggle, onSelect }) {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Name + badges */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
             <span style={{
               fontSize: 13, fontWeight: 600, color: '#111827',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              ...(expanded ? {} : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }),
             }}>
               {activity.name}
             </span>
@@ -253,11 +253,14 @@ function ActivityRow({ activity, token, expanded, onToggle, onSelect }) {
             </span>
           </div>
 
-          {/* Uncertainty preview */}
+          {/* Uncertainty preview — full when expanded, truncated when collapsed */}
           {activity.uncertainty && (
             <p style={{
-              fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.4,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.5,
+              ...(expanded
+                ? {}
+                : { overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }
+              ),
             }}>
               {activity.uncertainty}
             </p>
@@ -276,7 +279,7 @@ function ActivityRow({ activity, token, expanded, onToggle, onSelect }) {
         </div>
       </div>
 
-      {/* Expanded: evidence within activity */}
+      {/* Expanded: full details + evidence */}
       {expanded && (
         <div style={{
           backgroundColor: '#f8f9fd',
@@ -284,6 +287,34 @@ function ActivityRow({ activity, token, expanded, onToggle, onSelect }) {
           borderLeft: `3px solid ${NAVY}15`,
           marginLeft: 14,
         }}>
+          {/* Full activity details */}
+          {(activity.hypothesis_text || activity.conclusion_text) && (
+            <div style={{ padding: '12px 16px 8px 28px' }}>
+              {activity.hypothesis_text && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>
+                    Hypothesis
+                  </div>
+                  <p style={{ fontSize: 12, color: '#374151', margin: 0, lineHeight: 1.5 }}>
+                    {activity.hypothesis_text}
+                  </p>
+                </div>
+              )}
+              {activity.conclusion_text && (
+                <div style={{ marginBottom: 6 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>
+                    Expected outcome
+                  </div>
+                  <p style={{ fontSize: 12, color: '#374151', margin: 0, lineHeight: 1.5 }}>
+                    {activity.conclusion_text}
+                  </p>
+                </div>
+              )}
+              <div style={{ borderBottom: '1px solid #eceef5', marginTop: 8 }} />
+            </div>
+          )}
+
+          {/* Evidence list */}
           {loading ? (
             <div style={{ padding: '16px 28px', fontSize: 12, color: '#9ca3af' }}>
               Loading evidence...
@@ -335,7 +366,7 @@ function ActivityRow({ activity, token, expanded, onToggle, onSelect }) {
                   <p style={{
                     fontSize: 12, color: '#374151', margin: 0, lineHeight: 1.4,
                     overflow: 'hidden', textOverflow: 'ellipsis',
-                    display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                   }}>
                     {ev.content}
                   </p>
