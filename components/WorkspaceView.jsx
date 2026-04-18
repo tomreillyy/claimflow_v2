@@ -156,46 +156,72 @@ function InlineEditor({ sectionKey, projectId, initialContent, placeholder, onSa
   );
 }
 
-/* ── Evidence row (compact) ── */
-function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onClick, linkAction }) {
+/* ── Evidence row (compact) with right-click context menu ── */
+function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onClick, contextActions }) {
+  const [ctxMenu, setCtxMenu] = useState(null);
   const step = evidenceSteps?.[ev.id]?.step || ev.systematic_step_primary;
   const actType = evidenceActivityTypes?.[ev.id]?.activity_type || ev.activity_type || 'core';
+
+  const handleContextMenu = (e) => {
+    if (!contextActions || contextActions.length === 0) return;
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY });
+  };
+
   return (
-    <div onClick={onClick} style={{
-      padding: '10px 16px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer',
-      backgroundColor: selected ? '#f0f4ff' : 'white', transition: 'background-color 0.12s',
-    }}
-      onMouseEnter={e => { if (!selected) e.currentTarget.style.backgroundColor = '#fafbfc'; }}
-      onMouseLeave={e => { if (!selected) e.currentTarget.style.backgroundColor = 'white'; }}
-    >
-      <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'ui-monospace, Monaco, monospace' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 3, backgroundColor: '#f3f4f6', fontSize: 10, fontWeight: 700, color: '#6b7280', flexShrink: 0 }}>
-          {SOURCE_ICONS[ev.source] || 'M'}
-        </span>
-        <span style={{ color: '#6b7280', fontWeight: 500 }}>{relativeTime(ev.created_at)}</span>
-        {step && step !== 'Unknown' && (<><span style={{ color: '#d1d5db' }}>·</span><span style={{ color: '#374151', fontWeight: 600, fontSize: 11 }}>{step}</span></>)}
-        {actType && (<><span style={{ color: '#d1d5db' }}>·</span><span style={{ padding: '1px 5px', fontSize: 10, fontWeight: 600, borderRadius: 3, backgroundColor: actType === 'core' ? NAVY : '#6b7280', color: 'white' }}>{actType === 'core' ? 'Core' : 'Supporting'}</span></>)}
-        {/* Link/Unlink button */}
-        {linkAction && (
-          <button
-            onClick={e => { e.stopPropagation(); linkAction.action(); }}
-            disabled={linkAction.loading}
-            style={{
-              marginLeft: 'auto', padding: '2px 8px', fontSize: 10, fontWeight: 600,
-              color: linkAction.type === 'unlink' ? '#dc2626' : NAVY,
-              backgroundColor: linkAction.type === 'unlink' ? '#fef2f2' : '#eef2ff',
-              border: `1px solid ${linkAction.type === 'unlink' ? '#fecaca' : '#c7d2fe'}`,
-              borderRadius: 4, cursor: linkAction.loading ? 'not-allowed' : 'pointer',
-              fontFamily: 'inherit', flexShrink: 0, opacity: linkAction.loading ? 0.5 : 1,
-            }}
-          >
-            {linkAction.loading ? '...' : linkAction.type === 'unlink' ? 'Unlink' : 'Link'}
-          </button>
-        )}
+    <>
+      <div
+        onClick={onClick}
+        onContextMenu={handleContextMenu}
+        style={{
+          padding: '10px 16px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer',
+          backgroundColor: selected ? '#f0f4ff' : 'white', transition: 'background-color 0.12s',
+        }}
+        onMouseEnter={e => { if (!selected) e.currentTarget.style.backgroundColor = '#fafbfc'; }}
+        onMouseLeave={e => { if (!selected) e.currentTarget.style.backgroundColor = 'white'; }}
+      >
+        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'ui-monospace, Monaco, monospace' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 3, backgroundColor: '#f3f4f6', fontSize: 10, fontWeight: 700, color: '#6b7280', flexShrink: 0 }}>
+            {SOURCE_ICONS[ev.source] || 'M'}
+          </span>
+          <span style={{ color: '#6b7280', fontWeight: 500 }}>{relativeTime(ev.created_at)}</span>
+          {step && step !== 'Unknown' && (<><span style={{ color: '#d1d5db' }}>·</span><span style={{ color: '#374151', fontWeight: 600, fontSize: 11 }}>{step}</span></>)}
+          {actType && (<><span style={{ color: '#d1d5db' }}>·</span><span style={{ padding: '1px 5px', fontSize: 10, fontWeight: 600, borderRadius: 3, backgroundColor: actType === 'core' ? NAVY : '#6b7280', color: 'white' }}>{actType === 'core' ? 'Core' : 'Supporting'}</span></>)}
+        </div>
+        {ev.content && (<p style={{ fontSize: 13, color: '#1a1a1a', lineHeight: 1.5, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ev.content}</p>)}
+        {ev.author_email && (<div style={{ fontSize: 11, color: '#c0c5ce', marginTop: 4 }}>{ev.author_email}</div>)}
       </div>
-      {ev.content && (<p style={{ fontSize: 13, color: '#1a1a1a', lineHeight: 1.5, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ev.content}</p>)}
-      {ev.author_email && (<div style={{ fontSize: 11, color: '#c0c5ce', marginTop: 4 }}>{ev.author_email}</div>)}
-    </div>
+
+      {/* Right-click context menu */}
+      {ctxMenu && (
+        <>
+          <div onClick={() => setCtxMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+          <div style={{
+            position: 'fixed', top: ctxMenu.y, left: ctxMenu.x, zIndex: 70,
+            backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 160,
+          }}>
+            {contextActions.map((action, i) => (
+              <button
+                key={i}
+                onClick={() => { action.action(); setCtxMenu(null); }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  padding: '8px 14px', fontSize: 13,
+                  color: action.danger ? '#dc2626' : '#374151',
+                  fontWeight: 400, backgroundColor: 'white',
+                  border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = action.danger ? '#fef2f2' : '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -254,13 +280,42 @@ function CreateActivityModal({ token, onCreated, onClose }) {
   );
 }
 
+/* ── Loading overlay for generation ── */
+function GeneratingOverlay() {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 10,
+      backgroundColor: 'rgba(255,255,255,0.85)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 16,
+      backdropFilter: 'blur(2px)',
+    }}>
+      <div className="gen-spinner" />
+      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151' }}>
+        Generating with AI...
+      </div>
+      <div style={{ fontSize: 12, color: '#9ca3af' }}>
+        Analysing evidence and writing narrative
+      </div>
+      <style>{`
+        .gen-spinner {
+          width: 36px; height: 36px; border-radius: 50%;
+          border: 3px solid #e5e7eb;
+          border-top-color: ${NAVY};
+          animation: gen-spin 0.8s linear infinite;
+        }
+        @keyframes gen-spin { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  );
+}
+
 /* ── Per-activity narrative panel ── */
 function ActivityNarrativePanel({ activity, projectId, token, sections, saveStatus, onSaveStatus, onGenerated }) {
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState(null);
   const isAI = activity.source === 'ai';
 
-  // Check if any sections have content
   const hasContent = ACTIVITY_STEPS.some(({ key }) => {
     const s = sections[`activity_${activity.id}_${key}`];
     return s?.content && s.content.replace(/<[^>]*>/g, '').trim().length > 10;
@@ -289,47 +344,45 @@ function ActivityNarrativePanel({ activity, projectId, token, sections, saveStat
   };
 
   return (
-    <div style={{ padding: '28px 36px 36px' }}>
+    <div style={{ padding: '28px 36px 36px', position: 'relative', minHeight: '100%' }}>
+      {generating && <GeneratingOverlay />}
+
       {/* Activity header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexWrap: 'wrap', gap: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
-            {activity.name}
-          </h1>
-          <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 600, borderRadius: 4, backgroundColor: isAI ? '#ede9fe' : '#ecfdf5', color: isAI ? '#7c3aed' : '#059669' }}>
-            {isAI ? 'AI' : 'Manual'}
-          </span>
-          <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 500, borderRadius: 4, backgroundColor: activity.status === 'adopted' ? '#dcfce7' : '#fef9c3', color: activity.status === 'adopted' ? '#166534' : '#854d0e' }}>
-            {activity.status === 'adopted' ? 'Adopted' : 'Draft'}
-          </span>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4, gap: 10 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
+              {activity.name}
+            </h1>
+            <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 600, borderRadius: 4, backgroundColor: isAI ? '#ede9fe' : '#ecfdf5', color: isAI ? '#7c3aed' : '#059669' }}>
+              {isAI ? 'AI' : 'Manual'}
+            </span>
+            <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 500, borderRadius: 4, backgroundColor: activity.status === 'adopted' ? '#dcfce7' : '#fef9c3', color: activity.status === 'adopted' ? '#166534' : '#854d0e' }}>
+              {activity.status === 'adopted' ? 'Adopted' : 'Draft'}
+            </span>
+          </div>
+          {activity.uncertainty && (
+            <p style={{ fontSize: 14, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
+              {activity.uncertainty}
+            </p>
+          )}
         </div>
         <button
           onClick={handleGenerate}
           disabled={generating}
           style={{
-            padding: '6px 14px', fontSize: 12, fontWeight: 600,
+            padding: '7px 16px', fontSize: 13, fontWeight: 600,
             color: 'white', backgroundColor: generating ? '#9ca3af' : NAVY,
-            border: 'none', borderRadius: 6,
+            border: 'none', borderRadius: 8,
             cursor: generating ? 'not-allowed' : 'pointer',
             fontFamily: 'inherit',
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            flexShrink: 0,
+            flexShrink: 0, whiteSpace: 'nowrap',
           }}
         >
-          {generating ? (
-            'Generating...'
-          ) : (
-            <><span style={{ fontSize: 14 }}>&#10022;</span> {hasContent ? 'Regenerate' : 'Generate narrative'}</>
-          )}
+          <span style={{ fontSize: 15 }}>&#10022;</span> {hasContent ? 'Regenerate with AI' : 'Generate with AI'}
         </button>
       </div>
-
-      {/* Uncertainty */}
-      {activity.uncertainty && (
-        <p style={{ fontSize: 14, color: '#6b7280', margin: '0 0 4px', lineHeight: 1.5 }}>
-          {activity.uncertainty}
-        </p>
-      )}
 
       {/* Save status + gen error */}
       <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 28, minHeight: 18 }}>
@@ -422,7 +475,6 @@ export default function WorkspaceView({
   const [showMore, setShowMore] = useState(false);
   const [showAllEvidence, setShowAllEvidence] = useState(false);
   const [activityEvidence, setActivityEvidence] = useState({});
-  const [linkingEvidence, setLinkingEvidence] = useState(null); // evidence ID currently being linked/unlinked
 
   // Fetch sections
   const fetchSections = useCallback(async () => {
@@ -472,12 +524,6 @@ export default function WorkspaceView({
     if (activeActivity) fetchActivityEvidence(activeActivity.id);
   }, [activeActivity, fetchActivityEvidence]);
 
-  // Build tab list
-  const tabs = [
-    ...PROJECT_TABS,
-    ...activities.map(a => ({ key: `activity_${a.id}`, label: a.name, isActivity: true })),
-    ...SUFFIX_TABS,
-  ];
 
   // Evidence filtering
   const filteredEvidence = (() => {
@@ -494,7 +540,6 @@ export default function WorkspaceView({
   };
 
   const handleLinkEvidence = async (evidenceId, activityId) => {
-    setLinkingEvidence(evidenceId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const step = items.find(e => e.id === evidenceId)?.systematic_step_primary || 'Hypothesis';
@@ -503,14 +548,11 @@ export default function WorkspaceView({
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ evidence_ids: [evidenceId], step }),
       });
-      // Refresh activity evidence
       await fetchActivityEvidence(activityId, true);
     } catch (err) { console.error('Link failed:', err); }
-    setLinkingEvidence(null);
   };
 
   const handleUnlinkEvidence = async (evidenceId, activityId) => {
-    setLinkingEvidence(evidenceId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       await fetch(`/api/projects/${token}/core-activities/${activityId}/evidence`, {
@@ -520,7 +562,6 @@ export default function WorkspaceView({
       });
       await fetchActivityEvidence(activityId, true);
     } catch (err) { console.error('Unlink failed:', err); }
-    setLinkingEvidence(null);
   };
 
   if (loading) {
@@ -645,18 +686,31 @@ export default function WorkspaceView({
           {/* Evidence list */}
           {filteredEvidence.length > 0 ? (
             filteredEvidence.map(ev => {
-              // Determine link action when on activity tab
-              let linkAction = null;
+              // Build context menu actions
+              const contextActions = [];
               if (isActivityTab && activeActivity) {
                 const linkedIds = new Set((activityEvidence[activeActivity.id] || []).map(e => e.id));
                 const isLinked = linkedIds.has(ev.id);
-                linkAction = {
-                  type: isLinked ? 'unlink' : 'link',
-                  loading: linkingEvidence === ev.id,
-                  action: () => isLinked
-                    ? handleUnlinkEvidence(ev.id, activeActivity.id)
-                    : handleLinkEvidence(ev.id, activeActivity.id),
-                };
+                if (isLinked) {
+                  contextActions.push({
+                    label: `Unlink from ${activeActivity.name}`,
+                    danger: true,
+                    action: () => handleUnlinkEvidence(ev.id, activeActivity.id),
+                  });
+                } else {
+                  contextActions.push({
+                    label: `Link to ${activeActivity.name}`,
+                    action: () => handleLinkEvidence(ev.id, activeActivity.id),
+                  });
+                }
+              } else if (!isActivityTab && activities.length > 0) {
+                // On overview: offer to link to any activity
+                activities.forEach(act => {
+                  contextActions.push({
+                    label: `Link to ${act.name}`,
+                    action: () => handleLinkEvidence(ev.id, act.id),
+                  });
+                });
               }
               return (
                 <EvidenceRow
@@ -666,7 +720,7 @@ export default function WorkspaceView({
                   evidenceActivityTypes={evidenceActivityTypes}
                   selected={selectedEvidenceId === ev.id}
                   onClick={() => setSelectedEvidenceId(ev.id)}
-                  linkAction={linkAction}
+                  contextActions={contextActions}
                 />
               );
             })
@@ -683,68 +737,70 @@ export default function WorkspaceView({
         {/* Tab bar */}
         <div style={{
           display: 'flex', alignItems: 'center', borderBottom: '1px solid #f0f0f0',
-          padding: '0 24px', flexShrink: 0, overflow: 'hidden',
+          padding: '0 20px', flexShrink: 0, gap: 0,
         }}>
-          <div style={{ display: 'flex', overflowX: 'auto', scrollbarWidth: 'none', flex: 1 }}>
-            {tabs.map(tab => {
-              const isActive = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => { setActiveTab(tab.key); setShowAllEvidence(false); }}
-                  style={{
-                    padding: '10px 14px', fontSize: 13,
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? '#111827' : '#9ca3af',
-                    backgroundColor: 'transparent', border: 'none',
-                    borderBottom: `2px solid ${isActive ? '#111827' : 'transparent'}`,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                    whiteSpace: 'nowrap', flexShrink: 0,
-                    marginBottom: -1, transition: 'all 0.12s',
-                    maxWidth: tab.isActivity ? 140 : 'none',
-                    overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}
-                  title={tab.label}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          {/* Overview tab */}
+          <button
+            onClick={() => { setActiveTab('project_overview'); setShowAllEvidence(false); }}
+            style={{
+              padding: '10px 14px', fontSize: 13,
+              fontWeight: activeTab === 'project_overview' ? 600 : 400,
+              color: activeTab === 'project_overview' ? '#111827' : '#9ca3af',
+              backgroundColor: 'transparent', border: 'none',
+              borderBottom: `2px solid ${activeTab === 'project_overview' ? '#111827' : 'transparent'}`,
+              cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
+            }}
+          >
+            Overview
+          </button>
 
-          {/* More dropdown */}
-          <div style={{ position: 'relative', flexShrink: 0, marginLeft: 4 }}>
+          {/* Activity selector dropdown */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
-              onClick={() => setShowMore(prev => !prev)}
+              onClick={() => setShowMore(prev => prev === 'activities' ? false : 'activities')}
               style={{
-                padding: '10px 12px', fontSize: 13, fontWeight: 400, color: '#9ca3af',
-                backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
-                fontFamily: 'inherit', whiteSpace: 'nowrap',
+                padding: '10px 14px', fontSize: 13,
+                fontWeight: isActivityTab ? 600 : 400,
+                color: isActivityTab ? '#111827' : '#9ca3af',
+                backgroundColor: 'transparent', border: 'none',
+                borderBottom: `2px solid ${isActivityTab ? '#111827' : 'transparent'}`,
+                cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
+                display: 'flex', alignItems: 'center', gap: 4,
               }}
             >
-              More ▾
+              {isActivityTab
+                ? `Activity ${activities.indexOf(activeActivity) + 1}`
+                : 'Activities'}
+              <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
             </button>
-            {showMore && (
+            {showMore === 'activities' && (
               <div onClick={e => e.stopPropagation()} style={{
-                position: 'absolute', top: '100%', right: 0, zIndex: 50,
+                position: 'absolute', top: '100%', left: 0, zIndex: 50,
                 backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.1)', overflow: 'hidden', minWidth: 180,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 260,
+                maxHeight: 320, overflowY: 'auto',
               }}>
-                {MORE_TABS.map(tab => (
+                {activities.map((act, i) => (
                   <button
-                    key={tab.key}
-                    onClick={() => { setActiveTab(tab.key); setShowMore(false); }}
+                    key={act.id}
+                    onClick={() => { setActiveTab(`activity_${act.id}`); setShowMore(false); setShowAllEvidence(false); }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left',
-                      padding: '9px 16px', fontSize: 13, color: activeTab === tab.key ? '#111827' : '#6b7280',
-                      fontWeight: activeTab === tab.key ? 600 : 400,
-                      backgroundColor: activeTab === tab.key ? '#f9fafb' : 'white',
+                      padding: '10px 16px', fontSize: 13,
+                      color: activeTab === `activity_${act.id}` ? '#111827' : '#374151',
+                      fontWeight: activeTab === `activity_${act.id}` ? 600 : 400,
+                      backgroundColor: activeTab === `activity_${act.id}` ? '#f3f4f6' : 'white',
                       border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                     }}
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                    onMouseLeave={e => { if (activeTab !== tab.key) e.currentTarget.style.backgroundColor = 'white'; }}
+                    onMouseLeave={e => { if (activeTab !== `activity_${act.id}`) e.currentTarget.style.backgroundColor = 'white'; }}
                   >
-                    {tab.label}
+                    <div style={{ fontWeight: 600, marginBottom: 2 }}>Activity {i + 1}: {act.name}</div>
+                    {act.uncertainty && (
+                      <div style={{ fontSize: 11, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {act.uncertainty}
+                      </div>
+                    )}
                   </button>
                 ))}
                 <div style={{ borderTop: '1px solid #f0f0f0' }}>
@@ -752,7 +808,7 @@ export default function WorkspaceView({
                     onClick={() => { setShowCreateModal(true); setShowMore(false); }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left',
-                      padding: '9px 16px', fontSize: 13, color: NAVY, fontWeight: 600,
+                      padding: '10px 16px', fontSize: 13, color: NAVY, fontWeight: 600,
                       backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                     }}
                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f4ff'}
@@ -761,6 +817,65 @@ export default function WorkspaceView({
                     + New Activity
                   </button>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Financials + R&D Boundary */}
+          {SUFFIX_TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => { setActiveTab(tab.key); setShowAllEvidence(false); }}
+              style={{
+                padding: '10px 14px', fontSize: 13,
+                fontWeight: activeTab === tab.key ? 600 : 400,
+                color: activeTab === tab.key ? '#111827' : '#9ca3af',
+                backgroundColor: 'transparent', border: 'none',
+                borderBottom: `2px solid ${activeTab === tab.key ? '#111827' : 'transparent'}`,
+                cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+
+          {/* More dropdown */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={() => setShowMore(prev => prev === 'more' ? false : 'more')}
+              style={{
+                padding: '10px 14px', fontSize: 13, fontWeight: 400, color: '#9ca3af',
+                backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+                fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              More <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
+            </button>
+            {showMore === 'more' && (
+              <div onClick={e => e.stopPropagation()} style={{
+                position: 'absolute', top: '100%', right: 0, zIndex: 50,
+                backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 200,
+              }}>
+                {MORE_TABS.map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => { setActiveTab(tab.key); setShowMore(false); }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '10px 16px', fontSize: 13,
+                      color: activeTab === tab.key ? '#111827' : '#6b7280',
+                      fontWeight: activeTab === tab.key ? 600 : 400,
+                      backgroundColor: activeTab === tab.key ? '#f3f4f6' : 'white',
+                      border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                    onMouseLeave={e => { if (activeTab !== tab.key) e.currentTarget.style.backgroundColor = 'white'; }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -807,9 +922,9 @@ export default function WorkspaceView({
         />
       )}
 
-      {/* Close more dropdown on outside click */}
+      {/* Close dropdowns on outside click */}
       {showMore && (
-        <div onClick={() => setShowMore(false)} style={{ position: 'fixed', inset: 0, zIndex: 25 }} />
+        <div onClick={() => setShowMore(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
       )}
 
       <style>{`
