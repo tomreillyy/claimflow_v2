@@ -157,7 +157,7 @@ function InlineEditor({ sectionKey, projectId, initialContent, placeholder, onSa
 }
 
 /* ── Evidence row (compact) ── */
-function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onClick }) {
+function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onClick, linkAction }) {
   const step = evidenceSteps?.[ev.id]?.step || ev.systematic_step_primary;
   const actType = evidenceActivityTypes?.[ev.id]?.activity_type || ev.activity_type || 'core';
   return (
@@ -175,6 +175,23 @@ function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onCli
         <span style={{ color: '#6b7280', fontWeight: 500 }}>{relativeTime(ev.created_at)}</span>
         {step && step !== 'Unknown' && (<><span style={{ color: '#d1d5db' }}>·</span><span style={{ color: '#374151', fontWeight: 600, fontSize: 11 }}>{step}</span></>)}
         {actType && (<><span style={{ color: '#d1d5db' }}>·</span><span style={{ padding: '1px 5px', fontSize: 10, fontWeight: 600, borderRadius: 3, backgroundColor: actType === 'core' ? NAVY : '#6b7280', color: 'white' }}>{actType === 'core' ? 'Core' : 'Supporting'}</span></>)}
+        {/* Link/Unlink button */}
+        {linkAction && (
+          <button
+            onClick={e => { e.stopPropagation(); linkAction.action(); }}
+            disabled={linkAction.loading}
+            style={{
+              marginLeft: 'auto', padding: '2px 8px', fontSize: 10, fontWeight: 600,
+              color: linkAction.type === 'unlink' ? '#dc2626' : NAVY,
+              backgroundColor: linkAction.type === 'unlink' ? '#fef2f2' : '#eef2ff',
+              border: `1px solid ${linkAction.type === 'unlink' ? '#fecaca' : '#c7d2fe'}`,
+              borderRadius: 4, cursor: linkAction.loading ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit', flexShrink: 0, opacity: linkAction.loading ? 0.5 : 1,
+            }}
+          >
+            {linkAction.loading ? '...' : linkAction.type === 'unlink' ? 'Unlink' : 'Link'}
+          </button>
+        )}
       </div>
       {ev.content && (<p style={{ fontSize: 13, color: '#1a1a1a', lineHeight: 1.5, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ev.content}</p>)}
       {ev.author_email && (<div style={{ fontSize: 11, color: '#c0c5ce', marginTop: 4 }}>{ev.author_email}</div>)}
@@ -405,6 +422,7 @@ export default function WorkspaceView({
   const [showMore, setShowMore] = useState(false);
   const [showAllEvidence, setShowAllEvidence] = useState(false);
   const [activityEvidence, setActivityEvidence] = useState({});
+  const [linkingEvidence, setLinkingEvidence] = useState(null); // evidence ID currently being linked/unlinked
 
   // Fetch sections
   const fetchSections = useCallback(async () => {
@@ -425,8 +443,8 @@ export default function WorkspaceView({
   useEffect(() => { fetchSections(); }, [fetchSections]);
 
   // Fetch evidence for a specific activity
-  const fetchActivityEvidence = useCallback(async (activityId) => {
-    if (activityEvidence[activityId]) return;
+  const fetchActivityEvidence = useCallback(async (activityId, force = false) => {
+    if (activityEvidence[activityId] && !force) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/projects/${token}/core-activities/${activityId}/evidence`, {
@@ -473,6 +491,36 @@ export default function WorkspaceView({
   const handleActivityCreated = (newActivity) => {
     if (onActivitiesChange) onActivitiesChange([...activities, newActivity]);
     setActiveTab(`activity_${newActivity.id}`);
+  };
+
+  const handleLinkEvidence = async (evidenceId, activityId) => {
+    setLinkingEvidence(evidenceId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const step = items.find(e => e.id === evidenceId)?.systematic_step_primary || 'Hypothesis';
+      await fetch(`/api/projects/${token}/core-activities/${activityId}/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ evidence_ids: [evidenceId], step }),
+      });
+      // Refresh activity evidence
+      await fetchActivityEvidence(activityId, true);
+    } catch (err) { console.error('Link failed:', err); }
+    setLinkingEvidence(null);
+  };
+
+  const handleUnlinkEvidence = async (evidenceId, activityId) => {
+    setLinkingEvidence(evidenceId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`/api/projects/${token}/core-activities/${activityId}/evidence`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ evidence_ids: [evidenceId] }),
+      });
+      await fetchActivityEvidence(activityId, true);
+    } catch (err) { console.error('Unlink failed:', err); }
+    setLinkingEvidence(null);
   };
 
   if (loading) {
@@ -596,16 +644,32 @@ export default function WorkspaceView({
 
           {/* Evidence list */}
           {filteredEvidence.length > 0 ? (
-            filteredEvidence.map(ev => (
-              <EvidenceRow
-                key={ev.id}
-                ev={ev}
-                evidenceSteps={evidenceSteps}
-                evidenceActivityTypes={evidenceActivityTypes}
-                selected={selectedEvidenceId === ev.id}
-                onClick={() => setSelectedEvidenceId(ev.id)}
-              />
-            ))
+            filteredEvidence.map(ev => {
+              // Determine link action when on activity tab
+              let linkAction = null;
+              if (isActivityTab && activeActivity) {
+                const linkedIds = new Set((activityEvidence[activeActivity.id] || []).map(e => e.id));
+                const isLinked = linkedIds.has(ev.id);
+                linkAction = {
+                  type: isLinked ? 'unlink' : 'link',
+                  loading: linkingEvidence === ev.id,
+                  action: () => isLinked
+                    ? handleUnlinkEvidence(ev.id, activeActivity.id)
+                    : handleLinkEvidence(ev.id, activeActivity.id),
+                };
+              }
+              return (
+                <EvidenceRow
+                  key={ev.id}
+                  ev={ev}
+                  evidenceSteps={evidenceSteps}
+                  evidenceActivityTypes={evidenceActivityTypes}
+                  selected={selectedEvidenceId === ev.id}
+                  onClick={() => setSelectedEvidenceId(ev.id)}
+                  linkAction={linkAction}
+                />
+              );
+            })
           ) : (
             <div style={{ padding: 32, textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
               {isActivityTab ? 'No evidence linked to this activity yet' : 'No evidence yet'}

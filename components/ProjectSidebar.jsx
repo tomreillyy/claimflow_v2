@@ -160,33 +160,22 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
   const sidebar = (
     <div style={{
       width: W, display: 'flex', flexDirection: 'column', height: '100%',
-      background: 'white', borderRight: '1px solid #f0f0f0',
+      background: 'white', borderRight: '1px solid #f0f0f0', overflowX: 'hidden',
     }}>
 
       {/* Project identity */}
       <div style={{
-        padding: '12px 16px 10px', display: 'flex', alignItems: 'center', gap: 10,
+        padding: '12px 16px 10px',
         borderBottom: '1px solid #f0f0f0',
       }}>
         <div style={{
-          width: 32, height: 32, borderRadius: '50%',
-          backgroundColor: NAVY,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'white', fontSize: 12, fontWeight: 700,
-          flexShrink: 0,
+          fontSize: 14, fontWeight: 700, color: '#111827',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
-          {initials}
+          {projectName || 'Your project'}
         </div>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{
-            fontSize: 14, fontWeight: 700, color: '#111827',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {projectName || 'Your project'}
-          </div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 1 }}>
-            FY{currentFY()} · R&D claim
-          </div>
+        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
+          FY{currentFY()} · R&D claim
         </div>
       </div>
 
@@ -220,7 +209,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       )}
 
       {/* Nav */}
-      <nav style={{ padding: '4px 0', flex: 1, overflowY: 'auto' }}>
+      <nav style={{ padding: '4px 0', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <NavItem label="Dashboard"       viewKey="dashboard"  icon={NAV_ICONS.dashboard} />
         <NavItem label="Workspace"       viewKey="workspace"  icon={NAV_ICONS.workspace} />
         <NavItem label="Project Details"  viewKey="details"    icon={NAV_ICONS.details} />
@@ -287,7 +276,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       borderRight: '1px solid #f0f0f0',
       height: 'calc(100vh - 56px)',
       position: 'sticky', top: 56,
-      overflowY: 'auto',
+      overflowY: 'auto', overflowX: 'hidden',
       display: 'flex', flexDirection: 'column',
     }}>
       {sidebar}
