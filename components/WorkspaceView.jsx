@@ -756,108 +756,125 @@ function ClaimPackPanel({ token, highlightItem }) {
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      minWidth: 0, backgroundColor: '#fafbfc',
+      minWidth: 0, backgroundColor: 'white',
     }}>
-      {/* Header */}
+      {/* Breadcrumb header + stats */}
       <div style={{
-        padding: '14px 20px 0',
+        padding: '12px 28px',
+        borderBottom: '1px solid #f0f0f0',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         flexShrink: 0,
       }}>
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginBottom: 12,
-        }}>
-          <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>
-              Claim Pack
-            </h2>
-            <p style={{ fontSize: 12, color: '#9ca3af', margin: '2px 0 0' }}>
-              {completedCount} of {SECTIONS_ORDER.length} sections done
-            </p>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <span style={{ color: '#9ca3af', fontWeight: 500 }}>Claim Pack</span>
+          <span style={{ color: '#d1d5db' }}>&rsaquo;</span>
+          <span style={{ color: '#111827', fontWeight: 600 }}>{SHORT_NAMES[activeSection]}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#9ca3af' }}>
+          <span><strong style={{ color: '#374151' }}>{completedCount}/{SECTIONS_ORDER.length}</strong> sections</span>
+          <span style={{ color: '#e5e7eb' }}>|</span>
           <button
             onClick={handleGenerateAll}
             disabled={isGenerating}
             style={{
-              padding: '6px 14px', fontSize: 12, fontWeight: 600,
-              color: 'white',
-              backgroundColor: isGenerating ? '#9ca3af' : NAVY,
-              border: 'none', borderRadius: 6,
+              padding: '5px 14px', fontSize: 12, fontWeight: 500,
+              color: '#374151', backgroundColor: 'white',
+              border: '1px solid #e5e7eb', borderRadius: 6,
               cursor: isGenerating ? 'not-allowed' : 'pointer',
               fontFamily: 'inherit',
             }}
           >
-            {isGenerating ? 'Generating...' : completedCount === 0 ? 'Generate All' : 'Regenerate All'}
+            {isGenerating ? 'Generating...' : completedCount === 0 ? 'Generate All' : 'Regenerate'}
           </button>
-        </div>
-
-        {/* Feedback banners */}
-        {genError && (
-          <div style={{
-            padding: '8px 12px', marginBottom: 10,
-            backgroundColor: '#fef2f2', border: '1px solid #fecaca',
-            borderRadius: 6, fontSize: 12, color: '#991b1b',
-          }}>
-            {genError}
-          </div>
-        )}
-        {genSuccess && (
-          <div style={{
-            padding: '8px 12px', marginBottom: 10,
-            backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
-            borderRadius: 6, fontSize: 12, color: '#166534',
-          }}>
-            {genSuccess}
-          </div>
-        )}
-
-        {/* Section tabs */}
-        <div style={{
-          display: 'flex', gap: 3, overflowX: 'auto',
-          paddingBottom: 12,
-          scrollbarWidth: 'none',
-        }}>
-          {SECTIONS_ORDER.map(key => {
-            const status = getSectionStatus(sections[key]);
-            const isActive = activeSection === key;
-            const dotColor = status === 'done' ? '#10b981' : status === 'draft' ? '#f59e0b' : '#d1d5db';
-
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveSection(key)}
-                style={{
-                  padding: '5px 10px',
-                  fontSize: 11,
-                  fontWeight: isActive ? 600 : 500,
-                  color: isActive ? 'white' : '#6b7280',
-                  backgroundColor: isActive ? NAVY : 'white',
-                  border: `1px solid ${isActive ? NAVY : '#e5e7eb'}`,
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  whiteSpace: 'nowrap',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  flexShrink: 0,
-                  transition: 'all 0.12s',
-                }}
-              >
-                <span style={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  backgroundColor: isActive ? 'rgba(255,255,255,0.6)' : dotColor,
-                  flexShrink: 0,
-                }} />
-                {SHORT_NAMES[key]}
-              </button>
-            );
-          })}
         </div>
       </div>
 
+      {/* Feedback banners */}
+      {(genError || genSuccess) && (
+        <div style={{ padding: '0 28px' }}>
+          {genError && (
+            <div style={{
+              padding: '8px 12px', marginTop: 10,
+              backgroundColor: '#fef2f2', border: '1px solid #fecaca',
+              borderRadius: 6, fontSize: 12, color: '#991b1b',
+            }}>
+              {genError}
+            </div>
+          )}
+          {genSuccess && (
+            <div style={{
+              padding: '8px 12px', marginTop: 10,
+              backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
+              borderRadius: 6, fontSize: 12, color: '#166534',
+            }}>
+              {genSuccess}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Section tabs — underline style */}
+      <div style={{
+        display: 'flex', overflowX: 'auto',
+        borderBottom: '1px solid #f0f0f0',
+        padding: '0 28px',
+        flexShrink: 0,
+        scrollbarWidth: 'none',
+      }}>
+        {SECTIONS_ORDER.map(key => {
+          const isActive = activeSection === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setActiveSection(key)}
+              style={{
+                padding: '10px 14px',
+                fontSize: 13,
+                fontWeight: isActive ? 600 : 400,
+                color: isActive ? '#111827' : '#9ca3af',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderBottom: `2px solid ${isActive ? '#111827' : 'transparent'}`,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                transition: 'all 0.12s',
+                marginBottom: -1,
+              }}
+            >
+              {SHORT_NAMES[key]}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Section content (read-only) */}
-      <div className="workspace-claimpack" style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
+      <div className="workspace-claimpack" style={{ flex: 1, overflowY: 'auto', padding: '28px 36px 36px' }}>
+        {/* Section title */}
+        <h1 style={{
+          fontSize: 28, fontWeight: 700, color: '#111827',
+          margin: '0 0 6px', lineHeight: 1.3,
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+        }}>
+          {SECTION_NAMES[activeSection]}
+        </h1>
+
+        {/* Edited metadata */}
+        {sectionData.last_edited_at && (
+          <p style={{
+            fontSize: 13, color: '#9ca3af', margin: '0 0 24px',
+          }}>
+            {sectionData.ai_generated !== false ? 'AI draft' : 'Edited'}{' '}
+            {new Date(sectionData.last_edited_at).toLocaleDateString('en-AU', {
+              day: 'numeric', month: 'long', year: 'numeric',
+            })}
+          </p>
+        )}
+        {!sectionData.last_edited_at && (
+          <div style={{ marginBottom: 24 }} />
+        )}
+
         {sectionData.content && sectionData.content.replace(/<[^>]*>/g, '').trim().length > 10 ? (
           <div
             className="claimpack-content"
@@ -907,12 +924,12 @@ function ClaimPackPanel({ token, highlightItem }) {
         <style>{`
           .claimpack-content {
             font-family: system-ui, -apple-system, sans-serif;
-            font-size: 14px;
-            line-height: 1.75;
-            color: #374151;
+            font-size: 16px;
+            line-height: 1.8;
+            color: #1a1a1a;
           }
           .claimpack-content p {
-            margin: 0 0 12px 0;
+            margin: 0 0 16px 0;
           }
           .claimpack-content p:last-child {
             margin-bottom: 0;
@@ -1007,95 +1024,101 @@ export default function WorkspaceView({
       <div style={{
         flex: 1, borderRight: '1px solid #e5e5e5',
         display: 'flex', flexDirection: 'column', minWidth: 0,
+        backgroundColor: 'white',
       }}>
-        {/* Toolbar */}
+        {/* Header */}
         <div style={{
-          padding: '10px 16px',
-          borderBottom: '1px solid #e5e5e5',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '14px 20px 12px',
+          borderBottom: '1px solid #f0f0f0',
           flexShrink: 0,
         }}>
-          {/* Pill filters */}
-          <div style={{ display: 'flex', gap: 4 }}>
-            <PillButton
-              label="All"
-              count={activityCount + evidenceCount}
-              active={filter === 'all'}
-              onClick={() => setFilter('all')}
-            />
-            <PillButton
-              label="Activities"
-              count={activityCount}
-              active={filter === 'activities'}
-              onClick={() => setFilter('activities')}
-            />
-            <PillButton
-              label="Evidence"
-              count={evidenceCount}
-              active={filter === 'evidence'}
-              onClick={() => setFilter('evidence')}
-            />
-          </div>
-
-          {/* Create button — shown on Activities or All filter */}
-          {(filter === 'all' || filter === 'activities') && (
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            marginBottom: 10,
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>
+              Activities
+            </h2>
             <button
               onClick={() => setShowCreateModal(true)}
               style={{
-                padding: '5px 12px', fontSize: 12, fontWeight: 600,
-                color: 'white', backgroundColor: NAVY,
-                border: 'none', borderRadius: 6,
+                padding: '5px 14px', fontSize: 13, fontWeight: 500,
+                color: '#374151', backgroundColor: 'white',
+                border: '1px solid #e5e7eb', borderRadius: 6,
                 cursor: 'pointer', fontFamily: 'inherit',
-                display: 'inline-flex', alignItems: 'center', gap: 4,
+                display: 'inline-flex', alignItems: 'center', gap: 5,
               }}
             >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>+</span> Activity
+              <span style={{ fontSize: 15, lineHeight: 1 }}>+</span> New
             </button>
-          )}
+          </div>
+
+          {/* Filter pills */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            <PillButton label="All" count={activityCount + evidenceCount} active={filter === 'all'} onClick={() => setFilter('all')} />
+            <PillButton label="Activities" count={activityCount} active={filter === 'activities'} onClick={() => setFilter('activities')} />
+            <PillButton label="Evidence" count={evidenceCount} active={filter === 'evidence'} onClick={() => setFilter('evidence')} />
+          </div>
         </div>
 
         {/* List content */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {/* Activities section */}
-          {(filter === 'all' || filter === 'activities') && activities.length > 0 && (
-            <div>
-              {filter === 'all' && (
-                <div style={{
-                  padding: '8px 16px', fontSize: 11, fontWeight: 600,
-                  color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em',
-                  backgroundColor: '#fafbfc', borderBottom: '1px solid #f0f0f0',
-                }}>
-                  Activities
-                </div>
-              )}
-              {activities.map(act => (
-                <ActivityRow
-                  key={act.id}
-                  activity={act}
-                  token={token}
-                  expanded={expandedActivity === act.id}
-                  onToggle={() => {
-                    setExpandedActivity(prev => prev === act.id ? null : act.id);
-                    setHighlightItem({ ...act, _type: 'activity', _ts: Date.now() });
-                  }}
-                  onSelect={(evidenceId) => {
-                    setSelectedId(evidenceId);
-                    const ev = items.find(e => e.id === evidenceId);
-                    if (ev) setHighlightItem({ ...ev, _type: 'evidence', _ts: Date.now() });
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          {(filter === 'all' || filter === 'activities') && activities.length > 0 && (() => {
+            const core = activities.filter(a => a.status === 'adopted' || a.source !== 'supporting');
+            const supporting = activities.filter(a => a.source === 'supporting');
+            const renderActivity = (act) => (
+              <ActivityRow
+                key={act.id}
+                activity={act}
+                token={token}
+                expanded={expandedActivity === act.id}
+                onToggle={() => {
+                  setExpandedActivity(prev => prev === act.id ? null : act.id);
+                  setHighlightItem({ ...act, _type: 'activity', _ts: Date.now() });
+                }}
+                onSelect={(evidenceId) => {
+                  setSelectedId(evidenceId);
+                  const ev = items.find(e => e.id === evidenceId);
+                  if (ev) setHighlightItem({ ...ev, _type: 'evidence', _ts: Date.now() });
+                }}
+              />
+            );
+            return (
+              <div>
+                {core.length > 0 && (
+                  <>
+                    <div style={{
+                      padding: '12px 20px 6px', fontSize: 11, fontWeight: 700,
+                      color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em',
+                    }}>
+                      Core Activities
+                    </div>
+                    {core.map(renderActivity)}
+                  </>
+                )}
+                {supporting.length > 0 && (
+                  <>
+                    <div style={{
+                      padding: '16px 20px 6px', fontSize: 11, fontWeight: 700,
+                      color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em',
+                    }}>
+                      Supporting
+                    </div>
+                    {supporting.map(renderActivity)}
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Evidence section */}
           {(filter === 'all' || filter === 'evidence') && (
             <div>
               {filter === 'all' && (
                 <div style={{
-                  padding: '8px 16px', fontSize: 11, fontWeight: 600,
-                  color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em',
-                  backgroundColor: '#fafbfc', borderBottom: '1px solid #f0f0f0',
+                  padding: '16px 20px 6px', fontSize: 11, fontWeight: 700,
+                  color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em',
                 }}>
                   Evidence
                 </div>
