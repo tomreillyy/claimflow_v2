@@ -533,11 +533,14 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
     nameTimerRef.current = setTimeout(() => saveSignatures(updated), 1000);
   };
 
+  const [saveError, setSaveError] = useState(null);
   const saveSignatures = async (data) => {
     setSaving(true);
+    setSaveError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
+      if (!projectId) throw new Error('Project not loaded yet');
       const res = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -548,7 +551,10 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
         throw new Error(err.error || `Save failed: ${res.status}`);
       }
       onSaved?.();
-    } catch (err) { console.error('Save signatures failed:', err); }
+    } catch (err) {
+      console.error('Save signatures failed:', err);
+      setSaveError(err.message);
+    }
     setSaving(false);
   };
 
@@ -568,6 +574,7 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
       <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 28px' }}>
         {signedCount} of {SIGN_OFF_ROLES.length} signed
         {saving && <span style={{ marginLeft: 8 }}>· Saving...</span>}
+        {saveError && <span style={{ marginLeft: 8, color: '#dc2626' }}>· {saveError}</span>}
       </p>
 
       {SIGN_OFF_ROLES.map(role => {
