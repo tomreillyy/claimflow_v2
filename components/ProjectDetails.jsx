@@ -111,7 +111,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
 
   const inputStyle = {
     width: '100%',
-    padding: '10px 12px',
+    padding: '8px 12px',
     fontSize: 15,
     border: '1px solid #ddd',
     borderRadius: 6,
@@ -126,14 +126,14 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
     fontSize: 13,
     fontWeight: 500,
     color: '#555',
-    marginBottom: 6,
+    marginBottom: 4,
   };
 
   const cardStyle = {
     backgroundColor: 'white',
     border: '1px solid #e5e5e5',
     borderRadius: 8,
-    padding: 20,
+    padding: 16,
   };
 
   const MissingBadge = () => (
@@ -149,9 +149,9 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
   );
 
   return (
-    <div style={{ padding: '20px 0' }}>
+    <div style={{ padding: '16px 0' }}>
       {/* Save button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
           onClick={handleSave}
           disabled={saving}
@@ -195,23 +195,23 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
         </div>
       )}
 
-      {/* Row 1: Basic info (left) + Hypothesis & Overview (right) */}
+      {/* Row 1: Basic info + Hypothesis (left) + Overview (right) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 20,
-        marginBottom: 20,
+        gridTemplateColumns: '2fr 3fr',
+        gap: 16,
+        marginBottom: 16,
       }}>
-        {/* Left: Basic info */}
+        {/* Left: Basic info + Hypothesis */}
         <div style={cardStyle}>
           <h3 style={{
             fontSize: 15,
             fontWeight: 600,
             color: '#1a1a1a',
-            margin: '0 0 16px 0',
+            margin: '0 0 12px 0',
           }}>Basic Information</h3>
 
-          <div style={{ display: 'grid', gap: 14 }}>
+          <div style={{ display: 'grid', gap: 10 }}>
             <div>
               <label style={labelStyle}>Project name</label>
               <input
@@ -223,7 +223,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
                 <label style={labelStyle}>Start year</label>
                 <select
@@ -258,70 +258,68 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
                   }).filter(opt => Number(opt.props.value) >= Number(form.year))}
                 </select>
               </div>
+              <div>
+                <label style={labelStyle}>Created</label>
+                <div style={{
+                  padding: '8px 12px',
+                  fontSize: 15,
+                  color: '#666',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: 6,
+                  border: '1px solid #e5e5e5',
+                }}>
+                  {project.created_at
+                    ? new Date(project.created_at).toLocaleDateString('en-AU', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                      })
+                    : '-'}
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label style={labelStyle}>Created</label>
-              <div style={{
-                padding: '10px 12px',
-                fontSize: 15,
-                color: '#666',
-                backgroundColor: '#f9fafb',
-                borderRadius: 6,
-                border: '1px solid #e5e5e5',
-              }}>
-                {project.created_at
-                  ? new Date(project.created_at).toLocaleDateString('en-AU', {
-                      day: 'numeric', month: 'short', year: 'numeric'
-                    })
-                  : '-'}
+            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <label style={{ ...labelStyle, marginBottom: 0 }}>Hypothesis</label>
+                {!form.current_hypothesis?.trim() ? <MissingBadge /> : <Check size={14} color="#22c55e" strokeWidth={3} />}
+              </div>
+              <p style={{ fontSize: 12, color: '#888', margin: '0 0 6px 0' }}>
+                One sentence, technical and testable (not a business goal).
+              </p>
+              <textarea
+                value={form.current_hypothesis}
+                onChange={e => updateField('current_hypothesis', e.target.value)}
+                placeholder="If we <approach> under <conditions>, we expect <measurable outcome>..."
+                maxLength={280}
+                rows={2}
+                style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }}
+                onFocus={e => e.target.style.borderColor = '#021048'}
+                onBlur={e => e.target.style.borderColor = '#ddd'}
+              />
+              <div style={{ fontSize: 11, color: '#999', marginTop: 2, textAlign: 'right' }}>
+                {form.current_hypothesis.length}/280
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right: Hypothesis + Overview stacked */}
-        <div style={{ display: 'grid', gap: 20 }}>
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>Hypothesis</h3>
-              {!form.current_hypothesis?.trim() ? <MissingBadge /> : <Check size={14} color="#22c55e" strokeWidth={3} />}
-            </div>
-            <p style={{ fontSize: 13, color: '#666', margin: '0 0 8px 0' }}>
-              One sentence, technical and testable (not a business goal).
-            </p>
-            <input
-              value={form.current_hypothesis}
-              onChange={e => updateField('current_hypothesis', e.target.value)}
-              placeholder="If we <approach> under <conditions>, we expect <measurable outcome>..."
-              maxLength={280}
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = '#021048'}
-              onBlur={e => e.target.style.borderColor = '#ddd'}
-            />
-            <div style={{ fontSize: 12, color: '#999', marginTop: 4, textAlign: 'right' }}>
-              {form.current_hypothesis.length}/280
-            </div>
+        {/* Right: Project Overview */}
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>Project Overview</h3>
+            {!form.project_overview?.trim() ? <MissingBadge /> : <Check size={14} color="#22c55e" strokeWidth={3} />}
           </div>
-
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>Project Overview</h3>
-              {!form.project_overview?.trim() ? <MissingBadge /> : <Check size={14} color="#22c55e" strokeWidth={3} />}
-            </div>
-            <p style={{ fontSize: 13, color: '#666', margin: '0 0 8px 0' }}>
-              Context and technical challenges. Used in claim pack generation.
-            </p>
-            <textarea
-              value={form.project_overview}
-              onChange={e => updateField('project_overview', e.target.value)}
-              placeholder="Describe the project context, technical challenges, and what you're trying to achieve..."
-              rows={4}
-              style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }}
-              onFocus={e => e.target.style.borderColor = '#021048'}
-              onBlur={e => e.target.style.borderColor = '#ddd'}
-            />
-          </div>
+          <p style={{ fontSize: 12, color: '#888', margin: '0 0 6px 0' }}>
+            Context and technical challenges. Used in claim pack generation.
+          </p>
+          <textarea
+            value={form.project_overview}
+            onChange={e => updateField('project_overview', e.target.value)}
+            placeholder="Describe the project context, technical challenges, and what you're trying to achieve..."
+            rows={8}
+            style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }}
+            onFocus={e => e.target.style.borderColor = '#021048'}
+            onBlur={e => e.target.style.borderColor = '#ddd'}
+          />
         </div>
       </div>
 
@@ -368,7 +366,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
               <div
                 key={field.key}
                 style={{
-                  padding: 20,
+                  padding: 14,
                   borderRight: isLeft ? '1px solid #e5e5e5' : 'none',
                   borderBottom: isTop ? '1px solid #e5e5e5' : 'none',
                 }}
@@ -377,7 +375,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  marginBottom: 6,
+                  marginBottom: 4,
                 }}>
                   <label style={{
                     fontSize: 14,
@@ -387,16 +385,16 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
                   {isEmpty ? <MissingBadge /> : <Check size={14} color="#22c55e" strokeWidth={3} />}
                 </div>
                 <p style={{
-                  fontSize: 13,
-                  color: '#666',
-                  margin: '0 0 8px 0',
+                  fontSize: 12,
+                  color: '#888',
+                  margin: '0 0 6px 0',
                   lineHeight: 1.4,
                 }}>{field.prompt}</p>
                 <textarea
                   value={form[field.key]}
                   onChange={e => updateField(field.key, e.target.value)}
                   placeholder={field.placeholder}
-                  rows={4}
+                  rows={3}
                   style={{
                     ...inputStyle,
                     fontFamily: 'inherit',
@@ -414,7 +412,7 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
       {/* AI & Data Privacy Section */}
       <div style={{
         ...cardStyle,
-        marginTop: 20,
+        marginTop: 16,
         border: '1px solid #e5e5e5',
       }}>
         <div style={{
