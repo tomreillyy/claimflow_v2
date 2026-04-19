@@ -961,47 +961,54 @@ export default function WorkspaceView({
       }}>
         {/* Header */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>
-              {isActivityTab ? 'Evidence' : 'Activities & Evidence'}
+          {/* Title row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isActivityTab ? 8 : 0 }}>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>
+                {isActivityTab ? 'Evidence' : 'Activities & Evidence'}
+              </h2>
               {isActivityTab && !showAllEvidence && (
-                <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: 6, fontSize: 12 }}>
-                  for {activeActivity.name}
-                </span>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {activeActivity.name} · {filteredEvidence.length} items
+                </div>
               )}
-            </h2>
-            <div style={{ position: 'relative' }}>
-              <button
-                ref={addBtnRef}
-                onClick={() => {
-                  const rect = addBtnRef.current?.getBoundingClientRect();
-                  setShowAddMenu(prev => prev ? false : { top: rect?.bottom + 4, left: rect?.left });
-                }}
-                style={{
-                  padding: '4px 10px', fontSize: 12, fontWeight: 500,
-                  color: '#374151', backgroundColor: 'white',
-                  border: '1px solid #e5e7eb', borderRadius: 5,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'inline-flex', alignItems: 'center', gap: 4,
-                }}
-              >
-                <span style={{ fontSize: 13, lineHeight: 1 }}>+</span> Add
-              </button>
+              {isActivityTab && showAllEvidence && (
+                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                  All evidence · {filteredEvidence.length} items
+                </div>
+              )}
             </div>
-            {isActivityTab && (
-              <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 'auto' }}>{filteredEvidence.length} items</span>
-            )}
-          </div>
-          {isActivityTab && (
             <button
-              onClick={() => setShowAllEvidence(prev => !prev)}
+              ref={addBtnRef}
+              onClick={() => {
+                const rect = addBtnRef.current?.getBoundingClientRect();
+                setShowAddMenu(prev => prev ? false : { top: rect?.bottom + 4, left: rect?.left });
+              }}
               style={{
-                marginTop: 6, fontSize: 12, color: NAVY, background: 'none', border: 'none',
-                cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontWeight: 500,
+                padding: '4px 10px', fontSize: 12, fontWeight: 500,
+                color: '#374151', backgroundColor: 'white',
+                border: '1px solid #e5e7eb', borderRadius: 5,
+                cursor: 'pointer', fontFamily: 'inherit',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                flexShrink: 0,
               }}
             >
-              {showAllEvidence ? 'Show activity evidence only' : 'Show all evidence'}
+              <span style={{ fontSize: 13, lineHeight: 1 }}>+</span> Add
             </button>
+          </div>
+          {/* Action links */}
+          {isActivityTab && (
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => setShowAllEvidence(prev => !prev)}
+                style={{
+                  fontSize: 12, color: NAVY, background: 'none', border: 'none',
+                  cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontWeight: 500,
+                }}
+              >
+                {showAllEvidence ? 'Show linked only' : 'Link more evidence'}
+              </button>
+            </div>
           )}
         </div>
 
