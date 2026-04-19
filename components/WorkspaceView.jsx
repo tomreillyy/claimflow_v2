@@ -1749,7 +1749,7 @@ export default function WorkspaceView({
                       }}
                       style={{
                         display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13,
-                        color: '#374151', fontWeight: t.value === (act.activity_type || 'core') ? 600 : 400,
+                        color: '#374151', fontWeight: t.value === (actCtxMenu.activity.activity_type || 'core') ? 600 : 400,
                         backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                       }}
                       onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
