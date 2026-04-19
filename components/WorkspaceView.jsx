@@ -725,9 +725,10 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
 }
 
 /* ── Add Evidence Modal ── */
-function AddEvidenceModal({ token, onCreated, onClose }) {
+function AddEvidenceModal({ token, activities = [], onCreated, onClose }) {
   const [content, setContent] = useState('');
   const [file, setFile] = useState(null);
+  const [linkedActivityId, setLinkedActivityId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -746,6 +747,8 @@ function AddEvidenceModal({ token, onCreated, onClose }) {
         if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Upload failed'); }
       }
 
+      let createdEvidenceId = null;
+
       if (content.trim()) {
         // Text note
         const res = await fetch(`/api/evidence/${token}/add`, {
@@ -755,9 +758,19 @@ function AddEvidenceModal({ token, onCreated, onClose }) {
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed to add'); }
         const data = await res.json();
+        createdEvidenceId = data.id;
         // Trigger AI classification (fire-and-forget)
         fetch(`/api/classify?id=${data.id}`, { method: 'POST', headers }).catch(() => {});
         fetch(`/api/evidence/classify-activity-type?id=${data.id}`, { method: 'POST', headers }).catch(() => {});
+      }
+
+      // Link to activity if one was selected
+      if (linkedActivityId && createdEvidenceId) {
+        await fetch(`/api/evidence/${token}/link`, {
+          method: 'PATCH',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ evidence_id: createdEvidenceId, activity_id: linkedActivityId }),
+        });
       }
 
       onCreated();
@@ -818,10 +831,36 @@ function AddEvidenceModal({ token, onCreated, onClose }) {
             <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>PNG, JPEG, PDF, CSV, TXT, XLS — max 10MB</div>
           </div>
 
+          {activities.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                Link to activity <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span>
+              </label>
+              <select
+                value={linkedActivityId}
+                onChange={e => setLinkedActivityId(e.target.value)}
+                style={{
+                  width: '100%', padding: '9px 12px', fontSize: 13, border: '1px solid #e5e7eb',
+                  borderRadius: 8, outline: 'none', fontFamily: 'inherit', backgroundColor: 'white',
+                  color: linkedActivityId ? '#111827' : '#9ca3af', cursor: 'pointer', boxSizing: 'border-box',
+                }}
+                onFocus={e => e.target.style.borderColor = NAVY}
+                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+              >
+                <option value="">None — AI will suggest</option>
+                {activities.map(act => (
+                  <option key={act.id} value={act.id}>{act.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {error && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{error}</div>}
 
           <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 12, padding: '8px 10px', backgroundColor: '#f9fafb', borderRadius: 6 }}>
-            AI will automatically classify this evidence into the R&D systematic progression and suggest which activity it belongs to.
+            {linkedActivityId
+              ? 'Evidence will be linked to the selected activity.'
+              : 'AI will automatically classify this evidence into the R&D systematic progression and suggest which activity it belongs to.'}
           </div>
         </div>
         <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -1511,6 +1550,7 @@ export default function WorkspaceView({
       {showEvidenceModal && (
         <AddEvidenceModal
           token={token}
+          activities={activities}
           onCreated={() => { window.location.reload(); }}
           onClose={() => setShowEvidenceModal(false)}
         />
