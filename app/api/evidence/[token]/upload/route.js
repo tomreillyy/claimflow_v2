@@ -16,7 +16,7 @@ const ALLOWED_FILE_TYPES = [
 ];
 
 export async function POST(req, { params }) {
-  const token = params.token;
+  const { token } = await params;
 
   // Apply rate limiting (per-IP + per-project)
   const clientIp = getClientIp(req);
