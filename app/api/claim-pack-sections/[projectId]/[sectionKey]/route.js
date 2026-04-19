@@ -24,9 +24,9 @@ export async function GET(req, { params }) {
   const { projectId, sectionKey } = await params;
 
   // Verify user authentication
-  const user = await getAuthenticatedUser(req);
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authError } = await getAuthenticatedUser(req);
+  if (authError || !user) {
+    return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -115,9 +115,9 @@ export async function PATCH(req, { params }) {
   const { projectId, sectionKey } = await params;
 
   // Verify user authentication
-  const user = await getAuthenticatedUser(req);
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authError } = await getAuthenticatedUser(req);
+  if (authError || !user) {
+    return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 });
   }
 
   try {
@@ -211,9 +211,9 @@ export async function DELETE(req, { params }) {
   const { projectId, sectionKey } = await params;
 
   // Verify user authentication
-  const user = await getAuthenticatedUser(req);
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { user, error: authError } = await getAuthenticatedUser(req);
+  if (authError || !user) {
+    return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 });
   }
 
   try {

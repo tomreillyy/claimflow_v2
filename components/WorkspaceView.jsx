@@ -540,7 +540,8 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
-      if (!projectId) throw new Error('Project not loaded yet');
+      if (!projectId) throw new Error(`Project not loaded yet (projectId=${projectId})`);
+      console.log('[Attestations] Saving to:', `/api/claim-pack-sections/${projectId}/${sectionKey}`, 'data length:', JSON.stringify(data).length);
       const res = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
