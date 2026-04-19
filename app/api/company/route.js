@@ -68,6 +68,7 @@ export async function PUT(req) {
       company_name: (body.company_name || '').trim(),
       entity_type: body.entity_type || null,
       aggregated_turnover_band: body.aggregated_turnover_band || null,
+      aggregated_turnover: body.aggregated_turnover ?? null,
       financial_year_end: body.financial_year_end || '06-30',
       abn: cleanAbn,
       industry: body.industry || null,

@@ -18,6 +18,7 @@ import RecordsPage from '@/components/RecordsPage';
 import ProjectDashboard from '@/components/ProjectDashboard';
 import ProjectDetails from '@/components/ProjectDetails';
 import WorkspaceView from '@/components/WorkspaceView';
+import ProjectSettings from '@/components/ProjectSettings';
 
 // Hook to fetch step counts and compute gap hint
 function useStepGapHint(token) {
@@ -2098,6 +2099,13 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
         {activeTab === 'team' && (
           <div style={{ padding: '20px 0' }}>
             <ProjectTeam projectToken={token} />
+          </div>
+        )}
+
+        {/* Settings Tab Content */}
+        {activeTab === 'settings' && (
+          <div style={{ padding: '20px 0' }}>
+            <ProjectSettings project={project} token={token} />
           </div>
         )}
 
