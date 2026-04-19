@@ -463,6 +463,238 @@ function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus
   );
 }
 
+/* ── Attestations & Sign-offs Panel ── */
+const SIGN_OFF_ROLES = [
+  { key: 'technical_lead', title: 'Technical Lead / CTO', description: 'I confirm that the activities described in this claim pack constitute genuine R&D involving technical uncertainty that could not be resolved by a competent professional using existing knowledge.' },
+  { key: 'cfo', title: 'CFO / Finance', description: 'I confirm that the expenditure figures in this claim pack are accurate, the apportionment methodology has been applied consistently, and costs are substantiated by underlying records.' },
+  { key: 'ceo', title: 'CEO / Managing Director', description: 'I confirm that this claim pack is complete and accurate to the best of my knowledge, and that the company is entitled to claim the R&D Tax Incentive for the activities and expenditure described.' },
+];
+
+function AttestationsPanel({ projectId, sections, token, onSaved }) {
+  const sectionKey = 'attestations';
+  const [signatures, setSignatures] = useState(() => {
+    try {
+      const existing = sections[sectionKey]?.content;
+      if (existing && existing.startsWith('{')) return JSON.parse(existing);
+    } catch {}
+    return {};
+  });
+  const [saving, setSaving] = useState(false);
+  const sigRefs = useRef({});
+
+  const handleSign = (roleKey) => {
+    const canvas = sigRefs.current[roleKey];
+    if (!canvas || canvas.isEmpty()) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    const updated = {
+      ...signatures,
+      [roleKey]: {
+        signature: dataUrl,
+        signedAt: new Date().toISOString(),
+        signedBy: '', // will be filled by name input
+      },
+    };
+    setSignatures(updated);
+    saveSignatures(updated);
+  };
+
+  const handleClear = (roleKey) => {
+    const canvas = sigRefs.current[roleKey];
+    if (canvas) canvas.clear();
+    const updated = { ...signatures };
+    delete updated[roleKey];
+    setSignatures(updated);
+    saveSignatures(updated);
+  };
+
+  const handleNameChange = (roleKey, name) => {
+    const updated = {
+      ...signatures,
+      [roleKey]: { ...signatures[roleKey], signedBy: name },
+    };
+    setSignatures(updated);
+    // Debounce save
+    clearTimeout(handleNameChange._timer);
+    handleNameChange._timer = setTimeout(() => saveSignatures(updated), 1000);
+  };
+
+  const saveSignatures = async (data) => {
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ content: JSON.stringify(data) }),
+      });
+      onSaved?.();
+    } catch (err) { console.error('Save signatures failed:', err); }
+    setSaving(false);
+  };
+
+  // Dynamic import of SignatureCanvas (it uses <canvas> which is client-only)
+  const [SignatureCanvas, setSignatureCanvas] = useState(null);
+  useEffect(() => {
+    import('react-signature-canvas').then(mod => setSignatureCanvas(() => mod.default));
+  }, []);
+
+  const signedCount = SIGN_OFF_ROLES.filter(r => signatures[r.key]?.signature).length;
+
+  return (
+    <div style={{ padding: '28px 36px 36px' }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>
+        Attestations & Sign-offs
+      </h1>
+      <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 28px' }}>
+        {signedCount} of {SIGN_OFF_ROLES.length} signed
+        {saving && <span style={{ marginLeft: 8 }}>· Saving...</span>}
+      </p>
+
+      {SIGN_OFF_ROLES.map(role => {
+        const sig = signatures[role.key];
+        const isSigned = !!sig?.signature;
+
+        return (
+          <div key={role.key} style={{
+            marginBottom: 24, border: '1px solid #e5e7eb', borderRadius: 10,
+            overflow: 'hidden', backgroundColor: 'white',
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '14px 20px', borderBottom: '1px solid #f0f0f0',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>{role.title}</div>
+                {isSigned && (
+                  <div style={{ fontSize: 11, color: '#10b981', marginTop: 2 }}>
+                    Signed {new Date(sig.signedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {sig.signedBy && ` by ${sig.signedBy}`}
+                  </div>
+                )}
+              </div>
+              {isSigned && (
+                <span style={{
+                  padding: '3px 10px', fontSize: 11, fontWeight: 600, borderRadius: 12,
+                  backgroundColor: '#dcfce7', color: '#166534',
+                }}>
+                  Signed
+                </span>
+              )}
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '16px 20px' }}>
+              <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, margin: '0 0 16px' }}>
+                {role.description}
+              </p>
+
+              {isSigned ? (
+                /* Signed state — show signature image */
+                <div>
+                  <div style={{
+                    border: '1px solid #e5e7eb', borderRadius: 8,
+                    padding: 8, backgroundColor: '#fafbfc', marginBottom: 12,
+                    display: 'flex', justifyContent: 'center',
+                  }}>
+                    <img src={sig.signature} alt="Signature" style={{ maxHeight: 80, maxWidth: '100%' }} />
+                  </div>
+                  <button
+                    onClick={() => handleClear(role.key)}
+                    style={{
+                      padding: '6px 14px', fontSize: 12, fontWeight: 500,
+                      color: '#dc2626', backgroundColor: 'white',
+                      border: '1px solid #fecaca', borderRadius: 6,
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    Clear signature
+                  </button>
+                </div>
+              ) : (
+                /* Unsigned state — show canvas + name input */
+                <div>
+                  {/* Name input */}
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
+                      Full name
+                    </label>
+                    <input
+                      value={sig?.signedBy || ''}
+                      onChange={e => handleNameChange(role.key, e.target.value)}
+                      placeholder="Enter full name"
+                      style={{
+                        width: '100%', padding: '8px 12px', fontSize: 13,
+                        border: '1px solid #e5e7eb', borderRadius: 6,
+                        outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  {/* Signature canvas */}
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
+                      Signature
+                    </label>
+                    <div style={{
+                      border: '1px dashed #d1d5db', borderRadius: 8,
+                      backgroundColor: '#fafbfc', overflow: 'hidden',
+                      height: 120, position: 'relative',
+                    }}>
+                      {SignatureCanvas ? (
+                        <SignatureCanvas
+                          ref={ref => { sigRefs.current[role.key] = ref; }}
+                          canvasProps={{
+                            style: { width: '100%', height: '100%', cursor: 'crosshair' },
+                          }}
+                          penColor={NAVY}
+                          dotSize={2}
+                          minWidth={1.5}
+                          maxWidth={3}
+                        />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9ca3af', fontSize: 12 }}>
+                          Loading...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => handleSign(role.key)}
+                      style={{
+                        padding: '7px 16px', fontSize: 13, fontWeight: 600,
+                        color: 'white', backgroundColor: NAVY,
+                        border: 'none', borderRadius: 6,
+                        cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      Sign
+                    </button>
+                    <button
+                      onClick={() => { const c = sigRefs.current[role.key]; if (c) c.clear(); }}
+                      style={{
+                        padding: '7px 14px', fontSize: 13, fontWeight: 500,
+                        color: '#6b7280', backgroundColor: 'white',
+                        border: '1px solid #e5e7eb', borderRadius: 6,
+                        cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    Main WorkspaceView
    ═══════════════════════════════════════════════════════════ */
@@ -916,6 +1148,13 @@ export default function WorkspaceView({
               saveStatus={saveStatus}
               onSaveStatus={setSaveStatus}
               onGenerated={fetchSections}
+            />
+          ) : activeTab === 'attestations' ? (
+            <AttestationsPanel
+              projectId={projectId}
+              sections={sections}
+              token={token}
+              onSaved={fetchSections}
             />
           ) : (
             (() => {
