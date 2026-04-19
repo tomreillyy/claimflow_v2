@@ -284,9 +284,15 @@ function CreateActivityModal({ token, onCreated, onClose }) {
 function BlobLoader() {
   return (
     <div style={{
-      position: 'absolute', inset: 0, zIndex: 10,
-      backgroundColor: 'rgba(255,255,255,0.9)',
+      position: 'sticky', top: 0, left: 0, right: 0, height: 0,
+      zIndex: 10, display: 'flex', justifyContent: 'center',
+    }}>
+    <div style={{
+      marginTop: 120, width: 80, height: 80,
+      backgroundColor: 'rgba(255,255,255,0.95)',
+      borderRadius: '50%',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
     }}>
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
         <circle className="blob-main" cx="24" cy="24" r="10" fill={NAVY} />
@@ -315,6 +321,7 @@ function BlobLoader() {
           50% { transform: rotate(180deg) scale(0.6); opacity: 0.2; }
         }
       `}</style>
+    </div>
     </div>
   );
 }

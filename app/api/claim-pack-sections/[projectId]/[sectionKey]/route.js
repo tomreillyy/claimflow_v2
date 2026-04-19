@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
  * }
  */
 export async function GET(req, { params }) {
-  const { projectId, sectionKey } = params;
+  const { projectId, sectionKey } = await params;
 
   // Verify user authentication
   const user = await getAuthenticatedUser(req);
@@ -112,7 +112,7 @@ export async function GET(req, { params }) {
  * }
  */
 export async function PATCH(req, { params }) {
-  const { projectId, sectionKey } = params;
+  const { projectId, sectionKey } = await params;
 
   // Verify user authentication
   const user = await getAuthenticatedUser(req);
@@ -208,7 +208,7 @@ export async function PATCH(req, { params }) {
  * }
  */
 export async function DELETE(req, { params }) {
-  const { projectId, sectionKey } = params;
+  const { projectId, sectionKey } = await params;
 
   // Verify user authentication
   const user = await getAuthenticatedUser(req);
