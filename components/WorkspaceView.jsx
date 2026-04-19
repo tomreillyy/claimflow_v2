@@ -722,12 +722,14 @@ export default function WorkspaceView({
   useEffect(() => {
     if (!showMore) return;
     const handler = (e) => {
-      // Don't close if clicking inside a dropdown
       if (e.target.closest('[data-dropdown]')) return;
       setShowMore(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    // Use setTimeout so this doesn't fire on the same click that opened the dropdown
+    const id = setTimeout(() => {
+      document.addEventListener('mousedown', handler);
+    }, 10);
+    return () => { clearTimeout(id); document.removeEventListener('mousedown', handler); };
   }, [showMore]);
 
   // Fetch sections
@@ -1011,7 +1013,7 @@ export default function WorkspaceView({
           </button>
 
           {/* Activity selector dropdown */}
-          <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div data-dropdown style={{ position: 'relative', flexShrink: 0 }}>
             <button
               onClick={() => setShowMore(prev => prev === 'activities' ? false : 'activities')}
               style={{
@@ -1097,7 +1099,7 @@ export default function WorkspaceView({
           ))}
 
           {/* More dropdown */}
-          <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div data-dropdown style={{ position: 'relative', flexShrink: 0 }}>
             <button
               onClick={() => setShowMore(prev => prev === 'more' ? false : 'more')}
               style={{
