@@ -6,6 +6,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { marked } from 'marked';
+import FinancialsPage from './financials/FinancialsPage';
 
 const NAVY = '#021048';
 
@@ -1371,6 +1372,8 @@ export default function WorkspaceView({
               onSaveStatus={setSaveStatus}
               onGenerated={fetchSections}
             />
+          ) : activeTab === 'financials' ? (
+            <FinancialsPage token={token} activities={activities} />
           ) : activeTab === 'attestations' ? (
             <AttestationsPanel
               projectId={projectId}
