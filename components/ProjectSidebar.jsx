@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 
 const NAVY = '#021048';
-const W = 210;
+const W_EXPANDED = 210;
+const W_COLLAPSED = 52;
 
 function currentFY() {
   const now = new Date();
@@ -61,6 +62,16 @@ const NAV_ICONS = {
       <rect x="2" y="3" width="20" height="18" rx="2" /><line x1="8" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="16" y2="21" /><line x1="2" y1="9" x2="22" y2="9" /><line x1="2" y1="15" x2="22" y2="15" />
     </svg>
   ),
+  collapse: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="11 17 6 12 11 7" /><polyline points="18 17 13 12 18 7" />
+    </svg>
+  ),
+  expand: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="13 17 18 12 13 7" /><polyline points="6 17 11 12 6 7" />
+    </svg>
+  ),
 };
 
 export default function ProjectSidebar({ token, projectName, stepperData = [] }) {
@@ -70,9 +81,11 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
 
   const [isMobile,   setIsMobile]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed,  setCollapsed]  = useState(false);
 
   const currentView = searchParams.get('view') || 'dashboard';
   const isMain      = pathname === `/p/${token}`;
+  const W = collapsed ? W_COLLAPSED : W_EXPANDED;
 
   useEffect(() => {
     const check = () => {
@@ -105,28 +118,25 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
 
   const done     = stepperData.filter(s => s.complete).length;
   const total    = stepperData.length;
-  const nextStep = stepperData.find(s => !s.complete);
 
   const isActiveKey = (key) => {
     if (key === 'pack-link') return pathname === `/p/${token}/pack`;
     return isMain && currentView === key;
   };
 
-  const initials = (projectName || 'P')
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase())
-    .join('');
-
   const NavItem = ({ label, viewKey, icon }) => {
     const active = isActiveKey(viewKey);
     return (
       <button
         onClick={() => go(viewKey)}
+        title={collapsed ? label : undefined}
         style={{
           display: 'flex', alignItems: 'center', gap: 12,
-          width: '100%', textAlign: 'left',
-          padding: '7px 14px', fontSize: 13,
+          width: collapsed ? 36 : '100%', height: 36,
+          textAlign: 'left',
+          padding: collapsed ? 0 : '0 14px',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          fontSize: 13,
           fontWeight: active ? 600 : 400,
           color: active ? '#111827' : '#6b7280',
           background: active ? '#f3f4f6' : 'transparent',
@@ -134,7 +144,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
           borderRadius: 8,
           cursor: 'pointer', fontFamily: 'inherit',
           transition: 'all 0.12s',
-          margin: '1px 8px',
+          margin: collapsed ? '1px auto' : '1px 8px',
         }}
         onMouseEnter={e => {
           if (!active) {
@@ -152,7 +162,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
         <span style={{ color: active ? '#374151' : '#9ca3af', display: 'flex', flexShrink: 0 }}>
           {icon}
         </span>
-        {label}
+        {!collapsed && label}
       </button>
     );
   };
@@ -161,26 +171,47 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
     <div style={{
       width: W, display: 'flex', flexDirection: 'column', height: '100%',
       background: 'white', borderRight: '1px solid #f0f0f0', overflowX: 'hidden',
+      transition: 'width 0.15s ease',
     }}>
 
       {/* Project identity */}
       <div style={{
-        padding: '12px 16px 10px',
+        padding: collapsed ? '12px 8px 10px' : '12px 16px 10px',
         borderBottom: '1px solid #f0f0f0',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 8, minHeight: 44,
       }}>
-        <div style={{
-          fontSize: 14, fontWeight: 700, color: '#111827',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {projectName || 'Your project'}
-        </div>
-        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
-          FY{currentFY()} · R&D claim
-        </div>
+        {!collapsed && (
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontSize: 14, fontWeight: 700, color: '#111827',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {projectName || 'Your project'}
+            </div>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
+              FY{currentFY()} · R&D claim
+            </div>
+          </div>
+        )}
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          style={{
+            border: 'none', background: 'none', cursor: 'pointer',
+            color: '#9ca3af', display: 'flex', padding: 4, borderRadius: 4,
+            flexShrink: 0,
+            margin: collapsed ? '0 auto' : 0,
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = '#374151'}
+          onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+        >
+          {collapsed ? NAV_ICONS.expand : NAV_ICONS.collapse}
+        </button>
       </div>
 
-      {/* Progress */}
-      {total > 0 && (
+      {/* Progress — hidden when collapsed */}
+      {!collapsed && total > 0 && (
         <div style={{
           padding: '8px 16px',
           borderBottom: '1px solid #f0f0f0',
@@ -217,7 +248,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
         <NavItem label="Costs"            viewKey="costs"      icon={NAV_ICONS.costs} />
         <NavItem label="Claim Pack"       viewKey="pack-link"  icon={NAV_ICONS.pack} />
 
-        <div style={{ margin: '6px 14px', borderTop: '1px solid #f0f0f0' }} />
+        <div style={{ margin: collapsed ? '6px 8px' : '6px 14px', borderTop: '1px solid #f0f0f0' }} />
 
         <NavItem label="Evidence"        viewKey="timeline"   icon={NAV_ICONS.timeline} />
         <NavItem label="Project Team"    viewKey="team"       icon={NAV_ICONS.team} />
@@ -235,7 +266,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
           onClick={() => setMobileOpen(o => !o)}
           style={{
             position: 'fixed', top: 64,
-            left: mobileOpen ? W + 8 : 8,
+            left: mobileOpen ? W_EXPANDED + 8 : 8,
             zIndex: 40, width: 32, height: 32, borderRadius: '50%',
             border: '1px solid #e5e5e5', backgroundColor: 'white',
             cursor: 'pointer', display: 'flex', alignItems: 'center',
@@ -249,7 +280,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
           <>
             <aside style={{
               position: 'fixed', top: 56, left: 0, zIndex: 35,
-              width: W, height: 'calc(100vh - 56px)',
+              width: W_EXPANDED, height: 'calc(100vh - 56px)',
               background: 'white',
               overflowY: 'auto',
             }}>
@@ -278,6 +309,7 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       position: 'sticky', top: 56,
       overflowY: 'auto', overflowX: 'hidden',
       display: 'flex', flexDirection: 'column',
+      transition: 'width 0.15s ease, min-width 0.15s ease',
     }}>
       {sidebar}
     </aside>
