@@ -702,6 +702,117 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
   );
 }
 
+/* ── Add Evidence Modal ── */
+function AddEvidenceModal({ token, onCreated, onClose }) {
+  const [content, setContent] = useState('');
+  const [file, setFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!content.trim() && !file) return;
+    setSaving(true); setError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = { Authorization: `Bearer ${session.access_token}` };
+
+      if (file) {
+        // File upload
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(`/api/evidence/${token}/upload`, { method: 'POST', headers, body: formData });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Upload failed'); }
+      }
+
+      if (content.trim()) {
+        // Text note
+        const res = await fetch(`/api/evidence/${token}/add`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: content.trim() }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed to add'); }
+        const data = await res.json();
+        // Trigger AI classification (fire-and-forget)
+        fetch(`/api/classify?id=${data.id}`, { method: 'POST', headers }).catch(() => {});
+        fetch(`/api/evidence/classify-activity-type?id=${data.id}`, { method: 'POST', headers }).catch(() => {});
+      }
+
+      onCreated();
+      onClose();
+    } catch (err) { setError(err.message); }
+    setSaving(false);
+  };
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+
+  const handleFileChange = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > MAX_FILE_SIZE) { setError('File must be under 10MB'); return; }
+    if (!ALLOWED_TYPES.includes(f.type)) { setError('Unsupported file type'); return; }
+    setFile(f);
+    setError('');
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
+      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: 12, width: 480, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>Add evidence</h3>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, color: '#9ca3af', cursor: 'pointer', padding: '0 4px' }}>×</button>
+        </div>
+        <div style={{ padding: 20 }}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Note</label>
+          <textarea
+            value={content} onChange={e => setContent(e.target.value)}
+            placeholder="What did you work on? Describe your experiment, observation, or finding..."
+            rows={4} autoFocus
+            style={{ width: '100%', padding: '10px 12px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 8, outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.5 }}
+            onFocus={e => e.target.style.borderColor = NAVY} onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+          />
+
+          <div style={{ marginTop: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+              Attach file <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span>
+            </label>
+            {file ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+                <span style={{ fontSize: 13, color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                <span style={{ fontSize: 11, color: '#9ca3af' }}>{(file.size / 1024).toFixed(0)} KB</span>
+                <button onClick={() => setFile(null)} style={{ border: 'none', background: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 14 }}>×</button>
+              </div>
+            ) : (
+              <label style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '16px', border: '1px dashed #d1d5db', borderRadius: 8,
+                cursor: 'pointer', color: '#9ca3af', fontSize: 13,
+              }}>
+                <input type="file" onChange={handleFileChange} style={{ display: 'none' }} accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.csv,.txt,.xls,.xlsx" />
+                Drop a file or click to upload
+              </label>
+            )}
+            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>PNG, JPEG, PDF, CSV, TXT, XLS — max 10MB</div>
+          </div>
+
+          {error && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{error}</div>}
+
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 12, padding: '8px 10px', backgroundColor: '#f9fafb', borderRadius: 6 }}>
+            AI will automatically classify this evidence into the R&D systematic progression and suggest which activity it belongs to.
+          </div>
+        </div>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose} style={{ padding: '7px 14px', fontSize: 13, fontWeight: 500, color: '#6b7280', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={saving || (!content.trim() && !file)} style={{ padding: '7px 16px', fontSize: 13, fontWeight: 600, color: 'white', backgroundColor: saving || (!content.trim() && !file) ? '#a5b4fc' : NAVY, border: 'none', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+            {saving ? 'Adding...' : 'Add evidence'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    Main WorkspaceView
    ═══════════════════════════════════════════════════════════ */
@@ -725,8 +836,11 @@ export default function WorkspaceView({
   const [showAllEvidence, setShowAllEvidence] = useState(false);
   const [activityEvidence, setActivityEvidence] = useState({});
   const [actCtxMenu, setActCtxMenu] = useState(null); // { x, y, activity }
+  const [showAddMenu, setShowAddMenu] = useState(false); // false | { x, y }
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const activitiesBtnRef = useRef(null);
   const moreBtnRef = useRef(null);
+  const addBtnRef = useRef(null);
 
   const toggleDropdown = (which) => {
     if (openDropdown === which) { setOpenDropdown(null); return; }
@@ -856,9 +970,13 @@ export default function WorkspaceView({
                 </span>
               )}
             </h2>
-            {!isActivityTab && (
+            <div style={{ position: 'relative' }}>
               <button
-                onClick={() => setShowCreateModal(true)}
+                ref={addBtnRef}
+                onClick={() => {
+                  const rect = addBtnRef.current?.getBoundingClientRect();
+                  setShowAddMenu(prev => prev ? false : { top: rect?.bottom + 4, left: rect?.left });
+                }}
                 style={{
                   padding: '4px 10px', fontSize: 12, fontWeight: 500,
                   color: '#374151', backgroundColor: 'white',
@@ -867,11 +985,11 @@ export default function WorkspaceView({
                   display: 'inline-flex', alignItems: 'center', gap: 4,
                 }}
               >
-                <span style={{ fontSize: 13, lineHeight: 1 }}>+</span> New
+                <span style={{ fontSize: 13, lineHeight: 1 }}>+</span> Add
               </button>
-            )}
+            </div>
             {isActivityTab && (
-              <span style={{ fontSize: 12, color: '#9ca3af' }}>{filteredEvidence.length} items</span>
+              <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 'auto' }}>{filteredEvidence.length} items</span>
             )}
           </div>
           {isActivityTab && (
@@ -1072,6 +1190,19 @@ export default function WorkspaceView({
             }}
           >
             More <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
+          </button>
+
+          {/* Export PDF */}
+          <button
+            onClick={() => window.print()}
+            style={{
+              padding: '10px 14px', fontSize: 13, fontWeight: 500, color: '#9ca3af',
+              backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
+              marginLeft: 'auto',
+            }}
+          >
+            Export PDF
           </button>
         </div>
 
@@ -1274,6 +1405,44 @@ export default function WorkspaceView({
             </button>
           </div>
         </>
+      )}
+
+      {/* Add menu dropdown */}
+      {showAddMenu && (
+        <>
+          <div onClick={() => setShowAddMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+          <div style={{
+            position: 'fixed', top: showAddMenu.top, left: showAddMenu.left, zIndex: 70,
+            backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 160,
+          }}>
+            <button
+              onClick={() => { setShowCreateModal(true); setShowAddMenu(false); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: '#374151', backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+            >
+              Activity
+            </button>
+            <button
+              onClick={() => { setShowEvidenceModal(true); setShowAddMenu(false); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: '#374151', backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+            >
+              Evidence
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Add evidence modal */}
+      {showEvidenceModal && (
+        <AddEvidenceModal
+          token={token}
+          onCreated={() => { window.location.reload(); }}
+          onClose={() => setShowEvidenceModal(false)}
+        />
       )}
 
       <style>{`
