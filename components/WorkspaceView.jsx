@@ -720,24 +720,27 @@ export default function WorkspaceView({
   const [saveStatus, setSaveStatus] = useState('');
   const [selectedEvidenceId, setSelectedEvidenceId] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showMore, setShowMore] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null); // null | 'activities' | 'more'
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [showAllEvidence, setShowAllEvidence] = useState(false);
   const [activityEvidence, setActivityEvidence] = useState({});
   const [actCtxMenu, setActCtxMenu] = useState(null); // { x, y, activity }
+  const activitiesBtnRef = useRef(null);
+  const moreBtnRef = useRef(null);
 
-  // Close dropdowns on any click outside
-  useEffect(() => {
-    if (!showMore) return;
-    const handler = (e) => {
-      if (e.target.closest('[data-dropdown]')) return;
-      setShowMore(false);
-    };
-    // Use setTimeout so this doesn't fire on the same click that opened the dropdown
-    const id = setTimeout(() => {
-      document.addEventListener('mousedown', handler);
-    }, 10);
-    return () => { clearTimeout(id); document.removeEventListener('mousedown', handler); };
-  }, [showMore]);
+  const toggleDropdown = (which) => {
+    if (openDropdown === which) { setOpenDropdown(null); return; }
+    const ref = which === 'activities' ? activitiesBtnRef : moreBtnRef;
+    const rect = ref.current?.getBoundingClientRect();
+    if (rect) {
+      setDropdownPos({
+        top: rect.bottom + 4,
+        left: which === 'more' ? undefined : rect.left,
+        right: which === 'more' ? (window.innerWidth - rect.right) : undefined,
+      });
+    }
+    setOpenDropdown(which);
+  };
 
   // Fetch sections
   const fetchSections = useCallback(async () => {
@@ -1020,36 +1023,77 @@ export default function WorkspaceView({
           </button>
 
           {/* Activity selector dropdown */}
-          <div data-dropdown style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            ref={activitiesBtnRef}
+            onClick={() => toggleDropdown('activities')}
+            style={{
+              padding: '10px 14px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
+              fontWeight: isActivityTab ? 600 : 400,
+              color: isActivityTab ? '#111827' : '#9ca3af',
+              backgroundColor: 'transparent', border: 'none',
+              borderBottom: `2px solid ${isActivityTab ? '#111827' : 'transparent'}`,
+              cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            {isActivityTab
+              ? `Activity ${activities.indexOf(activeActivity) + 1}`
+              : 'Activities'}
+            <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
+          </button>
+
+          {/* Financials + R&D Boundary */}
+          {SUFFIX_TABS.map(tab => (
             <button
-              onClick={() => setShowMore(prev => prev === 'activities' ? false : 'activities')}
+              key={tab.key}
+              onClick={() => { setActiveTab(tab.key); setShowAllEvidence(false); }}
               style={{
-                padding: '10px 14px', fontSize: 13,
-                fontWeight: isActivityTab ? 600 : 400,
-                color: isActivityTab ? '#111827' : '#9ca3af',
+                padding: '10px 12px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
+                fontWeight: activeTab === tab.key ? 600 : 400,
+                color: activeTab === tab.key ? '#111827' : '#9ca3af',
                 backgroundColor: 'transparent', border: 'none',
-                borderBottom: `2px solid ${isActivityTab ? '#111827' : 'transparent'}`,
+                borderBottom: `2px solid ${activeTab === tab.key ? '#111827' : 'transparent'}`,
                 cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
-                display: 'flex', alignItems: 'center', gap: 4,
               }}
             >
-              {isActivityTab
-                ? `Activity ${activities.indexOf(activeActivity) + 1}`
-                : 'Activities'}
-              <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
+              {tab.label}
             </button>
-            {showMore === 'activities' && (
-              <div data-dropdown onClick={e => e.stopPropagation()} style={{
-                position: 'absolute', top: '100%', left: 0, zIndex: 50,
+          ))}
+
+          {/* More dropdown */}
+          <button
+            ref={moreBtnRef}
+            onClick={() => toggleDropdown('more')}
+            style={{
+              padding: '10px 14px', fontSize: 13, fontWeight: 400, color: '#9ca3af',
+              backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4,
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            More <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
+          </button>
+        </div>
+
+        {/* Dropdown menus — rendered outside tab bar to avoid overflow clipping */}
+        {openDropdown && (
+          <>
+            {/* Backdrop to close */}
+            <div onClick={() => setOpenDropdown(null)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
+
+            {/* Activities dropdown */}
+            {openDropdown === 'activities' && (
+              <div style={{
+                position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, zIndex: 100,
                 backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
-                width: 280, maxWidth: 'calc(100vw - 60px)',
+                width: 280, maxWidth: 'calc(100vw - 40px)',
                 maxHeight: 360, overflowY: 'auto',
               }}>
                 {activities.map((act, i) => (
                   <button
                     key={act.id}
-                    onClick={() => { setActiveTab(`activity_${act.id}`); setShowMore(false); setShowAllEvidence(false); }}
+                    onClick={() => { setActiveTab(`activity_${act.id}`); setOpenDropdown(null); setShowAllEvidence(false); }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left',
                       padding: '10px 16px', fontSize: 13,
@@ -1071,7 +1115,7 @@ export default function WorkspaceView({
                 ))}
                 <div style={{ borderTop: '1px solid #f0f0f0' }}>
                   <button
-                    onClick={() => { setShowCreateModal(true); setShowMore(false); }}
+                    onClick={() => { setShowCreateModal(true); setOpenDropdown(null); }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left',
                       padding: '10px 16px', fontSize: 13, color: NAVY, fontWeight: 600,
@@ -1085,48 +1129,18 @@ export default function WorkspaceView({
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Financials + R&D Boundary */}
-          {SUFFIX_TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => { setActiveTab(tab.key); setShowAllEvidence(false); }}
-              style={{
-                padding: '10px 12px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
-                fontWeight: activeTab === tab.key ? 600 : 400,
-                color: activeTab === tab.key ? '#111827' : '#9ca3af',
-                backgroundColor: 'transparent', border: 'none',
-                borderBottom: `2px solid ${activeTab === tab.key ? '#111827' : 'transparent'}`,
-                cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-
-          {/* More dropdown */}
-          <div data-dropdown style={{ position: 'relative', flexShrink: 0 }}>
-            <button
-              onClick={() => setShowMore(prev => prev === 'more' ? false : 'more')}
-              style={{
-                padding: '10px 14px', fontSize: 13, fontWeight: 400, color: '#9ca3af',
-                backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
-                fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4,
-              }}
-            >
-              More <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
-            </button>
-            {showMore === 'more' && (
-              <div data-dropdown onClick={e => e.stopPropagation()} style={{
-                position: 'absolute', top: '100%', right: 0, zIndex: 50,
+            {/* More dropdown */}
+            {openDropdown === 'more' && (
+              <div style={{
+                position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 100,
                 backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 200,
               }}>
                 {MORE_TABS.map(tab => (
                   <button
                     key={tab.key}
-                    onClick={() => { setActiveTab(tab.key); setShowMore(false); }}
+                    onClick={() => { setActiveTab(tab.key); setOpenDropdown(null); }}
                     style={{
                       display: 'block', width: '100%', textAlign: 'left',
                       padding: '10px 16px', fontSize: 13,
@@ -1143,8 +1157,8 @@ export default function WorkspaceView({
                 ))}
               </div>
             )}
-          </div>
-        </div>
+          </>
+        )}
 
         {/* Content area */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
