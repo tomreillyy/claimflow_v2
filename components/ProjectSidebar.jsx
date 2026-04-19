@@ -250,12 +250,9 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
         <NavItem label="Workspace"       viewKey="workspace"  icon={NAV_ICONS.workspace} />
         <NavItem label="Project Details"  viewKey="details"    icon={NAV_ICONS.details} />
         <NavItem label="Activities"       viewKey="activities" icon={NAV_ICONS.activities} />
-        <NavItem label="Costs"            viewKey="costs"      icon={NAV_ICONS.costs} />
-        <NavItem label="Claim Pack"       viewKey="pack-link"  icon={NAV_ICONS.pack} />
 
         <div style={{ margin: collapsed ? '6px 8px' : '6px 14px', borderTop: '1px solid #f0f0f0' }} />
 
-        <NavItem label="Evidence"        viewKey="timeline"   icon={NAV_ICONS.timeline} />
         <NavItem label="Documents"       viewKey="knowledge"  icon={NAV_ICONS.knowledge} />
         <NavItem label="Integrations"    viewKey="records"    icon={NAV_ICONS.records} />
 

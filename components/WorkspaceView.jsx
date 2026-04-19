@@ -157,17 +157,94 @@ function InlineEditor({ sectionKey, projectId, initialContent, placeholder, onSa
   );
 }
 
+const STEPS = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion', 'Unknown'];
+const ACT_TYPES = [{ value: 'core', label: 'Core R&D' }, { value: 'supporting', label: 'Supporting R&D' }];
+
 /* ── Evidence row (compact) with right-click context menu ── */
-function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onClick, contextActions }) {
+function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onClick, contextActions, token, onEvidenceChange }) {
   const [ctxMenu, setCtxMenu] = useState(null);
+  const [subMenu, setSubMenu] = useState(null); // 'step' | 'actType' | 'reassign' | null
+  const [people, setPeople] = useState([]);
+  const [newAuthor, setNewAuthor] = useState('');
+  const [reassigning, setReassigning] = useState(false);
   const step = evidenceSteps?.[ev.id]?.step || ev.systematic_step_primary;
   const actType = evidenceActivityTypes?.[ev.id]?.activity_type || ev.activity_type || 'core';
 
+  const closeAll = () => { setCtxMenu(null); setSubMenu(null); setNewAuthor(''); };
+
   const handleContextMenu = (e) => {
-    if (!contextActions || contextActions.length === 0) return;
     e.preventDefault();
     setCtxMenu({ x: e.clientX, y: e.clientY });
+    setSubMenu(null);
   };
+
+  // Fetch people when reassign sub-menu opens
+  useEffect(() => {
+    if (subMenu === 'reassign' && people.length === 0 && token) {
+      fetch(`/api/projects/${token}/people`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.people) setPeople(d.people); })
+        .catch(() => {});
+    }
+  }, [subMenu, token, people.length]);
+
+  const handleStepSelect = async (newStep) => {
+    if (onEvidenceChange) onEvidenceChange(ev.id, 'step', newStep);
+    closeAll();
+    try {
+      await fetch(`/api/evidence/${token}/set-step`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evidence_id: ev.id, step: newStep }),
+      });
+    } catch (err) { console.error('Failed to update step:', err); }
+  };
+
+  const handleActivityTypeSelect = async (newType) => {
+    if (onEvidenceChange) onEvidenceChange(ev.id, 'activityType', newType);
+    closeAll();
+    try {
+      await fetch(`/api/evidence/${token}/set-activity-type`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evidence_id: ev.id, activity_type: newType }),
+      });
+    } catch (err) { console.error('Failed to update activity type:', err); }
+  };
+
+  const handleReassign = async () => {
+    if (!newAuthor) return;
+    setReassigning(true);
+    try {
+      const res = await fetch(`/api/evidence/${token}/reassign`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evidence_id: ev.id, new_author_email: newAuthor }),
+      });
+      if (!res.ok) throw new Error('Failed to reassign');
+      if (onEvidenceChange) onEvidenceChange(ev.id, 'reassign', newAuthor);
+      closeAll();
+    } catch (err) {
+      console.error('Failed to reassign:', err);
+      alert('Failed to reassign evidence');
+    } finally { setReassigning(false); }
+  };
+
+  const handleDelete = async () => {
+    if (onEvidenceChange) onEvidenceChange(ev.id, 'delete');
+    closeAll();
+    try {
+      await fetch(`/api/evidence/${token}/delete`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ evidence_id: ev.id }),
+      });
+    } catch (err) { console.error('Failed to delete:', err); }
+  };
+
+  const menuBtnStyle = (danger) => ({
+    display: 'block', width: '100%', textAlign: 'left',
+    padding: '8px 14px', fontSize: 13,
+    color: danger ? '#dc2626' : '#374151',
+    fontWeight: 400, backgroundColor: 'white',
+    border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+  });
 
   return (
     <>
@@ -191,34 +268,165 @@ function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onCli
         </div>
         {ev.content && (<p style={{ fontSize: 13, color: '#1a1a1a', lineHeight: 1.5, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ev.content}</p>)}
         {ev.author_email && (<div style={{ fontSize: 11, color: '#c0c5ce', marginTop: 4 }}>{ev.author_email}</div>)}
+        {/* GitHub metadata */}
+        {ev.source === 'github' && ev.meta && (
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 11 }}>
+            <a href={ev.meta.commit_url} target="_blank" rel="noopener noreferrer" style={{ color: '#6b7280', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, fontFamily: 'ui-monospace, Monaco, monospace' }}>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+              {ev.meta.sha?.substring(0, 7)}
+            </a>
+            {ev.meta.files_changed > 0 && <span style={{ color: '#9ca3af' }}>{ev.meta.files_changed} file{ev.meta.files_changed !== 1 ? 's' : ''}</span>}
+            {(ev.meta.additions > 0 || ev.meta.deletions > 0) && (
+              <span>
+                {ev.meta.additions > 0 && <span style={{ color: '#1a7f37' }}>+{ev.meta.additions}</span>}
+                {ev.meta.additions > 0 && ev.meta.deletions > 0 && ' '}
+                {ev.meta.deletions > 0 && <span style={{ color: '#cf222e' }}>-{ev.meta.deletions}</span>}
+              </span>
+            )}
+          </div>
+        )}
+        {/* Jira metadata */}
+        {ev.meta?.type === 'jira' && (
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 11 }}>
+            <a href={ev.meta.jira_url} target="_blank" rel="noopener noreferrer" style={{ color: '#6b7280', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#2684FF"><path d="M11.53 2c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35V2.84A.84.84 0 0021.16 2H11.53zM6.77 6.8a4.362 4.362 0 004.34 4.34h1.8v1.72a4.362 4.362 0 004.34 4.34V7.63a.84.84 0 00-.83-.83H6.77zM2 11.6a4.362 4.362 0 004.35 4.36h1.78v1.7C8.13 20.06 10.1 22 12.48 22V12.44a.84.84 0 00-.84-.84H2z"/></svg>
+              {ev.meta.jira_key}
+            </a>
+            {ev.meta.issue_type && <span style={{ padding: '1px 5px', fontSize: 10, borderRadius: 3, backgroundColor: '#f3f4f6', color: '#6b7280' }}>{ev.meta.issue_type}</span>}
+            {ev.meta.status && <span style={{ padding: '1px 5px', fontSize: 10, borderRadius: 3, backgroundColor: '#dbeafe', color: '#1e40af' }}>{ev.meta.status}</span>}
+            {ev.meta.story_points && <span style={{ color: '#9ca3af' }}>{ev.meta.story_points} pts</span>}
+          </div>
+        )}
       </div>
 
       {/* Right-click context menu */}
       {ctxMenu && (
         <>
-          <div onClick={() => setCtxMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+          <div onClick={closeAll} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
           <div style={{
             position: 'fixed', top: ctxMenu.y, left: ctxMenu.x, zIndex: 70,
             backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 160,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'visible', minWidth: 180,
           }}>
+            {/* Link/unlink actions from parent */}
             {contextActions.map((action, i) => (
               <button
                 key={i}
-                onClick={() => { action.action(); setCtxMenu(null); }}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  padding: '8px 14px', fontSize: 13,
-                  color: action.danger ? '#dc2626' : '#374151',
-                  fontWeight: 400, backgroundColor: 'white',
-                  border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                }}
+                onClick={() => { action.action(); closeAll(); }}
+                style={menuBtnStyle(action.danger)}
                 onMouseEnter={e => e.currentTarget.style.backgroundColor = action.danger ? '#fef2f2' : '#f9fafb'}
                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
               >
                 {action.label}
               </button>
             ))}
+            {contextActions.length > 0 && <div style={{ borderTop: '1px solid #f0f0f0' }} />}
+
+            {/* Re-classify step */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setSubMenu(subMenu === 'step' ? null : 'step')}
+                style={{ ...menuBtnStyle(false), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+              >
+                Re-classify step <span style={{ fontSize: 10, color: '#9ca3af' }}>▸</span>
+              </button>
+              {subMenu === 'step' && (
+                <div style={{
+                  position: 'absolute', left: '100%', top: 0, zIndex: 80,
+                  backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 150,
+                }}>
+                  {STEPS.map(s => (
+                    <button key={s} onClick={() => handleStepSelect(s)}
+                      style={{ ...menuBtnStyle(false), fontWeight: s === step ? 600 : 400 }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                    >{s}{s === step ? ' ✓' : ''}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Re-classify activity type */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setSubMenu(subMenu === 'actType' ? null : 'actType')}
+                style={{ ...menuBtnStyle(false), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+              >
+                Change activity type <span style={{ fontSize: 10, color: '#9ca3af' }}>▸</span>
+              </button>
+              {subMenu === 'actType' && (
+                <div style={{
+                  position: 'absolute', left: '100%', top: 0, zIndex: 80,
+                  backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 150,
+                }}>
+                  {ACT_TYPES.map(t => (
+                    <button key={t.value} onClick={() => handleActivityTypeSelect(t.value)}
+                      style={{ ...menuBtnStyle(false), fontWeight: t.value === actType ? 600 : 400 }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                    >{t.label}{t.value === actType ? ' ✓' : ''}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Reassign person */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setSubMenu(subMenu === 'reassign' ? null : 'reassign')}
+                style={{ ...menuBtnStyle(false), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+              >
+                Reassign person <span style={{ fontSize: 10, color: '#9ca3af' }}>▸</span>
+              </button>
+              {subMenu === 'reassign' && (
+                <div style={{
+                  position: 'absolute', left: '100%', top: 0, zIndex: 80,
+                  backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 200, padding: 10,
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Reassign to:</div>
+                  <select
+                    value={newAuthor}
+                    onChange={e => setNewAuthor(e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', fontSize: 12, borderRadius: 5, border: '1px solid #d1d5db', marginBottom: 8, fontFamily: 'inherit' }}
+                  >
+                    <option value="">Select person...</option>
+                    {people.map(p => (
+                      <option key={p.email} value={p.email}>{p.name || p.email}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleReassign}
+                    disabled={!newAuthor || reassigning}
+                    style={{
+                      width: '100%', padding: '6px', fontSize: 12, fontWeight: 600,
+                      backgroundColor: newAuthor ? NAVY : '#e5e7eb', color: newAuthor ? 'white' : '#9ca3af',
+                      border: 'none', borderRadius: 5, cursor: newAuthor ? 'pointer' : 'default', fontFamily: 'inherit',
+                    }}
+                  >{reassigning ? 'Reassigning...' : 'Reassign'}</button>
+                </div>
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid #f0f0f0' }} />
+
+            {/* Delete */}
+            <button
+              onClick={handleDelete}
+              style={menuBtnStyle(true)}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+            >
+              Delete evidence
+            </button>
           </div>
         </>
       )}
@@ -1031,6 +1239,14 @@ export default function WorkspaceView({
     } catch (err) { console.error('Unlink failed:', err); }
   };
 
+  const handleEvidenceChange = useCallback((evidenceId, changeType, value) => {
+    if (changeType === 'delete') {
+      window.location.reload();
+    } else if (changeType === 'step' || changeType === 'activityType' || changeType === 'reassign') {
+      window.location.reload();
+    }
+  }, []);
+
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 160px)', color: '#9ca3af', fontSize: 13 }}>
@@ -1201,6 +1417,8 @@ export default function WorkspaceView({
                   selected={selectedEvidenceId === ev.id}
                   onClick={() => setSelectedEvidenceId(ev.id)}
                   contextActions={contextActions}
+                  token={token}
+                  onEvidenceChange={handleEvidenceChange}
                 />
               );
             })
@@ -1541,6 +1759,14 @@ export default function WorkspaceView({
               onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
             >
               Evidence
+            </button>
+            <button
+              onClick={() => { setShowAddMenu(false); window.location.href = `/p/${token}/upload`; }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: '#374151', backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+            >
+              Upload file
             </button>
           </div>
         </>
