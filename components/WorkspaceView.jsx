@@ -7,6 +7,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { marked } from 'marked';
 import FinancialsPage from './financials/FinancialsPage';
+import FinancialsPrintSection from './financials/FinancialsPrintSection';
 
 const NAVY = '#021048';
 
@@ -1905,13 +1906,16 @@ export default function WorkspaceView({
           </div>
         ))}
 
-        {/* Financials */}
+        {/* Financials narrative */}
         {sections.financials?.content && (
           <div className="print-section" style={{ pageBreakBefore: 'always' }}>
             <h2 className="print-section-title">Financials & Notional Deductions</h2>
             <div dangerouslySetInnerHTML={{ __html: sections.financials.content }} />
           </div>
         )}
+
+        {/* Financials figures — R&D Tax Incentive Schedule + detail tables */}
+        <FinancialsPrintSection token={token} />
 
         {/* R&D Boundary */}
         {sections.rd_boundary?.content && (

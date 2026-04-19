@@ -1,13 +1,36 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { computeDerived } from '@/lib/financialsCompute';
 
 const NAVY = '#021048';
 
 /**
- * Renders the full financials schedule + detail tables for the Claim Pack print layout.
- * Accepts pre-fetched data as a prop (server-side fetched in pack/page.jsx).
+ * Renders the full financials schedule + detail tables for print layout.
+ * Two modes:
+ *   - Pass `data` prop directly (server-side fetched, used in Claim Pack page)
+ *   - Pass `token` prop to fetch client-side (used in Workspace page)
  */
-export default function FinancialsPrintSection({ data }) {
-  if (!data) return null;
+export default function FinancialsPrintSection({ data: dataProp, token }) {
+  const [fetched, setFetched] = useState(null);
+  const [loading, setLoading] = useState(!dataProp && !!token);
+
+  useEffect(() => {
+    if (dataProp || !token) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+      fetch(`/api/projects/${token}/financials`, { headers })
+        .then(res => res.ok ? res.json() : null)
+        .then(d => { if (d) setFetched(d); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    });
+  }, [token, dataProp]);
+
+  const data = dataProp || fetched;
+  if (loading || !data) return null;
 
   const state = {
     turnover: data.turnover,
