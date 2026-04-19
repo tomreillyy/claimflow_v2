@@ -479,13 +479,20 @@ const SIGN_OFF_ROLES = [
 
 function AttestationsPanel({ projectId, sections, token, onSaved }) {
   const sectionKey = 'attestations';
-  const [signatures, setSignatures] = useState(() => {
+  const parseSignatures = (s) => {
     try {
-      const existing = sections[sectionKey]?.content;
-      if (existing && existing.startsWith('{')) return JSON.parse(existing);
+      const c = s?.[sectionKey]?.content;
+      if (c && c.startsWith('{')) return JSON.parse(c);
     } catch {}
     return {};
-  });
+  };
+  const [signatures, setSignatures] = useState(() => parseSignatures(sections));
+
+  // Re-sync from sections prop when it changes (e.g. after fetchSections)
+  useEffect(() => {
+    const parsed = parseSignatures(sections);
+    if (Object.keys(parsed).length > 0) setSignatures(parsed);
+  }, [sections]);
   const [saving, setSaving] = useState(false);
   const sigRefs = useRef({});
 
@@ -496,9 +503,10 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
     const updated = {
       ...signatures,
       [roleKey]: {
+        ...signatures[roleKey],
         signature: dataUrl,
         signedAt: new Date().toISOString(),
-        signedBy: '', // will be filled by name input
+        signedBy: signatures[roleKey]?.signedBy || '',
       },
     };
     setSignatures(updated);
@@ -514,26 +522,31 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
     saveSignatures(updated);
   };
 
+  const nameTimerRef = useRef(null);
   const handleNameChange = (roleKey, name) => {
     const updated = {
       ...signatures,
       [roleKey]: { ...signatures[roleKey], signedBy: name },
     };
     setSignatures(updated);
-    // Debounce save
-    clearTimeout(handleNameChange._timer);
-    handleNameChange._timer = setTimeout(() => saveSignatures(updated), 1000);
+    if (nameTimerRef.current) clearTimeout(nameTimerRef.current);
+    nameTimerRef.current = setTimeout(() => saveSignatures(updated), 1000);
   };
 
   const saveSignatures = async (data) => {
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
+      if (!session) throw new Error('Not authenticated');
+      const res = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ content: JSON.stringify(data) }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Save failed: ${res.status}`);
+      }
       onSaved?.();
     } catch (err) { console.error('Save signatures failed:', err); }
     setSaving(false);
@@ -1537,6 +1550,48 @@ export default function WorkspaceView({
             <div dangerouslySetInnerHTML={{ __html: sections.rd_boundary.content }} />
           </div>
         )}
+
+        {/* Attestations & Sign-offs */}
+        {(() => {
+          let sigs = {};
+          try {
+            const c = sections.attestations?.content;
+            if (c && c.startsWith('{')) sigs = JSON.parse(c);
+          } catch {}
+          const hasSigs = SIGN_OFF_ROLES.some(r => sigs[r.key]?.signature);
+          if (!hasSigs) return null;
+          return (
+            <div className="print-section" style={{ pageBreakBefore: 'always' }}>
+              <h2 className="print-section-title">Attestations & Sign-offs</h2>
+              {SIGN_OFF_ROLES.map(role => {
+                const sig = sigs[role.key];
+                if (!sig?.signature) return (
+                  <div key={role.key} style={{ marginBottom: 24 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, margin: '0 0 4px' }}>{role.title}</h3>
+                    <p style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>Not yet signed</p>
+                  </div>
+                );
+                return (
+                  <div key={role.key} style={{ marginBottom: 28 }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, margin: '0 0 6px' }}>{role.title}</h3>
+                    <p style={{ fontSize: 11, color: '#6b7280', margin: '0 0 10px', lineHeight: 1.5 }}>{role.description}</p>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24 }}>
+                      <div>
+                        <img src={sig.signature} alt="Signature" style={{ maxHeight: 60, maxWidth: 200 }} />
+                        <div style={{ borderTop: '1px solid #111', width: 200, paddingTop: 4, fontSize: 11 }}>
+                          {sig.signedBy || 'Name'}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>
+                        Date: {new Date(sig.signedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Footer */}
         <div style={{ marginTop: 40, paddingTop: 14, borderTop: '1px solid #ddd', fontSize: 10, color: '#999', textAlign: 'center' }}>
