@@ -513,6 +513,8 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
   const [ledger, setLedger] = useState([]);
   const [hasAttestations, setHasAttestations] = useState(false);
   const [costsLoading, setCostsLoading] = useState(false);
+  const [costSummary, setCostSummary] = useState(null);
+  const [taxBenefit, setTaxBenefit] = useState(null);
 
   // GitHub integration state
   const [githubRepo, setGithubRepo] = useState(null);
@@ -687,6 +689,8 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
         setLedger(costsData.ledger || []);
         setAttestations(costsData.attestations || []);
         setHasAttestations(costsData.hasAttestations || false);
+        if (costsData.costSummary) setCostSummary(costsData.costSummary);
+        if (costsData.taxBenefit) setTaxBenefit(costsData.taxBenefit);
       }
     } catch (err) {
       console.error('Failed to fetch costs data:', err);
@@ -1295,31 +1299,13 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
             project={project}
             items={items?.filter(ev => !deletedIds.has(ev.id))}
             token={token}
-            stepCounts={stepCounts}
-            coveredSteps={coveredSteps}
-            missingSteps={missingSteps}
-            weeklyEvidence={weeklyEvidence}
-            totalEvidence={totalEvidence}
-            githubConnected={!!githubRepo}
-            ledger={ledger}
             coreActivities={coreActivities}
-            onConnectGitHub={() => {
+            costSummary={costSummary}
+            taxBenefit={taxBenefit}
+            ledger={ledger}
+            onNavigate={(view) => {
               const params = new URLSearchParams(searchParams.toString());
-              params.set('view', 'records');
-              router.push(`/p/${token}?${params.toString()}`, { scroll: false });
-            }}
-            onAddNote={() => {
-              const params = new URLSearchParams(searchParams.toString());
-              params.set('view', 'timeline');
-              router.push(`/p/${token}?${params.toString()}`, { scroll: false });
-              setTimeout(() => {
-                const addNoteBtn = document.querySelector('button[data-action="add-note"]');
-                if (addNoteBtn) addNoteBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 300);
-            }}
-            onNavigateDetails={() => {
-              const params = new URLSearchParams(searchParams.toString());
-              params.set('view', 'details');
+              params.set('view', view);
               router.push(`/p/${token}?${params.toString()}`, { scroll: false });
             }}
           />
