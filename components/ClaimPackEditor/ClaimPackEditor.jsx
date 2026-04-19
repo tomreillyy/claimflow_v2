@@ -58,7 +58,8 @@ export default function ClaimPackEditor({
   activities,
   evidence,
   costLedger,
-  initialSections
+  initialSections,
+  financialsData,
 }) {
   const { consultantBranding } = useAuth();
   const [sections] = useState(initialSections || {});
@@ -596,7 +597,7 @@ export default function ClaimPackEditor({
         ))}
 
         {/* Financial figures from the Financials workspace */}
-        <FinancialsPrintSection token={project.project_token} />
+        <FinancialsPrintSection data={financialsData} />
 
         <div style={{
           marginTop: 40,

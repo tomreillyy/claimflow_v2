@@ -1,33 +1,13 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
 import { computeDerived } from '@/lib/financialsCompute';
 
 const NAVY = '#021048';
 
 /**
  * Renders the full financials schedule + detail tables for the Claim Pack print layout.
- * Fetches data independently — no FinancialsProvider needed.
+ * Accepts pre-fetched data as a prop (server-side fetched in pack/page.jsx).
  */
-export default function FinancialsPrintSection({ token }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!token) return;
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const headers = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}` }
-        : {};
-      fetch(`/api/projects/${token}/financials`, { headers })
-        .then(res => res.ok ? res.json() : null)
-        .then(d => { if (d) setData(d); })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    });
-  }, [token]);
-
-  if (loading || !data) return null;
+export default function FinancialsPrintSection({ data }) {
+  if (!data) return null;
 
   const state = {
     turnover: data.turnover,

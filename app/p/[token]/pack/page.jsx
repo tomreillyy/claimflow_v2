@@ -117,6 +117,32 @@ export default async function PackV2Page({ params }) {
     .eq('project_id', project.id)
     .order('month', { ascending: true });
 
+  // Fetch financials data for print layout
+  const companyQuery = project.company_id
+    ? supabaseAdmin.from('companies').select('aggregated_turnover, aggregated_turnover_band').eq('id', project.company_id).single()
+    : supabaseAdmin.from('companies').select('aggregated_turnover, aggregated_turnover_band').eq('owner_id', user.id).maybeSingle();
+
+  const [companyResult, finTeamResult, finContractorsResult, finMaterialsResult, finOverheadsResult, finDepreciationResult, finAdjustmentsResult] = await Promise.all([
+    companyQuery,
+    supabaseAdmin.from('fin_team').select('*, splits:fin_activity_splits(id, activity_id, hours)').eq('project_id', project.id).order('display_order'),
+    supabaseAdmin.from('fin_contractors').select('*, activity:core_activities(id, name)').eq('project_id', project.id).order('created_at'),
+    supabaseAdmin.from('fin_materials').select('*, activity:core_activities(id, name)').eq('project_id', project.id).order('created_at'),
+    supabaseAdmin.from('fin_overheads').select('*').eq('project_id', project.id).order('created_at'),
+    supabaseAdmin.from('fin_depreciation').select('*').eq('project_id', project.id).order('created_at'),
+    supabaseAdmin.from('fin_adjustments').select('*').eq('project_id', project.id),
+  ]);
+
+  const financialsData = {
+    turnover: companyResult.data?.aggregated_turnover || null,
+    turnoverBand: companyResult.data?.aggregated_turnover_band || null,
+    team: finTeamResult.data || [],
+    contractors: finContractorsResult.data || [],
+    materials: finMaterialsResult.data || [],
+    overheads: finOverheadsResult.data || [],
+    depreciation: finDepreciationResult.data || [],
+    adjustments: finAdjustmentsResult.data || [],
+  };
+
   // Fetch claim pack sections
   const { data: sectionsArray } = await supabaseAdmin
     .from('claim_pack_sections')
@@ -168,6 +194,7 @@ export default async function PackV2Page({ params }) {
             evidence={evidence || []}
             costLedger={costLedger || []}
             initialSections={sections}
+            financialsData={financialsData}
           />
         </main>
       </div>
