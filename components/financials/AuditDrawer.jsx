@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
 const NAVY = '#1e3a5f';
 
@@ -10,11 +11,16 @@ export default function AuditDrawer({ token, isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen || !token) return;
     setLoading(true);
-    fetch(`/api/projects/${token}/financials/audit`)
-      .then(res => res.ok ? res.json() : { events: [] })
-      .then(data => setEvents(data.events || []))
-      .catch(() => setEvents([]))
-      .finally(() => setLoading(false));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const headers = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+      fetch(`/api/projects/${token}/financials/audit`, { headers })
+        .then(res => res.ok ? res.json() : { events: [] })
+        .then(data => setEvents(data.events || []))
+        .catch(() => setEvents([]))
+        .finally(() => setLoading(false));
+    });
   }, [isOpen, token]);
 
   if (!isOpen) return null;

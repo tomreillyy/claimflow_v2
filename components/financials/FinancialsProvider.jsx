@@ -1,6 +1,13 @@
 'use client';
 import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import { computeDerived } from '@/lib/financialsCompute';
+import { supabase } from '@/lib/supabaseClient';
+
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return {};
+  return { Authorization: `Bearer ${session.access_token}` };
+}
 
 const FinancialsContext = createContext(null);
 
@@ -124,7 +131,10 @@ export default function FinancialsProvider({ token, activities, children }) {
   // Initial data fetch
   const fetchAll = useCallback(async () => {
     try {
-      const res = await fetch(`/api/projects/${tokenRef.current}/financials`);
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`/api/projects/${tokenRef.current}/financials`, {
+        headers: authHeaders,
+      });
       if (!res.ok) throw new Error('Failed to fetch financials');
       const data = await res.json();
       dispatch({
@@ -163,10 +173,11 @@ export default function FinancialsProvider({ token, activities, children }) {
     dispatch({ type: 'SET_SAVING', key: saveKey, value: true });
     dispatch({ type: 'SET_ERROR', key: saveKey, value: null });
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: method === 'DELETE' ? undefined : JSON.stringify(body),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
