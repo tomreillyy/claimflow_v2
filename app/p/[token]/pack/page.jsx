@@ -68,7 +68,7 @@ export default async function PackV2Page({ params }) {
   // Fetch project (include technical framing fields for validator and display)
   const { data: project } = await supabaseAdmin
     .from('projects')
-    .select('id, name, year, current_hypothesis, project_token, project_overview, technical_uncertainty, knowledge_gap, testing_method, success_criteria')
+    .select('id, name, year, current_hypothesis, project_token, project_overview, technical_uncertainty, knowledge_gap, testing_method, success_criteria, company_id, owner_id')
     .eq('project_token', token)
     .is('deleted_at', null)
     .single();
@@ -120,7 +120,7 @@ export default async function PackV2Page({ params }) {
   // Fetch financials data for print layout
   const companyQuery = project.company_id
     ? supabaseAdmin.from('companies').select('aggregated_turnover, aggregated_turnover_band').eq('id', project.company_id).single()
-    : supabaseAdmin.from('companies').select('aggregated_turnover, aggregated_turnover_band').eq('owner_id', user.id).maybeSingle();
+    : supabaseAdmin.from('companies').select('aggregated_turnover, aggregated_turnover_band').eq('owner_id', project.owner_id).maybeSingle();
 
   const [companyResult, finTeamResult, finContractorsResult, finMaterialsResult, finOverheadsResult, finDepreciationResult, finAdjustmentsResult] = await Promise.all([
     companyQuery,
