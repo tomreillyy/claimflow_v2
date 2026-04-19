@@ -268,13 +268,16 @@ export default function ProjectSettings({ project, token }) {
           </Field>
 
           <Field label="Financial Year End">
-            <input
-              type="text"
+            <select
               value={form.financial_year_end}
               onChange={e => updateField('financial_year_end', e.target.value)}
-              placeholder="MM-DD (e.g. 06-30)"
-              style={inputStyle}
-            />
+              style={selectStyle}
+            >
+              <option value="06-30">30 June (standard)</option>
+              <option value="12-31">31 December</option>
+              <option value="03-31">31 March</option>
+              <option value="09-30">30 September</option>
+            </select>
           </Field>
         </div>
       </div>
