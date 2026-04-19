@@ -859,6 +859,31 @@ export default function WorkspaceView({
   const [activityEvidence, setActivityEvidence] = useState({});
   const [actCtxMenu, setActCtxMenu] = useState(null); // { x, y, activity }
   const [showAddMenu, setShowAddMenu] = useState(false); // false | { x, y }
+  const [panelWidth, setPanelWidth] = useState(340);
+  const [isDragging, setIsDragging] = useState(false);
+  const panelRef = useRef(null);
+
+  const handleDragStart = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+    const onMove = (e) => {
+      const newWidth = Math.min(600, Math.max(200, startWidth + e.clientX - startX));
+      setPanelWidth(newWidth);
+    };
+    const onUp = () => {
+      setIsDragging(false);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [panelWidth]);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const activitiesBtnRef = useRef(null);
   const moreBtnRef = useRef(null);
@@ -979,7 +1004,7 @@ export default function WorkspaceView({
     <div className="workspace-screen" style={{ display: 'flex', gap: 0, height: 'calc(100vh - 120px)', minHeight: 500 }}>
       {/* ── Left panel ── */}
       <div style={{
-        width: 340, minWidth: 280, flexShrink: 0, borderRight: '1px solid #e5e5e5',
+        width: panelWidth, flexShrink: 0,
         display: 'flex', flexDirection: 'column', backgroundColor: 'white',
       }}>
         {/* Header */}
@@ -1146,6 +1171,19 @@ export default function WorkspaceView({
           )}
         </div>
       </div>
+
+      {/* Drag handle */}
+      <div
+        onMouseDown={handleDragStart}
+        style={{
+          width: 4, flexShrink: 0, cursor: 'col-resize',
+          backgroundColor: isDragging ? '#d1d5db' : 'transparent',
+          borderLeft: '1px solid #e5e5e5',
+          transition: isDragging ? 'none' : 'background-color 0.15s',
+        }}
+        onMouseEnter={e => { if (!isDragging) e.currentTarget.style.backgroundColor = '#e5e7eb'; }}
+        onMouseLeave={e => { if (!isDragging) e.currentTarget.style.backgroundColor = 'transparent'; }}
+      />
 
       {/* ── Right panel: Narrative ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: 'white' }}>
