@@ -484,6 +484,19 @@ export default function WorkspaceView({
   const [showMore, setShowMore] = useState(false);
   const [showAllEvidence, setShowAllEvidence] = useState(false);
   const [activityEvidence, setActivityEvidence] = useState({});
+  const [actCtxMenu, setActCtxMenu] = useState(null); // { x, y, activity }
+
+  // Close dropdowns on any click outside
+  useEffect(() => {
+    if (!showMore) return;
+    const handler = (e) => {
+      // Don't close if clicking inside a dropdown
+      if (e.target.closest('[data-dropdown]')) return;
+      setShowMore(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMore]);
 
   // Fetch sections
   const fetchSections = useCallback(async () => {
@@ -646,6 +659,7 @@ export default function WorkspaceView({
                   <div
                     key={act.id}
                     onClick={() => { setActiveTab(`activity_${act.id}`); setShowAllEvidence(false); }}
+                    onContextMenu={e => { e.preventDefault(); setActCtxMenu({ x: e.clientX, y: e.clientY, activity: act }); }}
                     style={{
                       padding: '10px 16px', borderBottom: '1px solid #f0f0f0',
                       cursor: 'pointer', transition: 'background-color 0.12s',
@@ -784,7 +798,7 @@ export default function WorkspaceView({
               <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
             </button>
             {showMore === 'activities' && (
-              <div onClick={e => e.stopPropagation()} style={{
+              <div data-dropdown onClick={e => e.stopPropagation()} style={{
                 position: 'absolute', top: '100%', left: 0, zIndex: 50,
                 backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
@@ -863,7 +877,7 @@ export default function WorkspaceView({
               More <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
             </button>
             {showMore === 'more' && (
-              <div onClick={e => e.stopPropagation()} style={{
+              <div data-dropdown onClick={e => e.stopPropagation()} style={{
                 position: 'absolute', top: '100%', right: 0, zIndex: 50,
                 backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
                 boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 200,
@@ -932,9 +946,72 @@ export default function WorkspaceView({
         />
       )}
 
-      {/* Close dropdowns on outside click */}
-      {showMore && (
-        <div onClick={() => setShowMore(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+      {/* Activity right-click context menu */}
+      {actCtxMenu && (
+        <>
+          <div onClick={() => setActCtxMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+          <div style={{
+            position: 'fixed', top: actCtxMenu.y, left: actCtxMenu.x, zIndex: 70,
+            backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 180,
+          }}>
+            <button
+              onClick={() => { setActiveTab(`activity_${actCtxMenu.activity.id}`); setShowAllEvidence(false); setActCtxMenu(null); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13, color: '#374151', fontWeight: 400, backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+            >
+              Open narrative
+            </button>
+            <button
+              onClick={async () => {
+                const act = actCtxMenu.activity;
+                setActCtxMenu(null);
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  await fetch(`/api/projects/${token}/core-activities/${act.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ status: act.status === 'adopted' ? 'draft' : 'adopted' }),
+                  });
+                  if (onActivitiesChange) {
+                    onActivitiesChange(activities.map(a => a.id === act.id ? { ...a, status: act.status === 'adopted' ? 'draft' : 'adopted' } : a));
+                  }
+                } catch (err) { console.error('Status change failed:', err); }
+              }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13, color: '#374151', fontWeight: 400, backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+            >
+              {actCtxMenu.activity.status === 'adopted' ? 'Revert to draft' : 'Adopt activity'}
+            </button>
+            <div style={{ borderTop: '1px solid #f0f0f0' }} />
+            <button
+              onClick={async () => {
+                const act = actCtxMenu.activity;
+                setActCtxMenu(null);
+                if (!confirm(`Delete "${act.name}"? This cannot be undone.`)) return;
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  await fetch(`/api/projects/${token}/core-activities/${act.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ status: 'archived' }),
+                  });
+                  if (onActivitiesChange) {
+                    onActivitiesChange(activities.filter(a => a.id !== act.id));
+                  }
+                  if (activeTab === `activity_${act.id}`) setActiveTab('project_overview');
+                } catch (err) { console.error('Archive failed:', err); }
+              }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13, color: '#dc2626', fontWeight: 400, backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+            >
+              Archive activity
+            </button>
+          </div>
+        </>
       )}
 
       <style>{`
