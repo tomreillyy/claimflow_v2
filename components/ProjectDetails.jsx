@@ -150,51 +150,8 @@ export default function ProjectDetails({ project, token, onProjectUpdate }) {
 
   return (
     <div style={{ padding: '20px 0' }}>
-      {/* Top bar: progress + save */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        marginBottom: 24,
-        padding: '14px 20px',
-        backgroundColor: filledCount === totalCount ? '#f0fdf4' : '#fffbeb',
-        border: `1px solid ${filledCount === totalCount ? '#bbf7d0' : '#fde68a'}`,
-        borderRadius: 8,
-      }}>
-        <div style={{ flex: 1 }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 6,
-          }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>
-              {filledCount === totalCount
-                ? 'All project details complete'
-                : `${filledCount} of ${totalCount} fields complete`}
-            </span>
-            {filledCount < totalCount && (
-              <span style={{ fontSize: 12, color: '#666' }}>
-                Missing: {ALL_FIELDS.filter(f => !form[f.key]?.trim()).map(f => f.label).join(', ')}
-              </span>
-            )}
-          </div>
-          <div style={{
-            width: '100%',
-            height: 5,
-            backgroundColor: '#e5e5e5',
-            borderRadius: 3,
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              width: `${(filledCount / totalCount) * 100}%`,
-              height: '100%',
-              backgroundColor: filledCount === totalCount ? '#22c55e' : '#f59e0b',
-              borderRadius: 3,
-              transition: 'width 0.3s ease',
-            }} />
-          </div>
-        </div>
+      {/* Save button */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
         <button
           onClick={handleSave}
           disabled={saving}
