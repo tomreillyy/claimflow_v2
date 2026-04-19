@@ -7,6 +7,7 @@ import ClaimPackStrengthenWizard from './ClaimPackStrengthenWizard';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 import { validateClaimPack, getRatingColor, getRatingLabel } from '@/lib/claimPackValidator';
 import { useAuth } from '@/components/AuthProvider';
+import FinancialsPrintSection from '@/components/financials/FinancialsPrintSection';
 
 const SECTIONS_ORDER = [
   SECTION_KEYS.PROJECT_OVERVIEW,
@@ -593,6 +594,9 @@ export default function ClaimPackEditor({
             onRegenerateClick={() => {}}
           />
         ))}
+
+        {/* Financial figures from the Financials workspace */}
+        <FinancialsPrintSection token={project.project_token} />
 
         <div style={{
           marginTop: 40,
