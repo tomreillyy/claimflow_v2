@@ -933,6 +933,96 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
   );
 }
 
+/* ── Upload File Modal ── */
+function UploadFileModal({ token, onCreated, onClose }) {
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+
+  const handleFileChange = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > MAX_FILE_SIZE) { setError('File must be under 10MB'); return; }
+    if (!ALLOWED_TYPES.includes(f.type)) { setError('Unsupported file type'); return; }
+    setFile(f);
+    setError('');
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files?.[0];
+    if (!f) return;
+    if (f.size > MAX_FILE_SIZE) { setError('File must be under 10MB'); return; }
+    if (!ALLOWED_TYPES.includes(f.type)) { setError('Unsupported file type'); return; }
+    setFile(f);
+    setError('');
+  };
+
+  const handleSubmit = async () => {
+    if (!file) return;
+    setUploading(true); setError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`/api/evidence/${token}/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Upload failed'); }
+      onCreated();
+      onClose();
+    } catch (err) { setError(err.message); }
+    setUploading(false);
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
+      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: 12, width: 440, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>Upload file</h3>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, color: '#9ca3af', cursor: 'pointer', padding: '0 4px' }}>×</button>
+        </div>
+        <div style={{ padding: 20 }}>
+          {file ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+              <span style={{ fontSize: 13, color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+              <span style={{ fontSize: 11, color: '#9ca3af' }}>{(file.size / 1024).toFixed(0)} KB</span>
+              <button onClick={() => setFile(null)} style={{ border: 'none', background: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 14 }}>×</button>
+            </div>
+          ) : (
+            <label
+              onDragOver={e => e.preventDefault()}
+              onDrop={handleDrop}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '32px 16px', border: '2px dashed #d1d5db', borderRadius: 8,
+                cursor: 'pointer', color: '#9ca3af', fontSize: 13, textAlign: 'center',
+              }}
+            >
+              <input type="file" onChange={handleFileChange} style={{ display: 'none' }} accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.csv,.txt,.xls,.xlsx" />
+              <span style={{ fontSize: 24 }}>📎</span>
+              Drop a file or click to upload
+            </label>
+          )}
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>PNG, JPEG, PDF, CSV, TXT, XLS — max 10MB</div>
+          {error && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{error}</div>}
+        </div>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button onClick={onClose} style={{ padding: '7px 14px', fontSize: 13, fontWeight: 500, color: '#6b7280', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={uploading || !file} style={{ padding: '7px 16px', fontSize: 13, fontWeight: 600, color: 'white', backgroundColor: uploading || !file ? '#a5b4fc' : NAVY, border: 'none', borderRadius: 8, cursor: uploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+            {uploading ? 'Uploading...' : 'Upload'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Add Evidence Modal ── */
 function AddEvidenceModal({ token, activities = [], onCreated, onClose }) {
   const [content, setContent] = useState('');
@@ -1108,6 +1198,7 @@ export default function WorkspaceView({
   const [activityEvidence, setActivityEvidence] = useState({});
   const [actCtxMenu, setActCtxMenu] = useState(null); // { x, y, activity }
   const [showAddMenu, setShowAddMenu] = useState(false); // false | { x, y }
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [panelWidth, setPanelWidth] = useState(340);
   const [isDragging, setIsDragging] = useState(false);
   const panelRef = useRef(null);
@@ -1817,7 +1908,7 @@ export default function WorkspaceView({
               Evidence
             </button>
             <button
-              onClick={() => { setShowAddMenu(false); window.location.href = `/p/${token}/upload`; }}
+              onClick={() => { setShowUploadModal(true); setShowAddMenu(false); }}
               style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: '#374151', backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
               onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
               onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
@@ -1835,6 +1926,15 @@ export default function WorkspaceView({
           activities={activities}
           onCreated={() => { window.location.reload(); }}
           onClose={() => setShowEvidenceModal(false)}
+        />
+      )}
+
+      {/* Upload file modal */}
+      {showUploadModal && (
+        <UploadFileModal
+          token={token}
+          onCreated={() => { window.location.reload(); }}
+          onClose={() => setShowUploadModal(false)}
         />
       )}
 

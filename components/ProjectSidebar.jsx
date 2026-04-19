@@ -253,7 +253,6 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
 
         <div style={{ margin: collapsed ? '6px 8px' : '6px 14px', borderTop: '1px solid #f0f0f0' }} />
 
-        <NavItem label="Documents"       viewKey="knowledge"  icon={NAV_ICONS.knowledge} />
         <NavItem label="Integrations"    viewKey="records"    icon={NAV_ICONS.records} />
 
         <div style={{ margin: collapsed ? '6px 8px' : '6px 14px', borderTop: '1px solid #f0f0f0' }} />
