@@ -1358,6 +1358,13 @@ export default function WorkspaceView({
                       }}>
                         {act.status === 'adopted' ? 'Adopted' : 'Draft'}
                       </span>
+                      <span style={{
+                        padding: '1px 5px', fontSize: 10, fontWeight: 600, borderRadius: 3, flexShrink: 0,
+                        backgroundColor: (act.activity_type || 'core') === 'core' ? NAVY : '#6b7280',
+                        color: 'white',
+                      }}>
+                        {(act.activity_type || 'core') === 'core' ? 'Core' : 'Supporting'}
+                      </span>
                     </div>
                     {act.uncertainty && (
                       <p style={{
@@ -1674,7 +1681,7 @@ export default function WorkspaceView({
           <div style={{
             position: 'fixed', top: actCtxMenu.y, left: actCtxMenu.x, zIndex: 70,
             backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 180,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'visible', minWidth: 180,
           }}>
             <button
               onClick={() => { setActiveTab(`activity_${actCtxMenu.activity.id}`); setShowAllEvidence(false); setActCtxMenu(null); }}
@@ -1706,6 +1713,54 @@ export default function WorkspaceView({
             >
               {actCtxMenu.activity.status === 'adopted' ? 'Revert to draft' : 'Adopt activity'}
             </button>
+            {/* Activity type sub-menu */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setActCtxMenu(prev => ({ ...prev, showTypePicker: !prev.showTypePicker }))}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13, color: '#374151', fontWeight: 400, backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+              >
+                {(actCtxMenu.activity.activity_type || 'core') === 'core' ? 'Core R&D' : 'Supporting R&D'} <span style={{ fontSize: 10, color: '#9ca3af' }}>▸</span>
+              </button>
+              {actCtxMenu.showTypePicker && (
+                <div style={{
+                  position: 'absolute', left: '100%', top: 0, zIndex: 80,
+                  backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 150,
+                }}>
+                  {ACT_TYPES.map(t => (
+                    <button
+                      key={t.value}
+                      onClick={async () => {
+                        const act = actCtxMenu.activity;
+                        setActCtxMenu(null);
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          await fetch(`/api/projects/${token}/core-activities/${act.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                            body: JSON.stringify({ activity_type: t.value }),
+                          });
+                          if (onActivitiesChange) {
+                            onActivitiesChange(activities.map(a => a.id === act.id ? { ...a, activity_type: t.value } : a));
+                          }
+                        } catch (err) { console.error('Activity type change failed:', err); }
+                      }}
+                      style={{
+                        display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13,
+                        color: '#374151', fontWeight: t.value === (act.activity_type || 'core') ? 600 : 400,
+                        backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                    >
+                      {t.label}{t.value === (actCtxMenu.activity.activity_type || 'core') ? ' ✓' : ''}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div style={{ borderTop: '1px solid #f0f0f0' }} />
             <button
               onClick={async () => {
