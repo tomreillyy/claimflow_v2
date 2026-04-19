@@ -17,15 +17,15 @@ export async function GET(req, { params }) {
       return NextResponse.json({ error: authError }, { status: !user ? 401 : 403 });
     }
 
-    // Fetch company for turnover
-    const { data: company } = await supabaseAdmin
-      .from('companies')
-      .select('aggregated_turnover, aggregated_turnover_band')
-      .eq('id', project.company_id)
-      .single();
-
-    // Fetch all financials data in parallel
-    const [teamRes, contractorsRes, materialsRes, overheadsRes, depreciationRes, adjustmentsRes] = await Promise.all([
+    // Fetch company + all financials data in parallel
+    const [companyRes, teamRes, contractorsRes, materialsRes, overheadsRes, depreciationRes, adjustmentsRes] = await Promise.all([
+      project.company_id
+        ? supabaseAdmin
+            .from('companies')
+            .select('aggregated_turnover, aggregated_turnover_band')
+            .eq('id', project.company_id)
+            .single()
+        : Promise.resolve({ data: null }),
       supabaseAdmin
         .from('fin_team')
         .select('*, splits:fin_activity_splits(id, activity_id, hours)')
@@ -57,6 +57,7 @@ export async function GET(req, { params }) {
         .eq('project_id', project.id),
     ]);
 
+    const company = companyRes.data;
     return NextResponse.json({
       turnover: company?.aggregated_turnover || null,
       turnoverBand: company?.aggregated_turnover_band || null,

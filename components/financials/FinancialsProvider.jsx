@@ -123,12 +123,15 @@ function reducer(state, action) {
 export default function FinancialsProvider({ token, activities, children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const tokenRef = useRef(token);
+  const activitiesRef = useRef(activities);
+  const fetchedRef = useRef(false);
   tokenRef.current = token;
+  activitiesRef.current = activities;
 
   // Compute derived values on every state change
   const derived = computeDerived(state);
 
-  // Initial data fetch
+  // Initial data fetch — runs once
   const fetchAll = useCallback(async () => {
     try {
       const authHeaders = await getAuthHeaders();
@@ -148,25 +151,28 @@ export default function FinancialsProvider({ token, activities, children }) {
           overheads: data.overheads || [],
           depreciation: data.depreciation || [],
           adjustments: data.adjustments || [],
-          activities,
+          activities: activitiesRef.current,
         },
       });
     } catch (err) {
       console.error('Failed to load financials:', err);
-      dispatch({ type: 'LOAD_ALL', payload: { activities } });
+      dispatch({ type: 'LOAD_ALL', payload: { activities: activitiesRef.current } });
     }
-  }, [activities]);
+  }, []); // no deps — fetch once
 
   useEffect(() => {
-    fetchAll();
+    if (!fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchAll();
+    }
   }, [fetchAll]);
 
-  // Update activities when they change externally
+  // Update activities list when it changes externally (without re-fetching)
   useEffect(() => {
-    if (!state.loading) {
+    if (!state.loading && activities) {
       dispatch({ type: 'LOAD_ALL', payload: { ...state, activities, loading: false } });
     }
-  }, [activities]);
+  }, [activities?.length]); // only when count changes, not reference
 
   // Debounced API save helper
   const saveField = useCallback(async (url, method, body, saveKey) => {

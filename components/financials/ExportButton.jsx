@@ -165,6 +165,25 @@ ${state.depreciation.length > 0 ? `<h2>Decline in Value Detail</h2>
 ${depRows}
 <tr class="total"><td>Total</td><td></td><td></td><td></td><td></td><td></td><td class="r">${fmt(derived.depreciationTotal)}</td></tr></table>` : ''}
 
+${(() => {
+  const associates = state.team.filter(m => m.is_associate);
+  if (associates.length === 0) return '';
+  const rows = associates.map(m => {
+    const d = derived.teamDerived.get(m.id) || { rdCost: 0 };
+    const paidInCash = parseFloat(m.paid_in_cash || 0);
+    const outstanding = Math.max(0, d.rdCost - paidInCash);
+    return '<tr><td>' + esc(m.person_name) + '</td><td class="r">' + fmt(d.rdCost) + '</td><td class="r">' + fmt(paidInCash) + '</td><td class="r"' + (outstanding > 0 ? ' style="color:#dc2626;font-weight:600"' : '') + '>' + fmt(outstanding) + '</td></tr>';
+  }).join('');
+  return '<h2>Part C — Associate Payments</h2><table><tr><th>Associate</th><th class="r">R&D Portion</th><th class="r">Paid in Cash</th><th class="r">Outstanding</th></tr>' + rows + '</table>';
+})()}
+
+${(() => {
+  const activeAdj = (state.adjustments || []).filter(a => a.applies && parseFloat(a.amount) > 0);
+  if (activeAdj.length === 0) return '';
+  const rows = activeAdj.map(a => '<tr><td>' + esc(a.adjustment_type.charAt(0).toUpperCase() + a.adjustment_type.slice(1)) + '</td><td class="r b" style="color:#dc2626">-' + fmt(a.amount) + '</td></tr>').join('');
+  return '<h2>Part B — Clawback Adjustments</h2><table><tr><th>Type</th><th class="r">Amount</th></tr>' + rows + '<tr class="total"><td>Total Adjustments</td><td class="r" style="color:#dc2626">-' + fmt(derived.adjustmentsTotal) + '</td></tr></table>';
+})()}
+
 </body></html>`;
   };
 
