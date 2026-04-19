@@ -822,6 +822,7 @@ export default function WorkspaceView({
   evidenceActivityTypes = {},
   activities = [],
   token,
+  project = {},
   onActivitiesChange,
 }) {
   const [activeTab, setActiveTab] = useState('project_overview');
@@ -953,7 +954,8 @@ export default function WorkspaceView({
   }
 
   return (
-    <div style={{ display: 'flex', gap: 0, height: 'calc(100vh - 120px)', minHeight: 500 }}>
+    <>
+    <div className="workspace-screen" style={{ display: 'flex', gap: 0, height: 'calc(100vh - 120px)', minHeight: 500 }}>
       {/* ── Left panel ── */}
       <div style={{
         width: 340, minWidth: 280, flexShrink: 0, borderRight: '1px solid #e5e5e5',
@@ -1452,7 +1454,141 @@ export default function WorkspaceView({
         />
       )}
 
+    </div>
+    {/* ══ PRINT LAYOUT — hidden on screen, shown on print ══ */}
+      <div className="workspace-print" style={{ display: 'none' }}>
+        {/* Cover page */}
+        <div className="print-cover" style={{
+          pageBreakAfter: 'always', backgroundColor: NAVY,
+          WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact',
+          display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: -120, right: -120, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
+          <div style={{ position: 'absolute', bottom: -80, left: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.02)' }} />
+          <div style={{ padding: '48px 56px 0' }}>
+            <img src="/claimflow-white-text-and-icon.png" alt="ClaimFlow" style={{ height: 40, width: 'auto' }} />
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 56px' }}>
+            <div style={{ width: 56, height: 3, backgroundColor: 'rgba(255,255,255,0.25)', marginBottom: 24 }} />
+            <h1 style={{ fontSize: 36, fontWeight: 700, color: '#fff', margin: '0 0 10px', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
+              R&D Tax Incentive<br />Substantiation Pack
+            </h1>
+            <div style={{ width: 56, height: 3, backgroundColor: 'rgba(255,255,255,0.25)', margin: '18px 0 24px' }} />
+            <h2 style={{ fontSize: 22, fontWeight: 500, color: 'rgba(255,255,255,0.85)', margin: '0 0 6px' }}>
+              {project.name || 'Project'}
+            </h2>
+          </div>
+          <div style={{ padding: '0 56px 44px', display: 'flex', gap: 24, fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
+            <span>FY{project.year || new Date().getFullYear()}</span>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
+            <span>{new Date().toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
+            <span>Confidential</span>
+          </div>
+        </div>
+
+        {/* Project Overview */}
+        {sections.project_overview?.content && (
+          <div className="print-section">
+            <h2 className="print-section-title">Project Overview & Existing Knowledge</h2>
+            <div dangerouslySetInnerHTML={{ __html: sections.project_overview.content }} />
+          </div>
+        )}
+
+        {/* Activity narratives */}
+        {activities.map((act, i) => (
+          <div key={act.id} className="print-section" style={{ pageBreakBefore: 'always' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+              Core Activity {i + 1}
+            </div>
+            <h2 className="print-section-title" style={{ marginTop: 0 }}>{act.name}</h2>
+            {act.uncertainty && (
+              <p style={{ fontSize: 11, color: '#6b7280', fontStyle: 'italic', margin: '0 0 16px', lineHeight: 1.5 }}>
+                {act.uncertainty}
+              </p>
+            )}
+            {ACTIVITY_STEPS.map(({ key, label }) => {
+              const content = sections[`activity_${act.id}_${key}`]?.content;
+              if (!content || content.replace(/<[^>]*>/g, '').trim().length < 5) return null;
+              return (
+                <div key={key} style={{ marginBottom: 16 }}>
+                  <h3 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#374151', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: '#9ca3af' }}>—</span> {label}
+                  </h3>
+                  <div dangerouslySetInnerHTML={{ __html: content }} />
+                </div>
+              );
+            })}
+          </div>
+        ))}
+
+        {/* Financials */}
+        {sections.financials?.content && (
+          <div className="print-section" style={{ pageBreakBefore: 'always' }}>
+            <h2 className="print-section-title">Financials & Notional Deductions</h2>
+            <div dangerouslySetInnerHTML={{ __html: sections.financials.content }} />
+          </div>
+        )}
+
+        {/* R&D Boundary */}
+        {sections.rd_boundary?.content && (
+          <div className="print-section">
+            <h2 className="print-section-title">R&D vs Non-R&D Boundary</h2>
+            <div dangerouslySetInnerHTML={{ __html: sections.rd_boundary.content }} />
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{ marginTop: 40, paddingTop: 14, borderTop: '1px solid #ddd', fontSize: 10, color: '#999', textAlign: 'center' }}>
+          Generated by ClaimFlow · {new Date().toLocaleDateString('en-AU')} · R&D Tax Incentive substantiation documentation
+        </div>
+      </div>
+
       <style>{`
+        @media print {
+          /* Hide workspace UI, show print layout */
+          body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          header, aside { display: none !important; }
+          .workspace-screen { display: none !important; }
+          .workspace-print { display: block !important; }
+
+          /* Page setup */
+          @page { size: A4; margin: 2.5cm 2cm; }
+
+          /* Cover page fills margins */
+          .print-cover {
+            margin: -2.5cm -2cm 0 -2cm !important;
+            padding: 2.5cm 2cm 0 2cm !important;
+            min-height: calc(100vh + 2.5cm) !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          /* Section styling */
+          .print-section {
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 11pt;
+            line-height: 1.7;
+            color: #111;
+            page-break-inside: avoid;
+          }
+          .print-section p { margin: 0 0 10px; }
+          .print-section h2, .print-section h3 { page-break-after: avoid; }
+          .print-section-title {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #111;
+            margin: 0 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+          }
+          .print-section ul, .print-section ol { padding-left: 20px; margin: 0 0 10px; }
+          .print-section li { margin-bottom: 3px; }
+          .print-section strong { font-weight: 600; color: #111; }
+        }
+
+        /* Screen styles */
         .workspace-inline-editor .ProseMirror {
           outline: none;
           font-family: system-ui, -apple-system, sans-serif;
@@ -1486,6 +1622,6 @@ export default function WorkspaceView({
           font-style: italic; font-size: 15px;
         }
       `}</style>
-    </div>
+    </>
   );
 }

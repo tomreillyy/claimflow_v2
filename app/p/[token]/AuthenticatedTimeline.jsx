@@ -1278,6 +1278,7 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
             evidenceActivityTypes={evidenceActivityTypes}
             activities={coreActivities}
             token={token}
+            project={project}
             onActivitiesChange={(updated) => setCoreActivities(updated)}
           />
         )}
