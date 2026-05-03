@@ -37,13 +37,13 @@ function StatCard({ label, value, valueColor, subtitle, subtitleColor, action, o
   return (
     <div style={{
       ...cardBase,
-      padding: '22px 24px',
+      padding: '18px 20px',
       display: 'flex',
       flexDirection: 'column',
     }}>
-      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 8 }}>{label}</div>
       <div style={{
-        fontSize: 26, fontWeight: 700, lineHeight: 1.1, marginBottom: 6,
+        fontSize: 22, fontWeight: 700, lineHeight: 1.1, marginBottom: 4,
         color: valueColor || '#111827',
       }}>
         {value}
@@ -54,7 +54,7 @@ function StatCard({ label, value, valueColor, subtitle, subtitleColor, action, o
         </div>
       )}
       {action && (
-        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+        <div style={{ marginTop: 'auto', paddingTop: 12 }}>
           <button
             onClick={onAction}
             style={{
@@ -154,10 +154,10 @@ export default function ProjectDashboard({
   const framingMissing = 4 - framingComplete;
 
   return (
-    <div style={{ padding: '24px 0' }}>
+    <div style={{ padding: '12px 0' }}>
 
       {/* ── Row 1 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 14 }}>
         <StatCard
           label={hasOffset ? (financials.isRefundable ? 'Refundable Cash Offset' : 'Tax Offset') : 'Estimated Offset'}
           value={hasOffset ? fmtK(financials.taxOffset) : '--'}
@@ -186,7 +186,7 @@ export default function ProjectDashboard({
       </div>
 
       {/* ── Row 2 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
         <StatCard
           label="R&D Activities"
           value={activityStats.length > 0 ? `${readyActivities}/${activityStats.length}` : '0'}
@@ -217,7 +217,7 @@ export default function ProjectDashboard({
       </div>
 
       {/* ── Bottom tables ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: insights.length > 0 ? '1fr 1fr' : '1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: insights.length > 0 ? '1fr 1fr' : '1fr', gap: 14, alignItems: 'start' }}>
 
         {/* Insights */}
         {insights.length > 0 && (
