@@ -26,7 +26,7 @@ function daysUntil(date) {
 }
 
 export default function ProjectDashboard({
-  project, items, token, coreActivities, costSummary, taxBenefit, ledger, onNavigate,
+  project, items, token, coreActivities, financials, onNavigate,
 }) {
 
   // Per-activity evidence stats
@@ -75,11 +75,8 @@ export default function ProjectDashboard({
     const evidence = items || [];
     const activities = coreActivities || [];
 
-    if (costSummary?.unapportionedTotal > 0) {
-      r.push({ text: `${fmt(costSummary.unapportionedTotal)} in payroll not linked to any activity — won't appear in claim`, action: 'Review costs', view: 'costs' });
-    }
-    if (!costSummary || costSummary.totalEligible === 0) {
-      r.push({ text: 'No R&D costs recorded — upload payroll to calculate your offset', action: 'Upload costs', view: 'costs' });
+    if (!financials || financials.eligibleExpenditure <= 0) {
+      r.push({ text: 'No R&D costs recorded — add team and costs in the Workspace financials tab', action: 'Open workspace', view: 'workspace' });
     }
     if (activities.length === 0 && evidence.length >= 5) {
       r.push({ text: `${evidence.length} evidence items — enough to auto-generate R&D activities`, action: 'Generate', view: 'activities' });
@@ -106,12 +103,19 @@ export default function ProjectDashboard({
     if (supportingEv.length >= 2 && supportingAct.length === 0) {
       r.push({ text: `${supportingEv.length} supporting evidence items — consider adding a supporting activity`, action: 'Review', view: 'activities' });
     }
+    // Risk flags from financials
+    if (financials?.risks) {
+      for (const risk of financials.risks) {
+        r.push({ text: risk.message, action: 'Review', view: 'workspace' });
+      }
+    }
+
     return r;
-  }, [items, coreActivities, costSummary, project]);
+  }, [items, coreActivities, financials, project]);
 
   const deadline = getDeadline(project.year_end || project.year);
   const daysLeft = daysUntil(deadline);
-  const hasOffset = taxBenefit && taxBenefit.offsetAmount > 0;
+  const hasOffset = financials && financials.taxOffset > 0;
 
   return (
     <div style={{ padding: '16px 0', maxWidth: 880 }}>
@@ -126,30 +130,29 @@ export default function ProjectDashboard({
           {hasOffset ? (
             <>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#111827', lineHeight: 1, marginBottom: 6 }}>
-                {fmt(taxBenefit.offsetAmount)}
+                {fmt(financials.taxOffset)}
               </div>
               <div style={{ fontSize: 12, color: '#9ca3af' }}>
-                {taxBenefit.refundable ? 'Refundable' : 'Non-refundable'} · {(taxBenefit.offsetRate * 100).toFixed(1)}% of {fmt(costSummary?.totalEligible)}
-                {taxBenefit.estimated ? ' · turnover band not set' : ''}
+                {financials.isRefundable ? 'Refundable' : 'Non-refundable'} · {(financials.offsetRate * 100).toFixed(1)}% of {fmt(financials.eligibleExpenditure)}
               </div>
-              {costSummary && (
-                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
-                  {[
-                    costSummary.staffTotal > 0 && `Labour ${fmt(costSummary.staffTotal)}`,
-                    costSummary.contractorTotal > 0 && `Contractors ${fmt(costSummary.contractorTotal)}`,
-                    costSummary.cloudTotal > 0 && `Cloud ${fmt(costSummary.cloudTotal)}`,
-                  ].filter(Boolean).join(' · ')}
-                </div>
-              )}
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
+                {[
+                  financials.totalSalaries > 0 && `Salaries ${fmt(financials.totalSalaries)}`,
+                  financials.contractorsTotal > 0 && `Contractors ${fmt(financials.contractorsTotal)}`,
+                  financials.materialsTotal > 0 && `Materials ${fmt(financials.materialsTotal)}`,
+                  financials.overheadsTotal > 0 && `Overheads ${fmt(financials.overheadsTotal)}`,
+                  financials.depreciationTotal > 0 && `Depreciation ${fmt(financials.depreciationTotal)}`,
+                ].filter(Boolean).join(' · ')}
+              </div>
             </>
           ) : (
             <>
               <div style={{ fontSize: 28, fontWeight: 700, color: '#d1d5db', lineHeight: 1, marginBottom: 6 }}>—</div>
               <button
-                onClick={() => onNavigate?.('costs')}
+                onClick={() => onNavigate?.('workspace')}
                 style={{ fontSize: 12, color: NAVY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
               >
-                Upload costs to calculate →
+                Add costs in workspace →
               </button>
             </>
           )}

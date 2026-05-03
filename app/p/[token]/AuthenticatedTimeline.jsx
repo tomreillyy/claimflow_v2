@@ -19,6 +19,7 @@ import ProjectDashboard from '@/components/ProjectDashboard';
 import ProjectDetails from '@/components/ProjectDetails';
 import WorkspaceView from '@/components/WorkspaceView';
 import ProjectSettings from '@/components/ProjectSettings';
+import { computeDerived } from '@/lib/financialsCompute';
 
 // Hook to fetch step counts and compute gap hint
 function useStepGapHint(token) {
@@ -515,6 +516,7 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
   const [costsLoading, setCostsLoading] = useState(false);
   const [costSummary, setCostSummary] = useState(null);
   const [taxBenefit, setTaxBenefit] = useState(null);
+  const [financialsDerived, setFinancialsDerived] = useState(null);
 
   // GitHub integration state
   const [githubRepo, setGithubRepo] = useState(null);
@@ -698,6 +700,26 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
       setCostsLoading(false);
     }
   };
+
+  // Fetch financials-derived data for dashboard offset display
+  useEffect(() => {
+    if (!token || activeTab !== 'dashboard') return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const authHeaders = session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {};
+        const res = await fetch(`/api/projects/${token}/financials`, { headers: authHeaders });
+        if (!res.ok) return;
+        const data = await res.json();
+        const derived = computeDerived(data);
+        setFinancialsDerived(derived);
+      } catch (err) {
+        console.error('Failed to fetch financials for dashboard:', err);
+      }
+    })();
+  }, [token, activeTab]);
 
   const showToast = (message) => {
     setToast(message);
@@ -1300,9 +1322,7 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
             items={items?.filter(ev => !deletedIds.has(ev.id))}
             token={token}
             coreActivities={coreActivities}
-            costSummary={costSummary}
-            taxBenefit={taxBenefit}
-            ledger={ledger}
+            financials={financialsDerived}
             onNavigate={(view) => {
               const params = new URLSearchParams(searchParams.toString());
               params.set('view', view);
