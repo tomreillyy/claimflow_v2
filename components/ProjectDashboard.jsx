@@ -5,18 +5,6 @@ import { useMemo } from 'react';
 const NAVY = '#021048';
 const STEPS = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
 
-const card = {
-  backgroundColor: 'white',
-  border: '1px solid #e5e7eb',
-  borderRadius: 8,
-  overflow: 'hidden',
-};
-
-const label = {
-  fontSize: 11, color: '#6b7280', fontWeight: 500,
-  textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2,
-};
-
 function fmtK(val) {
   if (!val && val !== 0) return '--';
   if (Math.abs(val) >= 1000000) return '$' + (val / 1000000).toFixed(1) + 'M';
@@ -37,6 +25,40 @@ function daysUntil(date) {
   const now = new Date(); now.setHours(0, 0, 0, 0);
   const t = new Date(date); t.setHours(0, 0, 0, 0);
   return Math.ceil((t - now) / 86400000);
+}
+
+// ── Stat card component ──
+function StatCard({ label, value, valueColor, subtitle, subtitleColor, action, onAction }) {
+  return (
+    <div style={{
+      backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
+      padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+      minHeight: 140,
+    }}>
+      <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500, marginBottom: 8 }}>{label}</div>
+      <div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: valueColor || '#111827', lineHeight: 1.1, marginBottom: 4 }}>
+          {value}
+        </div>
+        {subtitle && (
+          <div style={{ fontSize: 13, color: subtitleColor || '#9ca3af', lineHeight: 1.4 }}>{subtitle}</div>
+        )}
+      </div>
+      {action && (
+        <button
+          onClick={onAction}
+          style={{
+            fontSize: 13, fontWeight: 500, color: '#374151', background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0, fontFamily: 'inherit', marginTop: 12, textAlign: 'left',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = NAVY}
+          onMouseLeave={e => e.currentTarget.style.color = '#374151'}
+        >
+          {action} →
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function ProjectDashboard({
@@ -89,13 +111,7 @@ export default function ProjectDashboard({
     if (unlinked.length > 3 && activities.length > 0) {
       r.push({ text: `${unlinked.length} evidence items not linked to any activity`, action: 'Review', view: 'workspace' });
     }
-    if (project.current_hypothesis) {
-      const h = project.current_hypothesis.toLowerCase();
-      const biz = ['improve', 'increase revenue', 'reduce cost', 'grow', 'market share', 'customer satisfaction'];
-      if (biz.some(w => h.includes(w)) && !h.includes('whether') && !h.includes('can we')) {
-        r.push({ text: 'Hypothesis reads like a business goal — reframe around technical uncertainty', action: 'Edit', view: 'details' });
-      }
-    } else {
+    if (!project.current_hypothesis) {
       r.push({ text: 'No hypothesis defined', action: 'Add', view: 'details' });
     }
     const framingMissing = ['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim());
@@ -118,161 +134,213 @@ export default function ProjectDashboard({
   const deadline = getDeadline(project.year_end || project.year);
   const daysLeft = daysUntil(deadline);
   const hasOffset = financials && financials.taxOffset > 0;
-  const deadlineUrgent = daysLeft !== null && daysLeft < 60;
   const deadlineOverdue = daysLeft !== null && daysLeft < 0;
+  const deadlineUrgent = daysLeft !== null && daysLeft < 60;
+
+  const totalEvidence = (items || []).length;
+  const readyActivities = activityStats.filter(a => !a.issue).length;
 
   return (
-    <div style={{ padding: '16px 0' }}>
+    <div style={{ padding: '20px 0' }}>
 
-      {/* ── Financials card ── */}
-      <div style={{ ...card, padding: '14px 20px', display: 'flex', alignItems: 'flex-end', gap: 24, marginBottom: 12 }}>
-        <div>
-          <div style={label}>
-            {hasOffset ? (financials.isRefundable ? 'Refundable Offset' : 'Tax Offset') : 'Estimated Offset'}
-          </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#1e3a5f', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-            {hasOffset ? fmtK(financials.taxOffset) : '--'}
-          </div>
-          {!hasOffset && (
-            <button onClick={() => onNavigate?.('workspace')} style={{ fontSize: 11, color: NAVY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', marginTop: 2 }}>
-              Add costs →
-            </button>
-          )}
-        </div>
-        {hasOffset && (
-          <div>
-            <div style={label}>Eligible Spend</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-              {fmtK(financials.eligibleExpenditure)}
-            </div>
-          </div>
-        )}
-        {hasOffset && (
-          <div>
-            <div style={label}>Offset Rate</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
-              {(financials.offsetRate * 100).toFixed(1)}%
-              <span style={{
-                marginLeft: 8, fontSize: 10, fontWeight: 600, color: 'white',
-                backgroundColor: financials.isRefundable ? '#16a34a' : '#2563eb',
-                padding: '2px 6px', borderRadius: 4, fontFamily: 'system-ui', verticalAlign: 'middle',
-              }}>
-                {financials.isRefundable ? 'Refundable' : 'Non-refundable'}
-              </span>
-            </div>
-          </div>
-        )}
-        {deadline && (
-          <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-            <div style={label}>Registration</div>
-            <div style={{
-              fontSize: 16, fontWeight: 600, fontFamily: 'monospace', whiteSpace: 'nowrap',
-              color: deadlineOverdue || deadlineUrgent ? '#dc2626' : '#1a1a1a',
-            }}>
-              {deadlineOverdue ? 'Overdue' : `${daysLeft}d`}
-            </div>
-            <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>
-              {deadline.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </div>
-          </div>
-        )}
+      {/* ── Stat cards grid ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 16,
+        marginBottom: 16,
+      }}>
+        <StatCard
+          label={hasOffset ? (financials.isRefundable ? 'Refundable Cash Offset' : 'Tax Offset') : 'Estimated Offset'}
+          value={hasOffset ? fmtK(financials.taxOffset) : '--'}
+          valueColor={hasOffset ? '#16a34a' : '#d1d5db'}
+          subtitle={hasOffset
+            ? `${(financials.offsetRate * 100).toFixed(1)}% of ${fmtK(financials.eligibleExpenditure)} eligible spend`
+            : undefined
+          }
+          action={hasOffset ? 'View financials' : 'Add costs'}
+          onAction={() => onNavigate?.('workspace')}
+        />
+
+        <StatCard
+          label="R&D Activities"
+          value={activityStats.length > 0 ? `${readyActivities}/${activityStats.length}` : '0'}
+          subtitle={activityStats.length > 0
+            ? `${readyActivities === activityStats.length ? 'All activities ready' : `${activityStats.length - readyActivities} need attention`}`
+            : `${totalEvidence} evidence items collected`
+          }
+          subtitleColor={activityStats.length > 0 && readyActivities < activityStats.length ? '#d97706' : '#9ca3af'}
+          action="View activities"
+          onAction={() => onNavigate?.('activities')}
+        />
+
+        <StatCard
+          label="Registration Deadline"
+          value={deadlineOverdue ? 'Overdue' : daysLeft !== null ? `${daysLeft} days` : '--'}
+          valueColor={deadlineOverdue || deadlineUrgent ? '#dc2626' : '#111827'}
+          subtitle={deadline
+            ? `Due ${deadline.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`
+            : undefined
+          }
+          subtitleColor={deadlineUrgent ? '#dc2626' : '#9ca3af'}
+        />
       </div>
 
-      {/* ── Insights card ── */}
-      {insights.length > 0 && (
-        <div style={{ ...card, marginBottom: 12 }}>
-          {insights.map((ins, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                padding: '10px 20px',
-                borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
-              }}
-            >
-              <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.4 }}>{ins.text}</span>
-              <button
-                onClick={() => onNavigate?.(ins.view)}
-                style={{
-                  flexShrink: 0, fontSize: 12, fontWeight: 600, color: NAVY,
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontFamily: 'inherit', whiteSpace: 'nowrap',
-                }}
-              >
-                {ins.action} →
-              </button>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 16,
+        marginBottom: 24,
+      }}>
+        <StatCard
+          label="Eligible R&D Spend"
+          value={hasOffset ? fmtK(financials.eligibleExpenditure) : '--'}
+          subtitle={hasOffset ? [
+            financials.totalSalaries > 0 && `Salaries ${fmtK(financials.totalSalaries)}`,
+            financials.contractorsTotal > 0 && `Contractors ${fmtK(financials.contractorsTotal)}`,
+            financials.materialsTotal > 0 && `Materials ${fmtK(financials.materialsTotal)}`,
+          ].filter(Boolean).join(' · ') || undefined : undefined}
+          action={hasOffset ? 'View breakdown' : undefined}
+          onAction={() => onNavigate?.('workspace')}
+        />
+
+        <StatCard
+          label="Evidence Collected"
+          value={totalEvidence}
+          subtitle={totalEvidence > 0
+            ? `Across ${new Set((items || []).map(e => e.source)).size} source${new Set((items || []).map(e => e.source)).size !== 1 ? 's' : ''}`
+            : 'No evidence yet'
+          }
+          action="View evidence"
+          onAction={() => onNavigate?.('workspace')}
+        />
+
+        <StatCard
+          label="Technical Framing"
+          value={`${4 - ['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim()).length}/4`}
+          subtitle={['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim()).length === 0
+            ? 'All fields complete'
+            : `${['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim()).length} fields need attention`
+          }
+          subtitleColor={['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim()).length > 0 ? '#d97706' : '#9ca3af'}
+          action="Edit details"
+          onAction={() => onNavigate?.('details')}
+        />
+      </div>
+
+      {/* ── Insights + Activities side by side ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: insights.length > 0 ? '1fr 1fr' : '1fr',
+        gap: 16,
+      }}>
+        {/* Insights */}
+        {insights.length > 0 && (
+          <div style={{
+            backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '14px 20px', borderBottom: '1px solid #f0f0f0',
+              fontSize: 14, fontWeight: 600, color: '#111827',
+            }}>
+              Attention needed
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Activities card ── */}
-      <div style={card}>
-        <div style={{
-          padding: '10px 20px',
-          borderBottom: '1px solid #f0f0f0',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>R&D Activities</span>
-          {activityStats.length > 0 && (
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>
-              {activityStats.filter(a => !a.issue).length}/{activityStats.length} ready
-            </span>
-          )}
-        </div>
-
-        {activityStats.length === 0 ? (
-          <div style={{ padding: '14px 20px', fontSize: 13, color: '#6b7280' }}>
-            {(items || []).length >= 5
-              ? <><span>No activities defined. </span><button onClick={() => onNavigate?.('activities')} style={{ color: NAVY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 13, fontFamily: 'inherit' }}>Generate from evidence →</button></>
-              : `No activities. Add ${Math.max(0, 5 - (items || []).length)} more evidence for AI generation.`
-            }
-          </div>
-        ) : (
-          <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-            {activityStats.map((act, i) => (
-              <div
-                key={act.id}
-                style={{
-                  padding: '10px 20px',
-                  borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: act.issue || act.warnings.length ? 4 : 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{act.name}</span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
-                    backgroundColor: act.activity_type === 'supporting' ? '#f3f4f6' : NAVY,
-                    color: act.activity_type === 'supporting' ? '#6b7280' : 'white',
-                  }}>
-                    {act.activity_type === 'supporting' ? 'Supporting' : 'Core'}
-                  </span>
-                  <span style={{ fontSize: 12, color: '#9ca3af' }}>
-                    {act.evidenceCount} item{act.evidenceCount !== 1 ? 's' : ''}
-                  </span>
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 3 }}>
-                    {STEPS.map(step => (
-                      <span
-                        key={step}
-                        title={`${step}: ${act.stepCoverage[step]} items`}
-                        style={{
-                          fontSize: 10, fontWeight: 600, width: 16, height: 16, lineHeight: '16px',
-                          textAlign: 'center', borderRadius: 3,
-                          backgroundColor: act.stepCoverage[step] > 0 ? '#111827' : '#f3f4f6',
-                          color: act.stepCoverage[step] > 0 ? 'white' : '#d1d5db',
-                        }}
-                      >
-                        {step.charAt(0)}
-                      </span>
-                    ))}
-                  </div>
+            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+              {insights.map((ins, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+                    padding: '12px 20px',
+                    borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.5 }}>{ins.text}</span>
+                  <button
+                    onClick={() => onNavigate?.(ins.view)}
+                    style={{
+                      flexShrink: 0, fontSize: 12, fontWeight: 600, color: NAVY,
+                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                      fontFamily: 'inherit', whiteSpace: 'nowrap', marginTop: 1,
+                    }}
+                  >
+                    {ins.action} →
+                  </button>
                 </div>
-                {act.issue && <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>{act.issue}</div>}
-                {act.warnings.map((w, j) => <div key={j} style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.4 }}>{w}</div>)}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
+
+        {/* Activities */}
+        <div style={{
+          backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden',
+        }}>
+          <div style={{
+            padding: '14px 20px', borderBottom: '1px solid #f0f0f0',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>R&D Activities</span>
+            {activityStats.length > 0 && (
+              <span style={{ fontSize: 12, color: '#9ca3af' }}>
+                {readyActivities}/{activityStats.length} ready
+              </span>
+            )}
+          </div>
+
+          {activityStats.length === 0 ? (
+            <div style={{ padding: '20px', fontSize: 13, color: '#6b7280' }}>
+              {totalEvidence >= 5
+                ? <><span>No activities defined. </span><button onClick={() => onNavigate?.('activities')} style={{ color: NAVY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 13, fontFamily: 'inherit' }}>Generate from evidence →</button></>
+                : `No activities. Add ${Math.max(0, 5 - totalEvidence)} more evidence for AI generation.`
+              }
+            </div>
+          ) : (
+            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+              {activityStats.map((act, i) => (
+                <div
+                  key={act.id}
+                  style={{
+                    padding: '10px 20px',
+                    borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: act.issue || act.warnings.length ? 4 : 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{act.name}</span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
+                      backgroundColor: act.activity_type === 'supporting' ? '#f3f4f6' : NAVY,
+                      color: act.activity_type === 'supporting' ? '#6b7280' : 'white',
+                    }}>
+                      {act.activity_type === 'supporting' ? 'Supporting' : 'Core'}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#9ca3af' }}>
+                      {act.evidenceCount} item{act.evidenceCount !== 1 ? 's' : ''}
+                    </span>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 3 }}>
+                      {STEPS.map(step => (
+                        <span
+                          key={step}
+                          title={`${step}: ${act.stepCoverage[step]} items`}
+                          style={{
+                            fontSize: 10, fontWeight: 600, width: 16, height: 16, lineHeight: '16px',
+                            textAlign: 'center', borderRadius: 3,
+                            backgroundColor: act.stepCoverage[step] > 0 ? '#111827' : '#f3f4f6',
+                            color: act.stepCoverage[step] > 0 ? 'white' : '#d1d5db',
+                          }}
+                        >
+                          {step.charAt(0)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {act.issue && <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>{act.issue}</div>}
+                  {act.warnings.map((w, j) => <div key={j} style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.4 }}>{w}</div>)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
