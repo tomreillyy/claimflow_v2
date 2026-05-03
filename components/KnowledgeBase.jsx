@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
+import { sanitizeHtml } from '@/lib/sanitizeHtml';
 
 const FILE_TYPE_ICONS = {
   'application/pdf': 'PDF',
@@ -358,7 +359,7 @@ export default function KnowledgeBase({ projectToken, projectId }) {
         {result.headline && (
           <div
             style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}
-            dangerouslySetInnerHTML={{ __html: result.headline }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(result.headline) }}
           />
         )}
       </div>

@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getAuthenticatedUser } from '@/lib/serverAuth';
 
 export async function POST(req) {
   try {
+    // Require authentication
+    const { user, error: authError } = await getAuthenticatedUser(req);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { name, year, year_end, participants = [], owner_email, current_hypothesis, project_overview, technical_uncertainty, knowledge_gap, testing_method, success_criteria } = await req.json();
 
     if (!name || !year) {
@@ -18,17 +25,7 @@ export async function POST(req) {
     const project_token = crypto.randomBytes(24).toString('base64url'); // ~32 chars
     const inbound_email_local = 'p_' + crypto.randomBytes(5).toString('hex');
 
-    // Get authenticated user
-    const authHeader = req.headers.get('authorization');
-    let owner_id = null;
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split('Bearer ')[1];
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-      if (!authError && user) {
-        owner_id = user.id;
-      }
-    }
+    const owner_id = user.id;
 
     // Look up the user's company to auto-link the project
     let company_id = null;

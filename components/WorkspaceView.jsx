@@ -6,6 +6,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { marked } from 'marked';
+import { sanitizeHtml } from '@/lib/sanitizeHtml';
 import FinancialsPage from './financials/FinancialsPage';
 import FinancialsPrintSection from './financials/FinancialsPrintSection';
 
@@ -2272,7 +2273,7 @@ export default function WorkspaceView({
         {sections.project_overview?.content && (
           <div className="print-section">
             <h2 className="print-section-title">Project Overview & Existing Knowledge</h2>
-            <div dangerouslySetInnerHTML={{ __html: sections.project_overview.content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(sections.project_overview.content) }} />
           </div>
         )}
 
@@ -2296,7 +2297,7 @@ export default function WorkspaceView({
                   <h3 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#374151', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ color: '#9ca3af' }}>—</span> {label}
                   </h3>
-                  <div dangerouslySetInnerHTML={{ __html: content }} />
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }} />
                 </div>
               );
             })}
@@ -2307,7 +2308,7 @@ export default function WorkspaceView({
         {sections.financials?.content && (
           <div className="print-section" style={{ pageBreakBefore: 'always' }}>
             <h2 className="print-section-title">Financials & Notional Deductions</h2>
-            <div dangerouslySetInnerHTML={{ __html: sections.financials.content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(sections.financials.content) }} />
           </div>
         )}
 
@@ -2318,7 +2319,7 @@ export default function WorkspaceView({
         {sections.rd_boundary?.content && (
           <div className="print-section">
             <h2 className="print-section-title">R&D vs Non-R&D Boundary</h2>
-            <div dangerouslySetInnerHTML={{ __html: sections.rd_boundary.content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(sections.rd_boundary.content) }} />
           </div>
         )}
 

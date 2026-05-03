@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { SECTION_KEYS, SECTION_NAMES } from '@/lib/claimFlowMasterContext';
 import { supabase } from '@/lib/supabaseClient';
+import { sanitizeHtml } from '@/lib/sanitizeHtml';
 
 // Only sections with meaningful AI analysis
 const STRENGTHEN_SECTIONS = [
@@ -383,7 +384,7 @@ export default function ClaimPackStrengthenWizard({ project, sections, onClose }
                         overflowY: 'auto',
                         whiteSpace: 'pre-wrap',
                       }}
-                      dangerouslySetInnerHTML={{ __html: before || '<em style="color:#d1d5db">Empty</em>' }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(before) || '<em style="color:#d1d5db">Empty</em>' }}
                     />
                   </div>
 
@@ -408,7 +409,7 @@ export default function ClaimPackStrengthenWizard({ project, sections, onClose }
                         overflowY: 'auto',
                         whiteSpace: 'pre-wrap',
                       }}
-                      dangerouslySetInnerHTML={{ __html: after }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(after) }}
                     />
                   </div>
                 </div>
@@ -637,7 +638,7 @@ export default function ClaimPackStrengthenWizard({ project, sections, onClose }
                               overflowY: 'auto',
                               whiteSpace: 'pre-wrap',
                             }}
-                              dangerouslySetInnerHTML={{ __html: sugg.draftContent }}
+                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(sugg.draftContent) }}
                             />
                           </div>
                         )}

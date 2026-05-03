@@ -1,14 +1,29 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getAuthenticatedUser } from '@/lib/serverAuth';
 
 export async function POST(req) {
   try {
+    // Require authentication
+    const { user, error: authError } = await getAuthenticatedUser(req);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { project_token, user_email } = await req.json();
 
     if (!project_token || !user_email) {
       return NextResponse.json(
         { error: 'project_token and user_email required' },
         { status: 400 }
+      );
+    }
+
+    // Only allow users to join as themselves
+    if (user.email.toLowerCase() !== user_email.toLowerCase()) {
+      return NextResponse.json(
+        { error: 'Can only join as your own email' },
+        { status: 403 }
       );
     }
 
