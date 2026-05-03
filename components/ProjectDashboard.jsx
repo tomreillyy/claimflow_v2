@@ -27,42 +27,56 @@ function daysUntil(date) {
   return Math.ceil((t - now) / 86400000);
 }
 
-// ── Stat card component ──
+const cardBase = {
+  backgroundColor: 'white',
+  border: '1px solid #e5e7eb',
+  borderRadius: 12,
+};
+
 function StatCard({ label, value, valueColor, subtitle, subtitleColor, action, onAction }) {
   return (
     <div style={{
-      backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 12,
-      padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-      minHeight: 140,
+      ...cardBase,
+      padding: '22px 24px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
     }}>
-      <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500, marginBottom: 8 }}>{label}</div>
+      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>{label}</div>
       <div>
-        <div style={{ fontSize: 28, fontWeight: 700, color: valueColor || '#111827', lineHeight: 1.1, marginBottom: 4 }}>
+        <div style={{
+          fontSize: 26, fontWeight: 700, lineHeight: 1.1, marginBottom: 6,
+          color: valueColor || '#111827',
+        }}>
           {value}
         </div>
         {subtitle && (
-          <div style={{ fontSize: 13, color: subtitleColor || '#9ca3af', lineHeight: 1.4 }}>{subtitle}</div>
+          <div style={{ fontSize: 13, color: subtitleColor || '#9ca3af', lineHeight: 1.4 }}>
+            {subtitle}
+          </div>
         )}
       </div>
       {action && (
-        <button
-          onClick={onAction}
-          style={{
-            fontSize: 13, fontWeight: 500, color: '#374151', background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0, fontFamily: 'inherit', marginTop: 12, textAlign: 'left',
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = NAVY}
-          onMouseLeave={e => e.currentTarget.style.color = '#374151'}
-        >
-          {action} →
-        </button>
+        <div style={{ marginTop: 16 }}>
+          <button
+            onClick={onAction}
+            style={{
+              fontSize: 13, color: '#374151', background: 'none', border: 'none',
+              cursor: 'pointer', padding: 0, fontFamily: 'inherit',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = NAVY}
+            onMouseLeave={e => e.currentTarget.style.color = '#374151'}
+          >
+            {action} →
+          </button>
+        </div>
       )}
     </div>
   );
 }
 
 export default function ProjectDashboard({
-  project, items, token, coreActivities, financials, onNavigate,
+  project, items, coreActivities, financials, onNavigate,
 }) {
 
   const activityStats = useMemo(() => {
@@ -139,130 +153,93 @@ export default function ProjectDashboard({
 
   const totalEvidence = (items || []).length;
   const readyActivities = activityStats.filter(a => !a.issue).length;
+  const framingComplete = ['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => project[f]?.trim()).length;
+  const framingMissing = 4 - framingComplete;
 
   return (
-    <div style={{ padding: '20px 0' }}>
+    <div style={{ padding: '24px 0' }}>
 
-      {/* ── Stat cards grid ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 16,
-        marginBottom: 16,
-      }}>
+      {/* ── Row 1 ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 16 }}>
         <StatCard
           label={hasOffset ? (financials.isRefundable ? 'Refundable Cash Offset' : 'Tax Offset') : 'Estimated Offset'}
           value={hasOffset ? fmtK(financials.taxOffset) : '--'}
           valueColor={hasOffset ? '#16a34a' : '#d1d5db'}
-          subtitle={hasOffset
-            ? `${(financials.offsetRate * 100).toFixed(1)}% of ${fmtK(financials.eligibleExpenditure)} eligible spend`
-            : undefined
-          }
+          subtitle={hasOffset ? `${(financials.offsetRate * 100).toFixed(1)}% of ${fmtK(financials.eligibleExpenditure)} eligible` : undefined}
           action={hasOffset ? 'View financials' : 'Add costs'}
           onAction={() => onNavigate?.('workspace')}
         />
-
-        <StatCard
-          label="R&D Activities"
-          value={activityStats.length > 0 ? `${readyActivities}/${activityStats.length}` : '0'}
-          subtitle={activityStats.length > 0
-            ? `${readyActivities === activityStats.length ? 'All activities ready' : `${activityStats.length - readyActivities} need attention`}`
-            : `${totalEvidence} evidence items collected`
-          }
-          subtitleColor={activityStats.length > 0 && readyActivities < activityStats.length ? '#d97706' : '#9ca3af'}
-          action="View activities"
-          onAction={() => onNavigate?.('activities')}
-        />
-
-        <StatCard
-          label="Registration Deadline"
-          value={deadlineOverdue ? 'Overdue' : daysLeft !== null ? `${daysLeft} days` : '--'}
-          valueColor={deadlineOverdue || deadlineUrgent ? '#dc2626' : '#111827'}
-          subtitle={deadline
-            ? `Due ${deadline.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`
-            : undefined
-          }
-          subtitleColor={deadlineUrgent ? '#dc2626' : '#9ca3af'}
-        />
-      </div>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 16,
-        marginBottom: 24,
-      }}>
         <StatCard
           label="Eligible R&D Spend"
           value={hasOffset ? fmtK(financials.eligibleExpenditure) : '--'}
           subtitle={hasOffset ? [
             financials.totalSalaries > 0 && `Salaries ${fmtK(financials.totalSalaries)}`,
             financials.contractorsTotal > 0 && `Contractors ${fmtK(financials.contractorsTotal)}`,
-            financials.materialsTotal > 0 && `Materials ${fmtK(financials.materialsTotal)}`,
-          ].filter(Boolean).join(' · ') || undefined : undefined}
+          ].filter(Boolean).join(', ') || undefined : undefined}
           action={hasOffset ? 'View breakdown' : undefined}
           onAction={() => onNavigate?.('workspace')}
         />
+        <StatCard
+          label="Registration Deadline"
+          value={deadlineOverdue ? 'Overdue' : daysLeft !== null ? `${daysLeft} days` : '--'}
+          valueColor={deadlineOverdue || deadlineUrgent ? '#dc2626' : '#111827'}
+          subtitle={deadline ? `Due ${deadline.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : undefined}
+          subtitleColor={deadlineUrgent ? '#dc2626' : '#9ca3af'}
+        />
+      </div>
 
+      {/* ── Row 2 ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+        <StatCard
+          label="R&D Activities"
+          value={activityStats.length > 0 ? `${readyActivities}/${activityStats.length}` : '0'}
+          subtitle={activityStats.length > 0
+            ? (readyActivities === activityStats.length ? 'All activities ready' : `${activityStats.length - readyActivities} need attention`)
+            : `${totalEvidence} evidence items collected`}
+          subtitleColor={activityStats.length > 0 && readyActivities < activityStats.length ? '#d97706' : '#9ca3af'}
+          action="View activities"
+          onAction={() => onNavigate?.('activities')}
+        />
         <StatCard
           label="Evidence Collected"
           value={totalEvidence}
           subtitle={totalEvidence > 0
             ? `Across ${new Set((items || []).map(e => e.source)).size} source${new Set((items || []).map(e => e.source)).size !== 1 ? 's' : ''}`
-            : 'No evidence yet'
-          }
+            : 'No evidence yet'}
           action="View evidence"
           onAction={() => onNavigate?.('workspace')}
         />
-
         <StatCard
           label="Technical Framing"
-          value={`${4 - ['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim()).length}/4`}
-          subtitle={['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim()).length === 0
-            ? 'All fields complete'
-            : `${['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim()).length} fields need attention`
-          }
-          subtitleColor={['technical_uncertainty', 'knowledge_gap', 'testing_method', 'success_criteria'].filter(f => !project[f]?.trim()).length > 0 ? '#d97706' : '#9ca3af'}
+          value={`${framingComplete}/4`}
+          subtitle={framingMissing === 0 ? 'All fields complete' : `${framingMissing} field${framingMissing > 1 ? 's' : ''} need attention`}
+          subtitleColor={framingMissing > 0 ? '#d97706' : '#9ca3af'}
           action="Edit details"
           onAction={() => onNavigate?.('details')}
         />
       </div>
 
-      {/* ── Insights + Activities side by side ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: insights.length > 0 ? '1fr 1fr' : '1fr',
-        gap: 16,
-      }}>
+      {/* ── Bottom tables ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: insights.length > 0 ? '1fr 1fr' : '1fr', gap: 16, alignItems: 'start' }}>
+
         {/* Insights */}
         {insights.length > 0 && (
-          <div style={{
-            backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden',
-          }}>
-            <div style={{
-              padding: '14px 20px', borderBottom: '1px solid #f0f0f0',
-              fontSize: 14, fontWeight: 600, color: '#111827',
-            }}>
+          <div style={{ ...cardBase, overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', fontSize: 15, fontWeight: 600, color: '#111827' }}>
               Attention needed
             </div>
-            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+            <div style={{ maxHeight: 340, overflowY: 'auto' }}>
               {insights.map((ins, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
-                    padding: '12px 20px',
-                    borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
-                  }}
-                >
+                <div key={i} style={{
+                  padding: '12px 20px', borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
+                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
+                }}>
                   <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.5 }}>{ins.text}</span>
                   <button
                     onClick={() => onNavigate?.(ins.view)}
-                    style={{
-                      flexShrink: 0, fontSize: 12, fontWeight: 600, color: NAVY,
-                      background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      fontFamily: 'inherit', whiteSpace: 'nowrap', marginTop: 1,
-                    }}
+                    style={{ flexShrink: 0, fontSize: 13, color: '#374151', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => e.currentTarget.style.color = NAVY}
+                    onMouseLeave={e => e.currentTarget.style.color = '#374151'}
                   >
                     {ins.action} →
                   </button>
@@ -273,62 +250,44 @@ export default function ProjectDashboard({
         )}
 
         {/* Activities */}
-        <div style={{
-          backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden',
-        }}>
+        <div style={{ ...cardBase, overflow: 'hidden' }}>
           <div style={{
-            padding: '14px 20px', borderBottom: '1px solid #f0f0f0',
+            padding: '16px 20px', borderBottom: '1px solid #f0f0f0',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>R&D Activities</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>R&D Activities</span>
             {activityStats.length > 0 && (
-              <span style={{ fontSize: 12, color: '#9ca3af' }}>
-                {readyActivities}/{activityStats.length} ready
-              </span>
+              <span style={{ fontSize: 12, color: '#9ca3af' }}>{readyActivities}/{activityStats.length} ready</span>
             )}
           </div>
-
           {activityStats.length === 0 ? (
             <div style={{ padding: '20px', fontSize: 13, color: '#6b7280' }}>
               {totalEvidence >= 5
-                ? <><span>No activities defined. </span><button onClick={() => onNavigate?.('activities')} style={{ color: NAVY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 13, fontFamily: 'inherit' }}>Generate from evidence →</button></>
-                : `No activities. Add ${Math.max(0, 5 - totalEvidence)} more evidence for AI generation.`
-              }
+                ? <>No activities defined. <button onClick={() => onNavigate?.('activities')} style={{ color: NAVY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 13, fontFamily: 'inherit' }}>Generate from evidence →</button></>
+                : `No activities. Add ${Math.max(0, 5 - totalEvidence)} more evidence for AI generation.`}
             </div>
           ) : (
-            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+            <div style={{ maxHeight: 340, overflowY: 'auto' }}>
               {activityStats.map((act, i) => (
-                <div
-                  key={act.id}
-                  style={{
-                    padding: '10px 20px',
-                    borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
-                  }}
-                >
+                <div key={act.id} style={{ padding: '12px 20px', borderTop: i > 0 ? '1px solid #f0f0f0' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: act.issue || act.warnings.length ? 4 : 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{act.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{act.name}</span>
                     <span style={{
-                      fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
+                      fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4, flexShrink: 0,
                       backgroundColor: act.activity_type === 'supporting' ? '#f3f4f6' : NAVY,
                       color: act.activity_type === 'supporting' ? '#6b7280' : 'white',
                     }}>
                       {act.activity_type === 'supporting' ? 'Supporting' : 'Core'}
                     </span>
-                    <span style={{ fontSize: 12, color: '#9ca3af' }}>
-                      {act.evidenceCount} item{act.evidenceCount !== 1 ? 's' : ''}
-                    </span>
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 3 }}>
+                    <span style={{ fontSize: 12, color: '#9ca3af', flexShrink: 0 }}>{act.evidenceCount}</span>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 3, flexShrink: 0 }}>
                       {STEPS.map(step => (
-                        <span
-                          key={step}
-                          title={`${step}: ${act.stepCoverage[step]} items`}
-                          style={{
-                            fontSize: 10, fontWeight: 600, width: 16, height: 16, lineHeight: '16px',
-                            textAlign: 'center', borderRadius: 3,
-                            backgroundColor: act.stepCoverage[step] > 0 ? '#111827' : '#f3f4f6',
-                            color: act.stepCoverage[step] > 0 ? 'white' : '#d1d5db',
-                          }}
-                        >
+                        <span key={step} title={`${step}: ${act.stepCoverage[step]} items`} style={{
+                          fontSize: 10, fontWeight: 600, width: 16, height: 16, lineHeight: '16px',
+                          textAlign: 'center', borderRadius: 3,
+                          backgroundColor: act.stepCoverage[step] > 0 ? '#111827' : '#f3f4f6',
+                          color: act.stepCoverage[step] > 0 ? 'white' : '#d1d5db',
+                        }}>
                           {step.charAt(0)}
                         </span>
                       ))}

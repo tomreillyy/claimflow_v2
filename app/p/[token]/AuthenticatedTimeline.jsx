@@ -1320,7 +1320,6 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
           <ProjectDashboard
             project={project}
             items={items?.filter(ev => !deletedIds.has(ev.id))}
-            token={token}
             coreActivities={coreActivities}
             financials={financialsDerived}
             onNavigate={(view) => {
