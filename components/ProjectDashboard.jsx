@@ -5,6 +5,18 @@ import { useMemo } from 'react';
 const NAVY = '#021048';
 const STEPS = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion'];
 
+const card = {
+  backgroundColor: 'white',
+  border: '1px solid #e5e7eb',
+  borderRadius: 8,
+  overflow: 'hidden',
+};
+
+const label = {
+  fontSize: 11, color: '#6b7280', fontWeight: 500,
+  textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2,
+};
+
 function fmtK(val) {
   if (!val && val !== 0) return '--';
   if (Math.abs(val) >= 1000000) return '$' + (val / 1000000).toFixed(1) + 'M';
@@ -27,17 +39,10 @@ function daysUntil(date) {
   return Math.ceil((t - now) / 86400000);
 }
 
-// Shared label style (matches RunningTotalBar)
-const labelStyle = {
-  fontSize: 11, color: '#6b7280', fontWeight: 500,
-  textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2,
-};
-
 export default function ProjectDashboard({
   project, items, token, coreActivities, financials, onNavigate,
 }) {
 
-  // Per-activity evidence stats
   const activityStats = useMemo(() => {
     const activities = coreActivities || [];
     const evidence = items || [];
@@ -69,7 +74,6 @@ export default function ProjectDashboard({
     });
   }, [coreActivities, items]);
 
-  // Insights
   const insights = useMemo(() => {
     const r = [];
     const evidence = items || [];
@@ -118,18 +122,12 @@ export default function ProjectDashboard({
   const deadlineOverdue = daysLeft !== null && daysLeft < 0;
 
   return (
-    <div style={{
-      backgroundColor: 'white',
-      border: '1px solid #e5e7eb',
-      borderRadius: 8,
-      overflow: 'hidden',
-    }}>
+    <div style={{ padding: '16px 0' }}>
 
-      {/* ── Stats bar ── */}
-      <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'flex-end', gap: 24 }}>
-        {/* Offset (primary) */}
+      {/* ── Financials card ── */}
+      <div style={{ ...card, padding: '14px 20px', display: 'flex', alignItems: 'flex-end', gap: 24, marginBottom: 12 }}>
         <div>
-          <div style={labelStyle}>
+          <div style={label}>
             {hasOffset ? (financials.isRefundable ? 'Refundable Offset' : 'Tax Offset') : 'Estimated Offset'}
           </div>
           <div style={{ fontSize: 20, fontWeight: 700, color: '#1e3a5f', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
@@ -141,21 +139,17 @@ export default function ProjectDashboard({
             </button>
           )}
         </div>
-
-        {/* Eligible spend */}
         {hasOffset && (
           <div>
-            <div style={labelStyle}>Eligible Spend</div>
+            <div style={label}>Eligible Spend</div>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
               {fmtK(financials.eligibleExpenditure)}
             </div>
           </div>
         )}
-
-        {/* Rate + badge */}
         {hasOffset && (
           <div>
-            <div style={labelStyle}>Offset Rate</div>
+            <div style={label}>Offset Rate</div>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1a1a', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
               {(financials.offsetRate * 100).toFixed(1)}%
               <span style={{
@@ -168,11 +162,9 @@ export default function ProjectDashboard({
             </div>
           </div>
         )}
-
-        {/* Registration deadline — right-aligned */}
         {deadline && (
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-            <div style={labelStyle}>Registration</div>
+            <div style={label}>Registration</div>
             <div style={{
               fontSize: 16, fontWeight: 600, fontFamily: 'monospace', whiteSpace: 'nowrap',
               color: deadlineOverdue || deadlineUrgent ? '#dc2626' : '#1a1a1a',
@@ -186,81 +178,102 @@ export default function ProjectDashboard({
         )}
       </div>
 
-      {/* ── Activities ── */}
-      {activityStats.length === 0 ? (
-        <div style={{ borderTop: '1px solid #e5e7eb', padding: '14px 20px', fontSize: 13, color: '#6b7280' }}>
-          {(items || []).length >= 5
-            ? <><span>No activities defined. </span><button onClick={() => onNavigate?.('activities')} style={{ color: NAVY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 13, fontFamily: 'inherit' }}>Generate from evidence →</button></>
-            : `No activities. Add ${Math.max(0, 5 - (items || []).length)} more evidence for AI generation.`
-          }
-        </div>
-      ) : (
-        activityStats.map((act, i) => (
-          <div
-            key={act.id}
-            style={{
-              padding: '10px 20px',
-              borderTop: '1px solid #f0f0f0',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: act.issue || act.warnings.length ? 4 : 0 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{act.name}</span>
-              <span style={{
-                fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
-                backgroundColor: act.activity_type === 'supporting' ? '#f3f4f6' : NAVY,
-                color: act.activity_type === 'supporting' ? '#6b7280' : 'white',
-              }}>
-                {act.activity_type === 'supporting' ? 'Supporting' : 'Core'}
-              </span>
-              <span style={{ fontSize: 12, color: '#9ca3af' }}>
-                {act.evidenceCount} item{act.evidenceCount !== 1 ? 's' : ''}
-              </span>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 3 }}>
-                {STEPS.map(step => (
-                  <span
-                    key={step}
-                    title={`${step}: ${act.stepCoverage[step]} items`}
-                    style={{
-                      fontSize: 10, fontWeight: 600, width: 16, height: 16, lineHeight: '16px',
-                      textAlign: 'center', borderRadius: 3,
-                      backgroundColor: act.stepCoverage[step] > 0 ? '#111827' : '#f3f4f6',
-                      color: act.stepCoverage[step] > 0 ? 'white' : '#d1d5db',
-                    }}
-                  >
-                    {step.charAt(0)}
-                  </span>
-                ))}
-              </div>
+      {/* ── Insights card ── */}
+      {insights.length > 0 && (
+        <div style={{ ...card, marginBottom: 12 }}>
+          {insights.map((ins, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                padding: '10px 20px',
+                borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
+              }}
+            >
+              <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.4 }}>{ins.text}</span>
+              <button
+                onClick={() => onNavigate?.(ins.view)}
+                style={{
+                  flexShrink: 0, fontSize: 12, fontWeight: 600, color: NAVY,
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  fontFamily: 'inherit', whiteSpace: 'nowrap',
+                }}
+              >
+                {ins.action} →
+              </button>
             </div>
-            {act.issue && <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>{act.issue}</div>}
-            {act.warnings.map((w, j) => <div key={j} style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.4 }}>{w}</div>)}
-          </div>
-        ))
+          ))}
+        </div>
       )}
 
-      {/* ── Insights ── */}
-      {insights.length > 0 && insights.map((ins, i) => (
-        <div
-          key={i}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-            padding: '10px 20px',
-            borderTop: i === 0 ? '1px solid #e5e7eb' : '1px solid #f0f0f0',
-          }}
-        >
-          <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.4 }}>{ins.text}</span>
-          <button
-            onClick={() => onNavigate?.(ins.view)}
-            style={{
-              flexShrink: 0, fontSize: 12, fontWeight: 600, color: NAVY,
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              fontFamily: 'inherit', whiteSpace: 'nowrap',
-            }}
-          >
-            {ins.action} →
-          </button>
+      {/* ── Activities card ── */}
+      <div style={card}>
+        <div style={{
+          padding: '10px 20px',
+          borderBottom: '1px solid #f0f0f0',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>R&D Activities</span>
+          {activityStats.length > 0 && (
+            <span style={{ fontSize: 12, color: '#9ca3af' }}>
+              {activityStats.filter(a => !a.issue).length}/{activityStats.length} ready
+            </span>
+          )}
         </div>
-      ))}
+
+        {activityStats.length === 0 ? (
+          <div style={{ padding: '14px 20px', fontSize: 13, color: '#6b7280' }}>
+            {(items || []).length >= 5
+              ? <><span>No activities defined. </span><button onClick={() => onNavigate?.('activities')} style={{ color: NAVY, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 13, fontFamily: 'inherit' }}>Generate from evidence →</button></>
+              : `No activities. Add ${Math.max(0, 5 - (items || []).length)} more evidence for AI generation.`
+            }
+          </div>
+        ) : (
+          <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+            {activityStats.map((act, i) => (
+              <div
+                key={act.id}
+                style={{
+                  padding: '10px 20px',
+                  borderTop: i > 0 ? '1px solid #f0f0f0' : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: act.issue || act.warnings.length ? 4 : 0 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{act.name}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3,
+                    backgroundColor: act.activity_type === 'supporting' ? '#f3f4f6' : NAVY,
+                    color: act.activity_type === 'supporting' ? '#6b7280' : 'white',
+                  }}>
+                    {act.activity_type === 'supporting' ? 'Supporting' : 'Core'}
+                  </span>
+                  <span style={{ fontSize: 12, color: '#9ca3af' }}>
+                    {act.evidenceCount} item{act.evidenceCount !== 1 ? 's' : ''}
+                  </span>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 3 }}>
+                    {STEPS.map(step => (
+                      <span
+                        key={step}
+                        title={`${step}: ${act.stepCoverage[step]} items`}
+                        style={{
+                          fontSize: 10, fontWeight: 600, width: 16, height: 16, lineHeight: '16px',
+                          textAlign: 'center', borderRadius: 3,
+                          backgroundColor: act.stepCoverage[step] > 0 ? '#111827' : '#f3f4f6',
+                          color: act.stepCoverage[step] > 0 ? 'white' : '#d1d5db',
+                        }}
+                      >
+                        {step.charAt(0)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {act.issue && <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>{act.issue}</div>}
+                {act.warnings.map((w, j) => <div key={j} style={{ fontSize: 12, color: '#9ca3af', lineHeight: 1.4 }}>{w}</div>)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
