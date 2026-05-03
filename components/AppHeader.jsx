@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { usePathname } from 'next/navigation';
 import { OnboardingModal } from '@/components/OnboardingModal';
+import { NotificationBell } from '@/components/NotificationBell';
 import { resetOnboarding } from '@/lib/onboarding';
 
 export function AppHeader() {
@@ -198,6 +199,10 @@ export function AppHeader() {
 
           {/* Right: User Avatar (desktop) + Mobile Menu Button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: '100%' }}>
+            {/* Notification Bell - Desktop */}
+            <div className="app-header-user-desktop" style={{ display: 'flex', alignItems: 'center' }}>
+              <NotificationBell />
+            </div>
             {/* User Avatar - Desktop */}
             <div className="app-header-user-desktop" style={{ position: 'relative', display: 'flex', alignItems: 'center' }} ref={userMenuRef}>
               <button

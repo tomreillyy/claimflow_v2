@@ -122,6 +122,52 @@ export async function POST(req) {
       }
     }
 
+    // --- Insert notifications for project owners ---
+    try {
+      const okResults = results.filter(r => r.status === 'ok');
+      const projectIds = [...new Set(okResults.map(r => r.project_id))];
+
+      if (projectIds.length > 0) {
+        const { data: projects } = await supabaseAdmin
+          .from('projects')
+          .select('id, owner_id')
+          .in('id', projectIds);
+
+        // Group results by owner
+        const ownerResults = {};
+        for (const result of okResults) {
+          const proj = projects?.find(p => p.id === result.project_id);
+          if (!proj) continue;
+          if (!ownerResults[proj.owner_id]) ownerResults[proj.owner_id] = [];
+          ownerResults[proj.owner_id].push(result);
+        }
+
+        // Build one notification per owner
+        const notificationRows = Object.entries(ownerResults).map(([ownerId, ownerRes]) => {
+          const totalSynced = ownerRes.reduce((sum, r) => sum + (r.synced || 0), 0);
+          const totalMatched = ownerRes.reduce((sum, r) => sum + (r.matched || 0), 0);
+
+          const message = totalSynced > 0
+            ? `GitHub sync complete — ${totalSynced} new commit${totalSynced !== 1 ? 's' : ''} synced, ${totalMatched} matched to R&D activities`
+            : 'GitHub sync ran — no new commits found';
+
+          return {
+            user_id: ownerId,
+            message,
+            type: totalSynced > 0 ? 'success' : 'info',
+            metadata: { source: 'github-sync', synced: totalSynced, matched: totalMatched },
+          };
+        });
+
+        if (notificationRows.length > 0) {
+          await supabaseAdmin.from('notifications').insert(notificationRows);
+          console.log(`[GitHub Cron] Inserted ${notificationRows.length} notification(s)`);
+        }
+      }
+    } catch (notifErr) {
+      console.error('[GitHub Cron] Failed to insert notifications:', notifErr.message);
+    }
+
     console.log(`[GitHub Cron] Complete:`, JSON.stringify(results));
     return NextResponse.json({ ok: true, results });
 
