@@ -154,7 +154,7 @@ export default function ProjectDashboard({
   const framingMissing = 4 - framingComplete;
 
   return (
-    <div style={{ padding: '12px 0' }}>
+    <div style={{ padding: '0 0 12px' }}>
 
       {/* ── Row 1 ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 14 }}>

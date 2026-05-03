@@ -1264,7 +1264,7 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
         <main style={{
           flex: 1,
           minWidth: 0,
-          padding: activeTab === 'workspace' ? '16px 16px 0' : '40px 48px'
+          padding: activeTab === 'workspace' ? '16px 16px 0' : activeTab === 'dashboard' ? '20px 48px' : '40px 48px'
         }}>
         {/* Consultant breadcrumb */}
         {isConsultant && consultantBreadcrumb && (
@@ -1286,7 +1286,7 @@ export function AuthenticatedTimeline({ project: initialProject, items, token })
             justifyContent: 'space-between',
             alignItems: 'center',
             gap: 16,
-            marginBottom: 24
+            marginBottom: activeTab === 'dashboard' ? 8 : 24
           }}>
             <h1 style={{
               fontSize: 22,
