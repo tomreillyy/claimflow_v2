@@ -40,24 +40,21 @@ function StatCard({ label, value, valueColor, subtitle, subtitleColor, action, o
       padding: '22px 24px',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'space-between',
     }}>
       <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>{label}</div>
-      <div>
-        <div style={{
-          fontSize: 26, fontWeight: 700, lineHeight: 1.1, marginBottom: 6,
-          color: valueColor || '#111827',
-        }}>
-          {value}
-        </div>
-        {subtitle && (
-          <div style={{ fontSize: 13, color: subtitleColor || '#9ca3af', lineHeight: 1.4 }}>
-            {subtitle}
-          </div>
-        )}
+      <div style={{
+        fontSize: 26, fontWeight: 700, lineHeight: 1.1, marginBottom: 6,
+        color: valueColor || '#111827',
+      }}>
+        {value}
       </div>
+      {subtitle && (
+        <div style={{ fontSize: 13, color: subtitleColor || '#9ca3af', lineHeight: 1.4 }}>
+          {subtitle}
+        </div>
+      )}
       {action && (
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
           <button
             onClick={onAction}
             style={{
