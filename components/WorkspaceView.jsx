@@ -626,6 +626,34 @@ function ActivityRail({ activities, activeView, onSelect, addBtnRef, onAddClick,
         </button>
       </div>
 
+      {/* Project sections — always visible at top */}
+      <div style={{ padding: '6px 10px 4px', borderBottom: '1px solid #eef0f2' }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6, padding: '0 4px' }}>
+          Project
+        </div>
+        {[
+          { key: 'overview', label: 'Project Overview' },
+          { key: 'financials', label: 'Financials' },
+          { key: 'boundary', label: 'R&D Boundary' },
+          { key: 'attestations', label: 'Attestations' },
+        ].map(item => {
+          const sel = activeView.type === 'section' && activeView.id === item.key;
+          return (
+            <button key={item.key} onClick={() => onSelect({ type: 'section', id: item.key })} style={{
+              width: '100%', textAlign: 'left', display: 'block',
+              padding: '6px 10px', marginBottom: 1, borderRadius: 6,
+              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              background: sel ? 'white' : 'transparent',
+              boxShadow: sel ? '0 1px 3px rgba(0,0,0,0.04)' : 'none',
+              fontSize: 12, color: sel ? '#111827' : '#6b7280',
+              fontWeight: sel ? 500 : 400,
+            }}>
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Core activities */}
       {activities.filter(a => (a.activity_type || 'core') === 'core').length > 0 && (
         <div style={{ padding: '4px 10px 4px' }}>
@@ -707,32 +735,6 @@ function ActivityRail({ activities, activeView, onSelect, addBtnRef, onAddClick,
         </div>
       )}
 
-      <div style={{ flex: 1 }} />
-
-      {/* Project sections */}
-      <div style={{ padding: '6px 10px 14px', borderTop: '1px solid #eef0f2' }}>
-        {[
-          { key: 'overview', label: 'Project Overview' },
-          { key: 'financials', label: 'Financials' },
-          { key: 'boundary', label: 'R&D Boundary' },
-          { key: 'attestations', label: 'Attestations' },
-        ].map(item => {
-          const sel = activeView.type === 'section' && activeView.id === item.key;
-          return (
-            <button key={item.key} onClick={() => onSelect({ type: 'section', id: item.key })} style={{
-              width: '100%', textAlign: 'left', display: 'block',
-              padding: '6px 10px', marginBottom: 1, borderRadius: 6,
-              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-              background: sel ? 'white' : 'transparent',
-              boxShadow: sel ? '0 1px 3px rgba(0,0,0,0.04)' : 'none',
-              fontSize: 12, color: sel ? '#111827' : '#6b7280',
-              fontWeight: sel ? 500 : 400,
-            }}>
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
     </div>
   );
 }
