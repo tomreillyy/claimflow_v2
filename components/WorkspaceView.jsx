@@ -1,662 +1,321 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { SECTION_NAMES } from '@/lib/claimFlowMasterContext';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import { marked } from 'marked';
+import { SECTION_NAMES, ACTIVITY_NARRATIVE_STEPS } from '@/lib/claimFlowMasterContext';
 import { sanitizeHtml } from '@/lib/sanitizeHtml';
+import InlineEditor, { BlobLoader } from './workspace/InlineEditor';
+import { CreateActivityModal, UploadFileModal, AddEvidenceModal } from './workspace/WorkspaceModals';
 import FinancialsPage from './financials/FinancialsPage';
 import FinancialsPrintSection from './financials/FinancialsPrintSection';
 
 const NAVY = '#021048';
 
-const SOURCE_ICONS = {
-  manual: 'M', note: 'M', email: '@', github: 'G',
-  document: 'D', upload: 'U', jira: 'J',
+const STAGE_KEYS_5 = ['hypothesis', 'experiment', 'observation', 'evaluation', 'conclusion'];
+
+const STAGES = [
+  { key: 'prior_knowledge', label: 'Prior Knowledge & Knowledge Gap' },
+  { key: 'hypothesis', label: 'Hypothesis' },
+  { key: 'experiment', label: 'Experiment' },
+  { key: 'observation', label: 'Observation' },
+  { key: 'evaluation', label: 'Evaluation' },
+  { key: 'conclusion', label: 'Conclusion & New Knowledge' },
+];
+
+const SOURCE_ICONS = { manual: 'M', note: 'M', email: '@', github: 'G', document: 'D', upload: 'U', jira: 'J' };
+const SOURCE_COLORS = { manual: NAVY, github: '#24292f', jira: '#0052CC', email: '#0ea5e9', document: '#7c3aed', upload: '#6b7280', note: NAVY };
+
+// Map from API capitalized step names to our lowercase stage keys
+const STEP_TO_STAGE = {
+  'Prior Knowledge': 'prior_knowledge',
+  'Hypothesis': 'hypothesis',
+  'Experiment': 'experiment',
+  'Observation': 'observation',
+  'Evaluation': 'evaluation',
+  'Conclusion': 'conclusion',
+  'Unknown': null,
 };
 
-const ACTIVITY_STEPS = [
-  { key: 'prior_knowledge', label: 'Prior Knowledge', placeholder: 'What existing sources, standards, or literature were checked? Why were they insufficient?' },
-  { key: 'hypothesis', label: 'Hypothesis', placeholder: 'What testable proposition was formed? What measurable outcome was expected?' },
-  { key: 'experiment', label: 'Experiment', placeholder: 'What methodology was used? What controls and test environments were set up?' },
-  { key: 'observation', label: 'Observation', placeholder: 'What data was collected? What results were observed, including any failures?' },
-  { key: 'evaluation', label: 'Evaluation', placeholder: 'How were results analysed against the hypothesis? What comparisons were made?' },
-  { key: 'conclusion', label: 'Conclusion', placeholder: 'What new knowledge was generated? What was definitively learned?' },
+const SIGN_OFF_ROLES = [
+  { key: 'technical_lead', title: 'Technical Lead / CTO', description: 'I confirm that the activities described in this claim pack constitute genuine R&D involving technical uncertainty that could not be resolved by a competent professional using existing knowledge.' },
+  { key: 'cfo', title: 'CFO / Finance', description: 'I confirm that the expenditure figures in this claim pack are accurate, the apportionment methodology has been applied consistently, and costs are substantiated by underlying records.' },
+  { key: 'ceo', title: 'CEO / Managing Director', description: 'I confirm that this claim pack is complete and accurate to the best of my knowledge, and that the company is entitled to claim the R&D Tax Incentive for the activities and expenditure described.' },
 ];
 
-// Project-level tabs
-const PROJECT_TABS = [
-  { key: 'project_overview', label: 'Overview' },
-];
-const SUFFIX_TABS = [
-  { key: 'financials', label: 'Financials' },
-  { key: 'rd_boundary', label: 'R&D Boundary' },
-];
-const MORE_TABS = [
-  { key: 'overseas_contracted', label: 'Overseas & Contracted' },
-  { key: 'registration_tieout', label: 'Registration' },
-  { key: 'attestations', label: 'Attestations' },
-];
-
-function relativeTime(dateStr) {
-  const now = new Date();
-  const d = new Date(dateStr);
-  const diff = Math.floor((now - d) / 1000);
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function normaliseContent(raw) {
-  if (!raw) return '';
-  const trimmed = raw.trim();
-  if (trimmed.startsWith('<')) return trimmed;
-  return marked.parse(trimmed, { breaks: false });
-}
-
-/* ── Inline Section Editor with floating toolbar ── */
-function InlineEditor({ sectionKey, projectId, initialContent, placeholder, onSaveStatus }) {
-  const [saveTimer, setSaveTimer] = useState(null);
-  const [toolbarPos, setToolbarPos] = useState(null);
-  const isDirtyRef = useRef(false);
-  const wrapperRef = useRef(null);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3, 4] } }),
-      Placeholder.configure({ placeholder: placeholder || 'Start typing...' }),
-    ],
-    content: normaliseContent(initialContent),
-    editable: true,
-    onUpdate: ({ editor }) => {
-      if (!isDirtyRef.current) return;
-      const html = editor.getHTML();
-      if (saveTimer) clearTimeout(saveTimer);
-      const timer = setTimeout(() => handleSave(html), 2000);
-      setSaveTimer(timer);
-    },
-    onSelectionUpdate: ({ editor }) => {
-      isDirtyRef.current = true;
-      const { from, to } = editor.state.selection;
-      if (from === to) { setToolbarPos(null); return; }
-      const domSel = window.getSelection();
-      if (!domSel || domSel.rangeCount === 0) return;
-      const rect = domSel.getRangeAt(0).getBoundingClientRect();
-      const wr = wrapperRef.current?.getBoundingClientRect();
-      if (!wr || rect.width === 0) return;
-      setToolbarPos({ top: rect.top - wr.top - 44, left: rect.left - wr.left + rect.width / 2 });
-    },
-  });
-
-  useEffect(() => {
-    const hide = () => setTimeout(() => {
-      if (editor && editor.state.selection.from === editor.state.selection.to) setToolbarPos(null);
-    }, 200);
-    document.addEventListener('mousedown', hide);
-    return () => document.removeEventListener('mousedown', hide);
-  }, [editor]);
-
-  useEffect(() => {
-    const n = normaliseContent(initialContent);
-    if (editor) { editor.commands.setContent(n || ''); isDirtyRef.current = false; }
-  }, [initialContent, sectionKey]);
-
-  const handleSave = useCallback(async (content) => {
-    if (!content || content === '<p></p>') return;
-    onSaveStatus?.('saving');
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not authenticated');
-      const res = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ content }),
-      });
-      if (!res.ok) throw new Error('Save failed');
-      onSaveStatus?.('saved');
-      setTimeout(() => onSaveStatus?.(''), 2000);
-    } catch { onSaveStatus?.('error'); }
-  }, [projectId, sectionKey, onSaveStatus]);
-
-  if (!editor) return null;
-
-  const TB = ({ label, action, active, style: s = {} }) => (
-    <button onMouseDown={e => { e.preventDefault(); action(); }} style={{
-      padding: '4px 8px', minWidth: 28, backgroundColor: active ? 'white' : 'transparent',
-      color: active ? '#111' : 'rgba(255,255,255,0.9)', border: 'none', borderRadius: 4,
-      fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'system-ui', lineHeight: 1.2, ...s,
-    }}>{label}</button>
+/* ── Source badge ── */
+function SrcBadge({ src, size = 22 }) {
+  return (
+    <span style={{
+      width: size, height: size, borderRadius: 5, flexShrink: 0,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      background: SOURCE_COLORS[src] || '#6b7280',
+      fontSize: size < 22 ? 9 : 10, fontWeight: 700, color: 'white',
+      fontFamily: 'ui-monospace, monospace',
+    }}>
+      {SOURCE_ICONS[src] || '?'}
+    </span>
   );
+}
+
+/* ── Evidence card (inside a stage section) ── */
+function EvidenceCard({ item, onContextMenu }) {
+  const [open, setOpen] = useState(false);
+  const text = item.content || item.text || '';
+  const limit = 180;
+  const long = text.length > limit;
+  const date = item.created_at
+    ? new Date(item.created_at).toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' })
+    : item.date || '';
+  const author = item.author_email || item.author || '';
 
   return (
-    <div ref={wrapperRef} style={{ position: 'relative' }}>
-      {toolbarPos && (
-        <div onMouseDown={e => e.preventDefault()} style={{
-          position: 'absolute', top: toolbarPos.top, left: toolbarPos.left, transform: 'translateX(-50%)',
-          zIndex: 20, display: 'flex', alignItems: 'center', gap: 2,
-          backgroundColor: '#1a1a1a', borderRadius: 8, padding: '4px 6px',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
-        }}>
-          <TB label="B" action={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} style={{ fontWeight: 800 }} />
-          <TB label="I" action={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} style={{ fontStyle: 'italic' }} />
-          <TB label="H2" action={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} style={{ fontSize: 11 }} />
-          <div style={{ width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
-          <button onMouseDown={e => e.preventDefault()} style={{
-            display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px',
-            backgroundColor: NAVY, color: 'white', border: 'none', borderRadius: 5,
-            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'system-ui',
-          }}>
-            <span style={{ fontSize: 14 }}>&#10022;</span> Rewrite
-          </button>
+    <div
+      onContextMenu={onContextMenu}
+      style={{
+        padding: '10px 14px', background: 'white', borderRadius: 8,
+        border: '1px solid #eef0f2', display: 'flex', gap: 10,
+        alignItems: 'flex-start', transition: 'border-color 0.1s',
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = '#d1d5db'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = '#eef0f2'}
+    >
+      <SrcBadge src={item.source || 'manual'} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+          <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'ui-monospace, monospace', fontWeight: 500 }}>{date}</span>
+          {item.meta?.type === 'jira' && item.meta.jira_key && (
+            <span style={{ fontSize: 10, fontWeight: 600, color: '#0052CC', background: '#e8f0fe', padding: '1px 5px', borderRadius: 3 }}>{item.meta.jira_key}</span>
+          )}
+          {item.source === 'github' && item.meta && (
+            <span style={{ fontSize: 10, color: '#57606a' }}>
+              {item.meta.files_changed > 0 && `${item.meta.files_changed} files `}
+              {item.meta.additions > 0 && <span style={{ color: '#1a7f37' }}>+{item.meta.additions}</span>}
+              {item.meta.additions > 0 && item.meta.deletions > 0 && ' '}
+              {item.meta.deletions > 0 && <span style={{ color: '#cf222e' }}>-{item.meta.deletions}</span>}
+            </span>
+          )}
+          {author && <span style={{ fontSize: 10, color: '#c4c8cf', marginLeft: 'auto' }}>{author.split('@')[0]}</span>}
         </div>
-      )}
-      <EditorContent editor={editor} />
+        <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.55, whiteSpace: 'pre-line' }}>
+          {open || !long ? text : text.slice(0, limit) + '\u2026'}
+          {long && (
+            <button onClick={() => setOpen(!open)} style={{
+              display: 'inline', marginLeft: 4, padding: 0, border: 'none',
+              background: 'none', fontSize: 12, fontWeight: 500, color: '#2563eb',
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              {open ? 'less' : 'more'}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-const STEPS = ['Hypothesis', 'Experiment', 'Observation', 'Evaluation', 'Conclusion', 'Unknown'];
-const ACT_TYPES = [{ value: 'core', label: 'Core R&D' }, { value: 'supporting', label: 'Supporting R&D' }];
-
-/* ── Evidence row (compact) with right-click context menu ── */
-function EvidenceRow({ ev, evidenceSteps, evidenceActivityTypes, selected, onClick, contextActions, token, onEvidenceChange }) {
-  const [ctxMenu, setCtxMenu] = useState(null);
-  const [subMenu, setSubMenu] = useState(null); // 'step' | 'actType' | 'reassign' | null
-  const [people, setPeople] = useState([]);
-  const [newAuthor, setNewAuthor] = useState('');
-  const [reassigning, setReassigning] = useState(false);
-  const step = evidenceSteps?.[ev.id]?.step || ev.systematic_step_primary;
-  const actType = evidenceActivityTypes?.[ev.id]?.activity_type || ev.activity_type || 'core';
-
-  const closeAll = () => { setCtxMenu(null); setSubMenu(null); setNewAuthor(''); };
-
-  const handleContextMenu = (e) => {
-    e.preventDefault();
-    setCtxMenu({ x: e.clientX, y: e.clientY });
-    setSubMenu(null);
-  };
-
-  // Fetch people when reassign sub-menu opens
-  useEffect(() => {
-    if (subMenu === 'reassign' && people.length === 0 && token) {
-      fetch(`/api/projects/${token}/people`)
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.people) setPeople(d.people); })
-        .catch(() => {});
-    }
-  }, [subMenu, token, people.length]);
-
-  const handleStepSelect = async (newStep) => {
-    if (onEvidenceChange) onEvidenceChange(ev.id, 'step', newStep);
-    closeAll();
-    try {
-      await fetch(`/api/evidence/${token}/set-step`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ evidence_id: ev.id, step: newStep }),
-      });
-    } catch (err) { console.error('Failed to update step:', err); }
-  };
-
-  const handleActivityTypeSelect = async (newType) => {
-    if (onEvidenceChange) onEvidenceChange(ev.id, 'activityType', newType);
-    closeAll();
-    try {
-      await fetch(`/api/evidence/${token}/set-activity-type`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ evidence_id: ev.id, activity_type: newType }),
-      });
-    } catch (err) { console.error('Failed to update activity type:', err); }
-  };
-
-  const handleReassign = async () => {
-    if (!newAuthor) return;
-    setReassigning(true);
-    try {
-      const res = await fetch(`/api/evidence/${token}/reassign`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ evidence_id: ev.id, new_author_email: newAuthor }),
-      });
-      if (!res.ok) throw new Error('Failed to reassign');
-      if (onEvidenceChange) onEvidenceChange(ev.id, 'reassign', newAuthor);
-      closeAll();
-    } catch (err) {
-      console.error('Failed to reassign:', err);
-      alert('Failed to reassign evidence');
-    } finally { setReassigning(false); }
-  };
-
-  const handleDelete = async () => {
-    if (onEvidenceChange) onEvidenceChange(ev.id, 'delete');
-    closeAll();
-    try {
-      await fetch(`/api/evidence/${token}/delete`, {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ evidence_id: ev.id }),
-      });
-    } catch (err) { console.error('Failed to delete:', err); }
-  };
-
-  const menuBtnStyle = (danger) => ({
-    display: 'block', width: '100%', textAlign: 'left',
-    padding: '8px 14px', fontSize: 13,
-    color: danger ? '#dc2626' : '#374151',
-    fontWeight: 400, backgroundColor: 'white',
-    border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-  });
-
+/* ── Context menu ── */
+function ContextMenu({ x, y, items, onClose }) {
   return (
     <>
-      <div
-        onClick={onClick}
-        onContextMenu={handleContextMenu}
-        style={{
-          padding: '10px 16px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer',
-          backgroundColor: selected ? '#f0f4ff' : 'white', transition: 'background-color 0.12s',
-        }}
-        onMouseEnter={e => { if (!selected) e.currentTarget.style.backgroundColor = '#fafbfc'; }}
-        onMouseLeave={e => { if (!selected) e.currentTarget.style.backgroundColor = 'white'; }}
-      >
-        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'ui-monospace, Monaco, monospace' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 3, backgroundColor: '#f3f4f6', fontSize: 10, fontWeight: 700, color: '#6b7280', flexShrink: 0 }}>
-            {SOURCE_ICONS[ev.source] || 'M'}
-          </span>
-          <span style={{ color: '#6b7280', fontWeight: 500 }}>{relativeTime(ev.created_at)}</span>
-          {step && step !== 'Unknown' && (<><span style={{ color: '#d1d5db' }}>·</span><span style={{ color: '#374151', fontWeight: 600, fontSize: 11 }}>{step}</span></>)}
-          {actType && (<><span style={{ color: '#d1d5db' }}>·</span><span style={{ padding: '1px 5px', fontSize: 10, fontWeight: 600, borderRadius: 3, backgroundColor: actType === 'core' ? NAVY : '#6b7280', color: 'white' }}>{actType === 'core' ? 'Core' : 'Supporting'}</span></>)}
-        </div>
-        {ev.content && (<p style={{ fontSize: 13, color: '#1a1a1a', lineHeight: 1.5, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ev.content}</p>)}
-        {ev.author_email && (<div style={{ fontSize: 11, color: '#c0c5ce', marginTop: 4 }}>{ev.author_email}</div>)}
-        {/* GitHub metadata */}
-        {ev.source === 'github' && ev.meta && (
-          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 11 }}>
-            <a href={ev.meta.commit_url} target="_blank" rel="noopener noreferrer" style={{ color: '#6b7280', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, fontFamily: 'ui-monospace, Monaco, monospace' }}>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-              {ev.meta.sha?.substring(0, 7)}
-            </a>
-            {ev.meta.files_changed > 0 && <span style={{ color: '#9ca3af' }}>{ev.meta.files_changed} file{ev.meta.files_changed !== 1 ? 's' : ''}</span>}
-            {(ev.meta.additions > 0 || ev.meta.deletions > 0) && (
-              <span>
-                {ev.meta.additions > 0 && <span style={{ color: '#1a7f37' }}>+{ev.meta.additions}</span>}
-                {ev.meta.additions > 0 && ev.meta.deletions > 0 && ' '}
-                {ev.meta.deletions > 0 && <span style={{ color: '#cf222e' }}>-{ev.meta.deletions}</span>}
-              </span>
-            )}
-          </div>
-        )}
-        {/* Jira metadata */}
-        {ev.meta?.type === 'jira' && (
-          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 11 }}>
-            <a href={ev.meta.jira_url} target="_blank" rel="noopener noreferrer" style={{ color: '#6b7280', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#2684FF"><path d="M11.53 2c0 2.4 1.97 4.35 4.35 4.35h1.78v1.7c0 2.4 1.94 4.34 4.34 4.35V2.84A.84.84 0 0021.16 2H11.53zM6.77 6.8a4.362 4.362 0 004.34 4.34h1.8v1.72a4.362 4.362 0 004.34 4.34V7.63a.84.84 0 00-.83-.83H6.77zM2 11.6a4.362 4.362 0 004.35 4.36h1.78v1.7C8.13 20.06 10.1 22 12.48 22V12.44a.84.84 0 00-.84-.84H2z"/></svg>
-              {ev.meta.jira_key}
-            </a>
-            {ev.meta.issue_type && <span style={{ padding: '1px 5px', fontSize: 10, borderRadius: 3, backgroundColor: '#f3f4f6', color: '#6b7280' }}>{ev.meta.issue_type}</span>}
-            {ev.meta.status && <span style={{ padding: '1px 5px', fontSize: 10, borderRadius: 3, backgroundColor: '#dbeafe', color: '#1e40af' }}>{ev.meta.status}</span>}
-            {ev.meta.story_points && <span style={{ color: '#9ca3af' }}>{ev.meta.story_points} pts</span>}
-          </div>
-        )}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+      <div style={{
+        position: 'fixed', top: y, left: x, zIndex: 70,
+        background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
+        minWidth: 170, padding: '4px 0',
+      }}>
+        {items.map((item, i) => item.divider ? (
+          <div key={i} style={{ borderTop: '1px solid #f0f0f0', margin: '4px 0' }} />
+        ) : (
+          <button key={i} onClick={() => { item.action?.(); onClose(); }} style={{
+            display: 'block', width: '100%', textAlign: 'left',
+            padding: '7px 14px', fontSize: 13,
+            color: item.danger ? '#dc2626' : '#374151',
+            fontWeight: 400, background: 'white', border: 'none',
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = item.danger ? '#fef2f2' : '#f9fafb'}
+            onMouseLeave={e => e.currentTarget.style.background = 'white'}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
-
-      {/* Right-click context menu */}
-      {ctxMenu && (
-        <>
-          <div onClick={closeAll} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
-          <div style={{
-            position: 'fixed', top: ctxMenu.y, left: ctxMenu.x, zIndex: 70,
-            backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'visible', minWidth: 180,
-          }}>
-            {/* Link/unlink actions from parent */}
-            {contextActions.map((action, i) => (
-              <button
-                key={i}
-                onClick={() => { action.action(); closeAll(); }}
-                style={menuBtnStyle(action.danger)}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = action.danger ? '#fef2f2' : '#f9fafb'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-              >
-                {action.label}
-              </button>
-            ))}
-            {contextActions.length > 0 && <div style={{ borderTop: '1px solid #f0f0f0' }} />}
-
-            {/* Re-classify step */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setSubMenu(subMenu === 'step' ? null : 'step')}
-                style={{ ...menuBtnStyle(false), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-              >
-                Re-classify step <span style={{ fontSize: 10, color: '#9ca3af' }}>▸</span>
-              </button>
-              {subMenu === 'step' && (
-                <div style={{
-                  position: 'absolute', left: '100%', top: 0, zIndex: 80,
-                  backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 150,
-                }}>
-                  {STEPS.map(s => (
-                    <button key={s} onClick={() => handleStepSelect(s)}
-                      style={{ ...menuBtnStyle(false), fontWeight: s === step ? 600 : 400 }}
-                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-                    >{s}{s === step ? ' ✓' : ''}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Re-classify activity type */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setSubMenu(subMenu === 'actType' ? null : 'actType')}
-                style={{ ...menuBtnStyle(false), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-              >
-                Change activity type <span style={{ fontSize: 10, color: '#9ca3af' }}>▸</span>
-              </button>
-              {subMenu === 'actType' && (
-                <div style={{
-                  position: 'absolute', left: '100%', top: 0, zIndex: 80,
-                  backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 150,
-                }}>
-                  {ACT_TYPES.map(t => (
-                    <button key={t.value} onClick={() => handleActivityTypeSelect(t.value)}
-                      style={{ ...menuBtnStyle(false), fontWeight: t.value === actType ? 600 : 400 }}
-                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-                    >{t.label}{t.value === actType ? ' ✓' : ''}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Reassign person */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setSubMenu(subMenu === 'reassign' ? null : 'reassign')}
-                style={{ ...menuBtnStyle(false), display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-              >
-                Reassign person <span style={{ fontSize: 10, color: '#9ca3af' }}>▸</span>
-              </button>
-              {subMenu === 'reassign' && (
-                <div style={{
-                  position: 'absolute', left: '100%', top: 0, zIndex: 80,
-                  backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 200, padding: 10,
-                }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Reassign to:</div>
-                  <select
-                    value={newAuthor}
-                    onChange={e => setNewAuthor(e.target.value)}
-                    style={{ width: '100%', padding: '6px 8px', fontSize: 12, borderRadius: 5, border: '1px solid #d1d5db', marginBottom: 8, fontFamily: 'inherit' }}
-                  >
-                    <option value="">Select person...</option>
-                    {people.map(p => (
-                      <option key={p.email} value={p.email}>{p.name || p.email}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleReassign}
-                    disabled={!newAuthor || reassigning}
-                    style={{
-                      width: '100%', padding: '6px', fontSize: 12, fontWeight: 600,
-                      backgroundColor: newAuthor ? NAVY : '#e5e7eb', color: newAuthor ? 'white' : '#9ca3af',
-                      border: 'none', borderRadius: 5, cursor: newAuthor ? 'pointer' : 'default', fontFamily: 'inherit',
-                    }}
-                  >{reassigning ? 'Reassigning...' : 'Reassign'}</button>
-                </div>
-              )}
-            </div>
-
-            <div style={{ borderTop: '1px solid #f0f0f0' }} />
-
-            {/* Delete */}
-            <button
-              onClick={handleDelete}
-              style={menuBtnStyle(true)}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-            >
-              Delete evidence
-            </button>
-          </div>
-        </>
-      )}
     </>
   );
 }
 
-/* ── Create activity modal ── */
-function CreateActivityModal({ token, onCreated, onClose }) {
-  const [name, setName] = useState('');
-  const [uncertainty, setUncertainty] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+/* ── Collapsible stage section ── */
+function StageSection({
+  stage, evidence, sectionKey, projectId, sections,
+  expanded, onToggle, onSaveStatus, onLinkEvidence, onAddNote,
+  onUnlinkEvidence, activityId, onMoveStage,
+}) {
+  const evCount = evidence.length;
+  const narrativeData = sections[sectionKey];
+  const narrativeContent = narrativeData?.content || '';
+  const plainText = narrativeContent.replace(/<[^>]*>/g, '').trim();
+  const hasNarrative = plainText.length > 10;
+  const charCount = plainText.length;
+  const empty = evCount === 0 && !hasNarrative;
+  const [ctxMenu, setCtxMenu] = useState(null);
 
-  const handleCreate = async () => {
-    if (!name.trim() || !uncertainty.trim()) return;
-    setSaving(true); setError('');
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/projects/${token}/core-activities`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ name: name.trim(), uncertainty: uncertainty.trim() }),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
-      onCreated(await res.json());
-      onClose();
-    } catch (err) { setError(err.message); }
-    setSaving(false);
-  };
-
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
-      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: 12, width: 460, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>New activity</h3>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, color: '#9ca3af', cursor: 'pointer', padding: '0 4px' }}>×</button>
-        </div>
-        <div style={{ padding: 20 }}>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Activity name</label>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Isolation Forest Thresholding" maxLength={60} autoFocus
-            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 8, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
-            onFocus={e => e.target.style.borderColor = NAVY} onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, textAlign: 'right' }}>{name.length}/60</div>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6, marginTop: 12 }}>Technical uncertainty</label>
-          <textarea value={uncertainty} onChange={e => setUncertainty(e.target.value)} placeholder="What technical unknown are you investigating?" maxLength={800} rows={3}
-            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 8, outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.5 }}
-            onFocus={e => e.target.style.borderColor = NAVY} onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, textAlign: 'right' }}>{uncertainty.length}/800</div>
-          {error && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{error}</div>}
-        </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={{ padding: '7px 14px', fontSize: 13, fontWeight: 500, color: '#6b7280', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-          <button onClick={handleCreate} disabled={saving || !name.trim() || !uncertainty.trim()} style={{ padding: '7px 16px', fontSize: 13, fontWeight: 600, color: 'white', backgroundColor: saving || !name.trim() || !uncertainty.trim() ? '#a5b4fc' : NAVY, border: 'none', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-            {saving ? 'Creating...' : 'Create activity'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Organic blob loader ── */
-function BlobLoader() {
   return (
     <div style={{
-      position: 'sticky', top: 0, left: 0, right: 0, height: 0,
-      zIndex: 10, display: 'flex', justifyContent: 'center',
+      borderRadius: 10,
+      border: `1px solid ${empty ? '#fecaca' : expanded ? '#d1d5db' : '#f0f1f3'}`,
+      background: 'white', overflow: 'hidden', transition: 'border-color 0.15s',
     }}>
-    <div style={{
-      marginTop: 120, width: 80, height: 80,
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderRadius: '50%',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-    }}>
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <circle className="blob-main" cx="24" cy="24" r="10" fill={NAVY} />
-        <circle className="blob-orbit1" cx="24" cy="8" r="4" fill={NAVY} opacity="0.5" />
-        <circle className="blob-orbit2" cx="24" cy="40" r="3" fill={NAVY} opacity="0.3" />
-      </svg>
-      <style>{`
-        .blob-main {
-          animation: blob-pulse 1.4s ease-in-out infinite;
-          transform-origin: center;
-        }
-        .blob-orbit1 {
-          animation: blob-orbit 1.4s ease-in-out infinite;
-          transform-origin: 24px 24px;
-        }
-        .blob-orbit2 {
-          animation: blob-orbit 1.4s ease-in-out infinite 0.7s;
-          transform-origin: 24px 24px;
-        }
-        @keyframes blob-pulse {
-          0%, 100% { r: 10; }
-          50% { r: 13; }
-        }
-        @keyframes blob-orbit {
-          0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.5; }
-          50% { transform: rotate(180deg) scale(0.6); opacity: 0.2; }
-        }
-      `}</style>
-    </div>
-    </div>
-  );
-}
+      {/* Header */}
+      <button onClick={onToggle} style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+        padding: '13px 16px', background: 'none', border: 'none',
+        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+      }}>
+        <span style={{
+          width: 20, fontSize: 12, color: '#9ca3af', flexShrink: 0,
+          transition: 'transform 0.15s',
+          transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+        }}>
+          &#9656;
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: empty ? '#dc2626' : '#111827', flex: 1 }}>
+          {stage.label}
+        </span>
+        {evCount > 0 && (
+          <span style={{ padding: '2px 8px', fontSize: 10, fontWeight: 600, borderRadius: 10, background: '#f0fdf4', color: '#16a34a' }}>
+            {evCount}
+          </span>
+        )}
+        {hasNarrative && (
+          <span style={{ padding: '2px 8px', fontSize: 10, fontWeight: 500, borderRadius: 10, background: '#eff6ff', color: '#2563eb' }}>
+            drafted
+          </span>
+        )}
+        {empty && (
+          <span style={{ padding: '2px 8px', fontSize: 10, fontWeight: 500, borderRadius: 10, background: '#fef2f2', color: '#dc2626' }}>
+            gap
+          </span>
+        )}
+      </button>
 
-/* ── Per-activity narrative panel ── */
-function ActivityNarrativePanel({ activity, projectId, token, sections, saveStatus, onSaveStatus, onGenerated }) {
-  const [generating, setGenerating] = useState(false);
-  const [genError, setGenError] = useState(null);
-  const isAI = activity.source === 'ai';
-
-  const hasContent = ACTIVITY_STEPS.some(({ key }) => {
-    const s = sections[`activity_${activity.id}_${key}`];
-    return s?.content && s.content.replace(/<[^>]*>/g, '').trim().length > 10;
-  });
-
-  const handleGenerate = async () => {
-    setGenerating(true);
-    setGenError(null);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`/api/projects/${token}/activities/${activity.id}/generate-narrative`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-        },
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Generation failed');
-      onGenerated?.();
-    } catch (err) {
-      setGenError(err.message);
-      setTimeout(() => setGenError(null), 5000);
-    }
-    setGenerating(false);
-  };
-
-  return (
-    <div style={{ padding: '28px 36px 36px', position: 'relative', minHeight: '100%' }}>
-      {generating && <BlobLoader />}
-
-      {/* Activity header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4, gap: 10 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-            <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
-              {activity.name}
-            </h1>
-            <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 600, borderRadius: 4, backgroundColor: isAI ? '#ede9fe' : '#ecfdf5', color: isAI ? '#7c3aed' : '#059669' }}>
-              {isAI ? 'AI' : 'Manual'}
-            </span>
-            <span style={{ padding: '2px 8px', fontSize: 11, fontWeight: 500, borderRadius: 4, backgroundColor: activity.status === 'adopted' ? '#dcfce7' : '#fef9c3', color: activity.status === 'adopted' ? '#166534' : '#854d0e' }}>
-              {activity.status === 'adopted' ? 'Adopted' : 'Draft'}
-            </span>
-          </div>
-          {activity.uncertainty && (
-            <p style={{ fontSize: 14, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
-              {activity.uncertainty}
-            </p>
-          )}
+      {/* Collapsed narrative preview */}
+      {!expanded && hasNarrative && (
+        <div style={{
+          padding: '0 16px 12px 46px', fontSize: 13, color: '#9ca3af',
+          lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {plainText.slice(0, 100)}{plainText.length > 100 ? '\u2026' : ''}
         </div>
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          style={{
-            padding: '7px 16px', fontSize: 13, fontWeight: 600,
-            color: 'white', backgroundColor: generating ? '#9ca3af' : NAVY,
-            border: 'none', borderRadius: 8,
-            cursor: generating ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit',
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            flexShrink: 0, whiteSpace: 'nowrap',
-          }}
-        >
-          <span style={{ fontSize: 15 }}>&#10022;</span> {hasContent ? 'Regenerate with AI' : 'Generate with AI'}
-        </button>
-      </div>
+      )}
 
-      {/* Save status + gen error */}
-      <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 28, minHeight: 18 }}>
-        {saveStatus === 'saving' && 'Saving...'}
-        {saveStatus === 'saved' && <span style={{ color: '#10b981' }}>Saved</span>}
-        {saveStatus === 'error' && <span style={{ color: '#ef4444' }}>Save failed</span>}
-        {genError && <span style={{ color: '#ef4444' }}>{genError}</span>}
-      </div>
-
-      {/* Systematic progression — 6 sections */}
-      {ACTIVITY_STEPS.map(({ key, label, placeholder }) => {
-        const sectionKey = `activity_${activity.id}_${key}`;
-        const existing = sections[sectionKey];
-        return (
-          <div key={key} style={{ marginBottom: 28 }}>
+      {/* Expanded */}
+      {expanded && (
+        <div style={{ padding: '0 16px 16px 16px' }}>
+          {/* Evidence tray */}
+          {evCount > 0 && (
             <div style={{
-              fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-              color: '#374151', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8,
+              display: 'flex', flexDirection: 'column', gap: 5,
+              marginBottom: 12, padding: '10px 12px',
+              background: '#f8f9fb', borderRadius: 8,
             }}>
-              <span style={{ color: '#9ca3af', fontWeight: 400 }}>—</span> {label}
+              <div style={{
+                fontSize: 10, fontWeight: 600, color: '#9ca3af',
+                textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2,
+              }}>
+                Linked evidence
+              </div>
+              {evidence.map(ev => (
+                <EvidenceCard
+                  key={ev.id}
+                  item={ev}
+                  onContextMenu={e => {
+                    e.preventDefault();
+                    setCtxMenu({ x: e.clientX, y: e.clientY, ev });
+                  }}
+                />
+              ))}
             </div>
-            <div className="workspace-inline-editor">
-              <InlineEditor
-                key={sectionKey}
-                sectionKey={sectionKey}
-                projectId={projectId}
-                initialContent={existing?.content || null}
-                placeholder={placeholder}
-                onSaveStatus={onSaveStatus}
-              />
-            </div>
+          )}
+
+          {/* Link + Add buttons */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <button
+              onClick={onLinkEvidence}
+              style={{
+                fontSize: 12, fontWeight: 500, color: '#6b7280', background: 'none',
+                border: '1px dashed #d1d5db', borderRadius: 6, cursor: 'pointer',
+                padding: '5px 12px', fontFamily: 'inherit',
+              }}
+            >
+              + Link evidence
+            </button>
+            <button
+              onClick={onAddNote}
+              style={{
+                fontSize: 12, fontWeight: 500, color: '#6b7280', background: 'none',
+                border: '1px dashed #d1d5db', borderRadius: 6, cursor: 'pointer',
+                padding: '5px 12px', fontFamily: 'inherit',
+              }}
+            >
+              + Add note
+            </button>
           </div>
-        );
-      })}
+
+          {/* Narrative editor */}
+          <div className="workspace-inline-editor">
+            <InlineEditor
+              key={sectionKey}
+              sectionKey={sectionKey}
+              projectId={projectId}
+              initialContent={narrativeData?.content || null}
+              placeholder={ACTIVITY_NARRATIVE_STEPS.find(s => s.key === stage.key)?.placeholder || 'Start writing or click Generate with AI\u2026'}
+              onSaveStatus={onSaveStatus}
+            />
+          </div>
+
+          {/* Char count */}
+          <div style={{
+            display: 'flex', justifyContent: 'flex-end', marginTop: 5,
+            fontSize: 11, color: charCount > 3800 ? '#dc2626' : '#c4c8cf',
+            fontFamily: 'ui-monospace, monospace',
+          }}>
+            {charCount.toLocaleString()} / 4,000
+          </div>
+        </div>
+      )}
+
+      {/* Evidence context menu */}
+      {ctxMenu && (
+        <ContextMenu
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          onClose={() => setCtxMenu(null)}
+          items={[
+            { label: 'Move to different stage', action: () => onMoveStage?.(ctxMenu.ev) },
+            { divider: true },
+            { label: 'Unlink from this stage', danger: true, action: () => onUnlinkEvidence?.(ctxMenu.ev.id) },
+          ]}
+        />
+      )}
     </div>
   );
 }
 
-/* ── Project-level section panel (Overview, Financials, etc.) ── */
+/* ── Project-level section panel (Overview, R&D Boundary, etc.) ── */
 function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus, onSaveStatus }) {
   const data = sections[sectionKey] || {};
+  const plainText = (data.content || '').replace(/<[^>]*>/g, '').trim();
+  const charCount = plainText.length;
+
   return (
-    <div style={{ padding: '28px 36px 36px' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: '0 0 6px', lineHeight: 1.3 }}>
+    <div style={{ padding: '28px 40px 60px' }}>
+      <h1 style={{ fontSize: 19, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>
         {sectionName}
       </h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, fontSize: 12, color: '#9ca3af', minHeight: 18 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
+        fontSize: 12, color: '#9ca3af', minHeight: 18,
+      }}>
         {data.last_edited_at && (
           <span>
             {data.ai_generated !== false ? 'AI draft' : 'Edited'}{' '}
@@ -677,17 +336,18 @@ function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus
           onSaveStatus={onSaveStatus}
         />
       </div>
+      <div style={{
+        display: 'flex', justifyContent: 'flex-end', marginTop: 5,
+        fontSize: 11, color: charCount > 3800 ? '#dc2626' : '#c4c8cf',
+        fontFamily: 'ui-monospace, monospace',
+      }}>
+        {charCount.toLocaleString()} / 4,000
+      </div>
     </div>
   );
 }
 
 /* ── Attestations & Sign-offs Panel ── */
-const SIGN_OFF_ROLES = [
-  { key: 'technical_lead', title: 'Technical Lead / CTO', description: 'I confirm that the activities described in this claim pack constitute genuine R&D involving technical uncertainty that could not be resolved by a competent professional using existing knowledge.' },
-  { key: 'cfo', title: 'CFO / Finance', description: 'I confirm that the expenditure figures in this claim pack are accurate, the apportionment methodology has been applied consistently, and costs are substantiated by underlying records.' },
-  { key: 'ceo', title: 'CEO / Managing Director', description: 'I confirm that this claim pack is complete and accurate to the best of my knowledge, and that the company is entitled to claim the R&D Tax Incentive for the activities and expenditure described.' },
-];
-
 function AttestationsPanel({ projectId, sections, token, onSaved }) {
   const sectionKey = 'attestations';
   const parseSignatures = (s) => {
@@ -699,11 +359,11 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
   };
   const [signatures, setSignatures] = useState(() => parseSignatures(sections));
 
-  // Re-sync from sections prop when it changes (e.g. after fetchSections)
   useEffect(() => {
     const parsed = parseSignatures(sections);
     if (Object.keys(parsed).length > 0) setSignatures(parsed);
   }, [sections]);
+
   const [saving, setSaving] = useState(false);
   const sigRefs = useRef({});
 
@@ -752,7 +412,6 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
       if (!projectId) throw new Error(`Project not loaded yet (projectId=${projectId})`);
-      console.log('[Attestations] Saving to:', `/api/claim-pack-sections/${projectId}/${sectionKey}`, 'data length:', JSON.stringify(data).length);
       const res = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -770,7 +429,6 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
     setSaving(false);
   };
 
-  // Dynamic import of SignatureCanvas (it uses <canvas> which is client-only)
   const [SignatureCanvas, setSignatureCanvas] = useState(null);
   useEffect(() => {
     import('react-signature-canvas').then(mod => setSignatureCanvas(() => mod.default));
@@ -779,8 +437,8 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
   const signedCount = SIGN_OFF_ROLES.filter(r => signatures[r.key]?.signature).length;
 
   return (
-    <div style={{ padding: '28px 36px 36px' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>
+    <div style={{ padding: '28px 40px 60px' }}>
+      <h1 style={{ fontSize: 19, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>
         Attestations & Sign-offs
       </h1>
       <p style={{ fontSize: 13, color: '#9ca3af', margin: '0 0 28px' }}>
@@ -798,7 +456,6 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
             marginBottom: 24, border: '1px solid #e5e7eb', borderRadius: 10,
             overflow: 'hidden', backgroundColor: 'white',
           }}>
-            {/* Header */}
             <div style={{
               padding: '14px 20px', borderBottom: '1px solid #f0f0f0',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -822,14 +479,12 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
               )}
             </div>
 
-            {/* Body */}
             <div style={{ padding: '16px 20px' }}>
               <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.6, margin: '0 0 16px' }}>
                 {role.description}
               </p>
 
               {isSigned ? (
-                /* Signed state — show signature image */
                 <div>
                   <div style={{
                     border: '1px solid #e5e7eb', borderRadius: 8,
@@ -851,9 +506,7 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
                   </button>
                 </div>
               ) : (
-                /* Unsigned state — show canvas + name input */
                 <div>
-                  {/* Name input */}
                   <div style={{ marginBottom: 12 }}>
                     <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
                       Full name
@@ -870,7 +523,6 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
                     />
                   </div>
 
-                  {/* Signature canvas */}
                   <div style={{ marginBottom: 12 }}>
                     <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
                       Signature
@@ -899,7 +551,6 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={() => handleSign(role.key)}
@@ -934,245 +585,332 @@ function AttestationsPanel({ projectId, sections, token, onSaved }) {
   );
 }
 
-/* ── Upload File Modal ── */
-function UploadFileModal({ token, onCreated, onClose }) {
-  const [file, setFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
-
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
-  const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-
-  const handleFileChange = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > MAX_FILE_SIZE) { setError('File must be under 10MB'); return; }
-    if (!ALLOWED_TYPES.includes(f.type)) { setError('Unsupported file type'); return; }
-    setFile(f);
-    setError('');
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files?.[0];
-    if (!f) return;
-    if (f.size > MAX_FILE_SIZE) { setError('File must be under 10MB'); return; }
-    if (!ALLOWED_TYPES.includes(f.type)) { setError('Unsupported file type'); return; }
-    setFile(f);
-    setError('');
-  };
-
-  const handleSubmit = async () => {
-    if (!file) return;
-    setUploading(true); setError('');
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await fetch(`/api/evidence/${token}/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: formData,
+/* ── Activity Rail ── */
+function ActivityRail({ activities, activeView, onSelect, addBtnRef, onAddClick, activityEvidence }) {
+  const stageCount = (act) => {
+    const evData = activityEvidence[act.id];
+    if (!evData) return 0;
+    return STAGE_KEYS_5.filter(stageKey => {
+      // evData is an array with _step property (capitalized)
+      return evData.some(ev => {
+        const mapped = STEP_TO_STAGE[ev._step];
+        return mapped === stageKey;
       });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Upload failed'); }
-      onCreated();
-      onClose();
-    } catch (err) { setError(err.message); }
-    setUploading(false);
+    }).length;
+  };
+
+  const stageHas = (act, stageKey) => {
+    const evData = activityEvidence[act.id];
+    if (!evData) return false;
+    return evData.some(ev => STEP_TO_STAGE[ev._step] === stageKey);
   };
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
-      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: 12, width: 440, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>Upload file</h3>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, color: '#9ca3af', cursor: 'pointer', padding: '0 4px' }}>×</button>
+    <div style={{
+      width: 224, flexShrink: 0, borderRight: '1px solid #f0f1f3',
+      display: 'flex', flexDirection: 'column', background: '#fafbfc', overflowY: 'auto',
+    }}>
+      {/* Header */}
+      <div style={{ padding: '14px 14px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#111827' }}>Workspace</span>
+        <button
+          ref={addBtnRef}
+          onClick={onAddClick}
+          style={{
+            width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: 6, border: '1px solid #e5e7eb', background: 'white',
+            cursor: 'pointer', fontSize: 15, color: '#6b7280', fontWeight: 300, lineHeight: 1,
+          }}
+        >
+          +
+        </button>
+      </div>
+
+      {/* Core activities */}
+      {activities.filter(a => (a.activity_type || 'core') === 'core').length > 0 && (
+        <div style={{ padding: '4px 10px 4px' }}>
+          <div style={{
+            fontSize: 10, fontWeight: 600, color: '#9ca3af',
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            marginBottom: 6, padding: '0 4px',
+          }}>
+            Core Activities
+          </div>
+          {activities.filter(a => (a.activity_type || 'core') === 'core').map(act => {
+            const sel = activeView.type === 'activity' && activeView.id === act.id;
+            const filled = stageCount(act);
+            return (
+              <button key={act.id} onClick={() => onSelect({ type: 'activity', id: act.id })} style={{
+                width: '100%', textAlign: 'left', display: 'block', padding: '8px 10px',
+                marginBottom: 2, borderRadius: 7,
+                border: sel ? '1px solid #e0e2e6' : '1px solid transparent',
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: sel ? 'white' : 'transparent',
+                boxShadow: sel ? '0 1px 3px rgba(0,0,0,0.04)' : 'none',
+              }}>
+                <div style={{
+                  fontSize: 12, fontWeight: 500, color: '#111827', marginBottom: 5,
+                  lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                }}>
+                  {act.name}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 2 }}>
+                    {STAGE_KEYS_5.map(s => (
+                      <div key={s} style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: stageHas(act, s) ? '#10b981' : '#e5e7eb',
+                      }} />
+                    ))}
+                  </div>
+                  <span style={{
+                    marginLeft: 'auto', padding: '1px 6px', fontSize: 9, fontWeight: 600, borderRadius: 3,
+                    background: filled >= 5 ? '#dcfce7' : filled >= 3 ? '#fefce8' : '#f3f4f6',
+                    color: filled >= 5 ? '#166534' : filled >= 3 ? '#854d0e' : '#9ca3af',
+                  }}>
+                    {filled >= 5 ? 'Ready' : `${filled}/5`}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
-        <div style={{ padding: 20 }}>
-          {file ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}>
-              <span style={{ fontSize: 13, color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
-              <span style={{ fontSize: 11, color: '#9ca3af' }}>{(file.size / 1024).toFixed(0)} KB</span>
-              <button onClick={() => setFile(null)} style={{ border: 'none', background: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 14 }}>×</button>
-            </div>
-          ) : (
-            <label
-              onDragOver={e => e.preventDefault()}
-              onDrop={handleDrop}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-                padding: '32px 16px', border: '2px dashed #d1d5db', borderRadius: 8,
-                cursor: 'pointer', color: '#9ca3af', fontSize: 13, textAlign: 'center',
-              }}
-            >
-              <input type="file" onChange={handleFileChange} style={{ display: 'none' }} accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.csv,.txt,.xls,.xlsx" />
-              <span style={{ fontSize: 24 }}>📎</span>
-              Drop a file or click to upload
-            </label>
-          )}
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>PNG, JPEG, PDF, CSV, TXT, XLS — max 10MB</div>
-          {error && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{error}</div>}
+      )}
+
+      {/* Supporting activities */}
+      {activities.filter(a => a.activity_type === 'supporting').length > 0 && (
+        <div style={{ padding: '6px 10px 4px' }}>
+          <div style={{
+            fontSize: 10, fontWeight: 600, color: '#9ca3af',
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            marginBottom: 6, padding: '0 4px',
+          }}>
+            Supporting
+          </div>
+          {activities.filter(a => a.activity_type === 'supporting').map(act => {
+            const sel = activeView.type === 'activity' && activeView.id === act.id;
+            return (
+              <button key={act.id} onClick={() => onSelect({ type: 'activity', id: act.id })} style={{
+                width: '100%', textAlign: 'left', display: 'block', padding: '8px 10px',
+                marginBottom: 2, borderRadius: 7,
+                border: sel ? '1px solid #e0e2e6' : '1px solid transparent',
+                cursor: 'pointer', fontFamily: 'inherit',
+                background: sel ? 'white' : 'transparent',
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: '#111827', lineHeight: 1.35 }}>
+                  {act.name}
+                </div>
+              </button>
+            );
+          })}
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={{ padding: '7px 14px', fontSize: 13, fontWeight: 500, color: '#6b7280', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-          <button onClick={handleSubmit} disabled={uploading || !file} style={{ padding: '7px 16px', fontSize: 13, fontWeight: 600, color: 'white', backgroundColor: uploading || !file ? '#a5b4fc' : NAVY, border: 'none', borderRadius: 8, cursor: uploading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-            {uploading ? 'Uploading...' : 'Upload'}
-          </button>
-        </div>
+      )}
+
+      <div style={{ flex: 1 }} />
+
+      {/* Project sections */}
+      <div style={{ padding: '6px 10px 14px', borderTop: '1px solid #eef0f2' }}>
+        {[
+          { key: 'overview', label: 'Project Overview' },
+          { key: 'financials', label: 'Financials' },
+          { key: 'boundary', label: 'R&D Boundary' },
+          { key: 'attestations', label: 'Attestations' },
+        ].map(item => {
+          const sel = activeView.type === 'section' && activeView.id === item.key;
+          return (
+            <button key={item.key} onClick={() => onSelect({ type: 'section', id: item.key })} style={{
+              width: '100%', textAlign: 'left', display: 'block',
+              padding: '6px 10px', marginBottom: 1, borderRadius: 6,
+              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              background: sel ? 'white' : 'transparent',
+              boxShadow: sel ? '0 1px 3px rgba(0,0,0,0.04)' : 'none',
+              fontSize: 12, color: sel ? '#111827' : '#6b7280',
+              fontWeight: sel ? 500 : 400,
+            }}>
+              {item.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-/* ── Add Evidence Modal ── */
-function AddEvidenceModal({ token, activities = [], onCreated, onClose }) {
-  const [content, setContent] = useState('');
-  const [file, setFile] = useState(null);
-  const [linkedActivityId, setLinkedActivityId] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+/* ── Activity view (main content) ── */
+function ActivityView({
+  activity, expandedStages, onToggleStage, sections, projectId,
+  activityEvidence, onSaveStatus, token, onActivitiesChange,
+  onGenerated, onLinkEvidence, onAddNote, onUnlinkEvidence,
+}) {
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState(null);
+  const [actCtx, setActCtx] = useState(null);
 
-  const handleSubmit = async () => {
-    if (!content.trim() && !file) return;
-    setSaving(true); setError('');
+  // Check if any stage has narrative content
+  const hasContent = STAGES.some(({ key }) => {
+    const s = sections[`activity_${activity.id}_${key}`];
+    return s?.content && s.content.replace(/<[^>]*>/g, '').trim().length > 10;
+  });
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setGenError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const headers = { Authorization: `Bearer ${session.access_token}` };
-
-      if (file) {
-        // File upload
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await fetch(`/api/evidence/${token}/upload`, { method: 'POST', headers, body: formData });
-        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Upload failed'); }
-      }
-
-      let createdEvidenceId = null;
-
-      if (content.trim()) {
-        // Text note
-        const res = await fetch(`/api/evidence/${token}/add`, {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: content.trim() }),
-        });
-        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed to add'); }
-        const data = await res.json();
-        createdEvidenceId = data.id;
-        // Trigger AI classification (fire-and-forget)
-        fetch(`/api/classify?id=${data.id}`, { method: 'POST', headers }).catch(() => {});
-        fetch(`/api/evidence/classify-activity-type?id=${data.id}`, { method: 'POST', headers }).catch(() => {});
-      }
-
-      // Link to activity if one was selected
-      if (linkedActivityId && createdEvidenceId) {
-        await fetch(`/api/evidence/${token}/link`, {
-          method: 'PATCH',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ evidence_id: createdEvidenceId, activity_id: linkedActivityId }),
-        });
-      }
-
-      onCreated();
-      onClose();
-    } catch (err) { setError(err.message); }
-    setSaving(false);
+      const res = await fetch(`/api/projects/${token}/activities/${activity.id}/generate-narrative`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Generation failed');
+      onGenerated?.();
+    } catch (err) {
+      setGenError(err.message);
+      setTimeout(() => setGenError(null), 5000);
+    }
+    setGenerating(false);
   };
 
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
-  const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'text/csv', 'text/plain', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-
-  const handleFileChange = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > MAX_FILE_SIZE) { setError('File must be under 10MB'); return; }
-    if (!ALLOWED_TYPES.includes(f.type)) { setError('Unsupported file type'); return; }
-    setFile(f);
-    setError('');
+  const handleChangeType = async () => {
+    const newType = (activity.activity_type || 'core') === 'core' ? 'supporting' : 'core';
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`/api/projects/${token}/core-activities/${activity.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ activity_type: newType }),
+      });
+      if (onActivitiesChange) {
+        onActivitiesChange(prev => prev.map(a => a.id === activity.id ? { ...a, activity_type: newType } : a));
+      }
+    } catch (err) { console.error('Activity type change failed:', err); }
   };
+
+  const handleDelete = async () => {
+    if (!confirm(`Delete "${activity.name}"? This cannot be undone.`)) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`/api/projects/${token}/core-activities/${activity.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ status: 'archived' }),
+      });
+      if (onActivitiesChange) {
+        onActivitiesChange(prev => prev.filter(a => a.id !== activity.id));
+      }
+    } catch (err) { console.error('Archive failed:', err); }
+  };
+
+  // Build per-stage evidence from activityEvidence
+  const stageEvidence = {};
+  STAGES.forEach(s => { stageEvidence[s.key] = []; });
+  const evData = activityEvidence[activity.id] || [];
+  evData.forEach(ev => {
+    const mapped = STEP_TO_STAGE[ev._step];
+    if (mapped && stageEvidence[mapped]) {
+      stageEvidence[mapped].push(ev);
+    }
+  });
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 50, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
-      <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'white', borderRadius: 12, width: 480, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#111827', margin: 0 }}>Add evidence</h3>
-          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 18, color: '#9ca3af', cursor: 'pointer', padding: '0 4px' }}>×</button>
-        </div>
-        <div style={{ padding: 20 }}>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Note</label>
-          <textarea
-            value={content} onChange={e => setContent(e.target.value)}
-            placeholder="What did you work on? Describe your experiment, observation, or finding..."
-            rows={4} autoFocus
-            style={{ width: '100%', padding: '10px 12px', fontSize: 13, border: '1px solid #e5e7eb', borderRadius: 8, outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.5 }}
-            onFocus={e => e.target.style.borderColor = NAVY} onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-          />
+    <div style={{ padding: '28px 40px 60px', position: 'relative' }}>
+      {generating && <BlobLoader />}
 
-          <div style={{ marginTop: 16 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
-              Attach file <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span>
-            </label>
-            {file ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 }}>
-                <span style={{ fontSize: 13, color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
-                <span style={{ fontSize: 11, color: '#9ca3af' }}>{(file.size / 1024).toFixed(0)} KB</span>
-                <button onClick={() => setFile(null)} style={{ border: 'none', background: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: 14 }}>×</button>
-              </div>
-            ) : (
-              <label style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                padding: '16px', border: '1px dashed #d1d5db', borderRadius: 8,
-                cursor: 'pointer', color: '#9ca3af', fontSize: 13,
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 19, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
+                {activity.name}
+              </h1>
+              <span style={{
+                padding: '2px 7px', fontSize: 10, fontWeight: 600, borderRadius: 4,
+                background: (activity.activity_type || 'core') === 'core' ? NAVY : '#6b7280', color: 'white',
               }}>
-                <input type="file" onChange={handleFileChange} style={{ display: 'none' }} accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.csv,.txt,.xls,.xlsx" />
-                Drop a file or click to upload
-              </label>
-            )}
-            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>PNG, JPEG, PDF, CSV, TXT, XLS — max 10MB</div>
-          </div>
-
-          {activities.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
-                Link to activity <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span>
-              </label>
-              <select
-                value={linkedActivityId}
-                onChange={e => setLinkedActivityId(e.target.value)}
+                {(activity.activity_type || 'core') === 'core' ? 'Core' : 'Supporting'}
+              </span>
+              <button
+                onClick={e => setActCtx({ x: e.clientX, y: e.clientY })}
                 style={{
-                  width: '100%', padding: '9px 12px', fontSize: 13, border: '1px solid #e5e7eb',
-                  borderRadius: 8, outline: 'none', fontFamily: 'inherit', backgroundColor: 'white',
-                  color: linkedActivityId ? '#111827' : '#9ca3af', cursor: 'pointer', boxSizing: 'border-box',
+                  padding: '2px 6px', fontSize: 16, color: '#9ca3af', background: 'none',
+                  border: 'none', cursor: 'pointer', lineHeight: 1, borderRadius: 4,
                 }}
-                onFocus={e => e.target.style.borderColor = NAVY}
-                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
               >
-                <option value="">None — AI will suggest</option>
-                {activities.map(act => (
-                  <option key={act.id} value={act.id}>{act.name}</option>
-                ))}
-              </select>
+                &#x22EF;
+              </button>
             </div>
-          )}
-
-          {error && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{error}</div>}
-
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 12, padding: '8px 10px', backgroundColor: '#f9fafb', borderRadius: 6 }}>
-            {linkedActivityId
-              ? 'Evidence will be linked to the selected activity.'
-              : 'AI will automatically classify this evidence into the R&D systematic progression and suggest which activity it belongs to.'}
+            {activity.uncertainty && (
+              <p style={{ fontSize: 13, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
+                {activity.uncertainty}
+              </p>
+            )}
           </div>
-        </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button onClick={onClose} style={{ padding: '7px 14px', fontSize: 13, fontWeight: 500, color: '#6b7280', backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-          <button onClick={handleSubmit} disabled={saving || (!content.trim() && !file)} style={{ padding: '7px 16px', fontSize: 13, fontWeight: 600, color: 'white', backgroundColor: saving || (!content.trim() && !file) ? '#a5b4fc' : NAVY, border: 'none', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-            {saving ? 'Adding...' : 'Add evidence'}
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            style={{
+              padding: '8px 16px', fontSize: 13, fontWeight: 600,
+              color: 'white', background: generating ? '#9ca3af' : NAVY,
+              border: 'none', borderRadius: 8, cursor: generating ? 'not-allowed' : 'pointer',
+              fontFamily: 'inherit', flexShrink: 0, whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>&#10022;</span> {hasContent ? 'Regenerate with AI' : 'Generate with AI'}
           </button>
         </div>
+        {/* Save/gen status */}
+        {genError && (
+          <div style={{ fontSize: 12, color: '#ef4444', marginTop: 8 }}>{genError}</div>
+        )}
       </div>
+
+      {/* Stage sections */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {STAGES.map(stage => (
+          <StageSection
+            key={stage.key}
+            stage={stage}
+            evidence={stageEvidence[stage.key]}
+            sectionKey={`activity_${activity.id}_${stage.key}`}
+            projectId={projectId}
+            sections={sections}
+            expanded={expandedStages.has(stage.key)}
+            onToggle={() => onToggleStage(stage.key)}
+            onSaveStatus={onSaveStatus}
+            onLinkEvidence={() => onLinkEvidence?.(activity.id, stage.key)}
+            onAddNote={() => onAddNote?.(activity.id)}
+            onUnlinkEvidence={(evId) => onUnlinkEvidence?.(evId, activity.id)}
+            activityId={activity.id}
+          />
+        ))}
+      </div>
+
+      {/* Activity context menu */}
+      {actCtx && (
+        <ContextMenu
+          x={actCtx.x}
+          y={actCtx.y}
+          onClose={() => setActCtx(null)}
+          items={[
+            {
+              label: (activity.activity_type || 'core') === 'core' ? 'Change to supporting' : 'Change to core',
+              action: handleChangeType,
+            },
+            { divider: true },
+            { label: 'Delete activity', danger: true, action: handleDelete },
+          ]}
+        />
+      )}
     </div>
   );
 }
+
 
 /* ═══════════════════════════════════════════════════════════
    Main WorkspaceView
@@ -1186,46 +924,20 @@ export default function WorkspaceView({
   project = {},
   onActivitiesChange,
 }) {
-  const [activeTab, setActiveTab] = useState('project_overview');
+  // ── State ──
+  const [activeView, setActiveView] = useState({ type: 'section', id: 'overview' });
+  const [expandedStages, setExpandedStages] = useState(new Set(['prior_knowledge', 'hypothesis']));
   const [sections, setSections] = useState({});
   const [projectId, setProjectId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('');
-  const [selectedEvidenceId, setSelectedEvidenceId] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null); // null | 'activities' | 'more'
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
-  const [showAllEvidence, setShowAllEvidence] = useState(false);
   const [activityEvidence, setActivityEvidence] = useState({});
-  const [actCtxMenu, setActCtxMenu] = useState(null); // { x, y, activity }
-  const [showAddMenu, setShowAddMenu] = useState(false); // false | { x, y }
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(340);
-  const [isDragging, setIsDragging] = useState(false);
-  const panelRef = useRef(null);
 
-  const handleDragStart = useCallback((e) => {
-    e.preventDefault();
-    setIsDragging(true);
-    const startX = e.clientX;
-    const startWidth = panelWidth;
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
-    const onMove = (e) => {
-      const newWidth = Math.min(600, Math.max(200, startWidth + e.clientX - startX));
-      setPanelWidth(newWidth);
-    };
-    const onUp = () => {
-      setIsDragging(false);
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }, [panelWidth]);
+  // Modals
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   // Jira CSV import state
   const [showJiraImport, setShowJiraImport] = useState(false);
@@ -1237,25 +949,16 @@ export default function WorkspaceView({
   const [jiraError, setJiraError] = useState('');
   const [jiraSuccess, setJiraSuccess] = useState('');
 
-  const activitiesBtnRef = useRef(null);
-  const moreBtnRef = useRef(null);
   const addBtnRef = useRef(null);
 
-  const toggleDropdown = (which) => {
-    if (openDropdown === which) { setOpenDropdown(null); return; }
-    const ref = which === 'activities' ? activitiesBtnRef : moreBtnRef;
-    const rect = ref.current?.getBoundingClientRect();
-    if (rect) {
-      setDropdownPos({
-        top: rect.bottom + 4,
-        left: which === 'more' ? undefined : rect.left,
-        right: which === 'more' ? (window.innerWidth - rect.right) : undefined,
-      });
-    }
-    setOpenDropdown(which);
-  };
+  // ── Toggle stage expansion ──
+  const toggleStage = (key) => setExpandedStages(prev => {
+    const n = new Set(prev);
+    if (n.has(key)) n.delete(key); else n.add(key);
+    return n;
+  });
 
-  // Jira CSV handlers
+  // ── Jira CSV handlers (kept exactly as-is) ──
   const handleJiraAnalyse = async () => {
     if (!jiraFile) return;
     setJiraAnalysing(true);
@@ -1320,7 +1023,7 @@ export default function WorkspaceView({
     setJiraImporting(false);
   };
 
-  // Fetch sections
+  // ── Fetch sections ──
   const fetchSections = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1338,7 +1041,7 @@ export default function WorkspaceView({
 
   useEffect(() => { fetchSections(); }, [fetchSections]);
 
-  // Fetch evidence for a specific activity
+  // ── Fetch evidence for a specific activity ──
   const fetchActivityEvidence = useCallback(async (activityId, force = false) => {
     if (activityEvidence[activityId] && !force) return;
     try {
@@ -1359,28 +1062,38 @@ export default function WorkspaceView({
     } catch (err) { console.error('Failed to fetch activity evidence:', err); }
   }, [token, activityEvidence]);
 
-  // Determine if current tab is an activity
-  const activeActivity = activities.find(a => `activity_${a.id}` === activeTab);
-  const isActivityTab = !!activeActivity;
+  // Fetch evidence when an activity is selected
+  const activeActivity = activeView.type === 'activity' ? activities.find(a => a.id === activeView.id) : null;
 
-  // Fetch activity evidence when switching to activity tab
   useEffect(() => {
     if (activeActivity) fetchActivityEvidence(activeActivity.id);
-  }, [activeActivity, fetchActivityEvidence]);
+  }, [activeActivity?.id]);
 
+  // Select first activity on mount if any exist
+  useEffect(() => {
+    if (activities.length > 0 && activeView.type === 'section' && activeView.id === 'overview') {
+      setActiveView({ type: 'activity', id: activities[0].id });
+    }
+  }, [activities.length]);
 
-  // Evidence filtering
-  const filteredEvidence = (() => {
-    if (!isActivityTab || showAllEvidence) return items;
-    const actEvidence = activityEvidence[activeActivity?.id];
-    if (!actEvidence) return [];
-    const ids = new Set(actEvidence.map(e => e.id));
-    return items.filter(e => ids.has(e.id));
-  })();
-
+  // ── Handlers ──
   const handleActivityCreated = (newActivity) => {
     if (onActivitiesChange) onActivitiesChange([...activities, newActivity]);
-    setActiveTab(`activity_${newActivity.id}`);
+    setActiveView({ type: 'activity', id: newActivity.id });
+  };
+
+  const handleActivitiesChange = (updater) => {
+    if (!onActivitiesChange) return;
+    if (typeof updater === 'function') {
+      onActivitiesChange(updater(activities));
+      // If deleted the current activity, go to overview
+      const updated = updater(activities);
+      if (activeView.type === 'activity' && !updated.find(a => a.id === activeView.id)) {
+        setActiveView(updated.length > 0 ? { type: 'activity', id: updated[0].id } : { type: 'section', id: 'overview' });
+      }
+    } else {
+      onActivitiesChange(updater);
+    }
   };
 
   const handleLinkEvidence = async (evidenceId, activityId) => {
@@ -1408,14 +1121,12 @@ export default function WorkspaceView({
     } catch (err) { console.error('Unlink failed:', err); }
   };
 
-  const handleEvidenceChange = useCallback((evidenceId, changeType, value) => {
-    if (changeType === 'delete') {
-      window.location.reload();
-    } else if (changeType === 'step' || changeType === 'activityType' || changeType === 'reassign') {
-      window.location.reload();
-    }
-  }, []);
+  const handleEvidenceCreated = () => {
+    // Refresh evidence for current activity
+    if (activeActivity) fetchActivityEvidence(activeActivity.id, true);
+  };
 
+  // ── Loading ──
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 160px)', color: '#9ca3af', fontSize: 13 }}>
@@ -1426,818 +1137,397 @@ export default function WorkspaceView({
 
   return (
     <>
-    <div className="workspace-screen" style={{ display: 'flex', gap: 0, height: 'calc(100vh - 120px)', minHeight: 500 }}>
-      {/* ── Left panel ── */}
-      <div style={{
-        width: panelWidth, flexShrink: 0,
-        display: 'flex', flexDirection: 'column', backgroundColor: 'white',
-      }}>
-        {/* Header */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-          {/* Title row */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isActivityTab ? 8 : 0 }}>
-            <div style={{ minWidth: 0 }}>
-              <h2 style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: 0 }}>
-                {isActivityTab ? 'Evidence' : 'Activities & Evidence'}
-              </h2>
-              {isActivityTab && !showAllEvidence && (
-                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {activeActivity.name} · {filteredEvidence.length} items
-                </div>
-              )}
-              {isActivityTab && showAllEvidence && (
-                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
-                  All evidence · {filteredEvidence.length} items
-                </div>
-              )}
-            </div>
-            <button
-              ref={addBtnRef}
-              onClick={() => {
-                const rect = addBtnRef.current?.getBoundingClientRect();
-                setShowAddMenu(prev => prev ? false : { top: rect?.bottom + 4, left: rect?.left });
-              }}
-              style={{
-                padding: '4px 10px', fontSize: 12, fontWeight: 500,
-                color: '#374151', backgroundColor: 'white',
-                border: '1px solid #e5e7eb', borderRadius: 5,
-                cursor: 'pointer', fontFamily: 'inherit',
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                flexShrink: 0,
-              }}
-            >
-              <span style={{ fontSize: 13, lineHeight: 1 }}>+</span> Add
-            </button>
-          </div>
-          {/* Action links */}
-          {isActivityTab && (
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                onClick={() => setShowAllEvidence(prev => !prev)}
-                style={{
-                  fontSize: 12, color: NAVY, background: 'none', border: 'none',
-                  cursor: 'pointer', padding: 0, fontFamily: 'inherit', fontWeight: 500,
-                }}
-              >
-                {showAllEvidence ? 'Show linked only' : 'Link more evidence'}
-              </button>
-            </div>
-          )}
-        </div>
+      <div className="workspace-screen" style={{ display: 'flex', gap: 0, height: 'calc(100vh - 120px)', minHeight: 500 }}>
+        {/* ── Activity Rail ── */}
+        <ActivityRail
+          activities={activities}
+          activeView={activeView}
+          onSelect={setActiveView}
+          addBtnRef={addBtnRef}
+          onAddClick={() => setShowAddMenu(prev => !prev)}
+          activityEvidence={activityEvidence}
+        />
 
-        {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {/* Activities list — shown on project-level tabs */}
-          {!isActivityTab && activities.length > 0 && (
-            <div>
-              <div style={{
-                padding: '10px 16px 4px', fontSize: 11, fontWeight: 700,
-                color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em',
-              }}>
-                Activities ({activities.length})
-              </div>
-              {activities.map(act => {
-                return (
-                  <div
-                    key={act.id}
-                    onClick={() => { setActiveTab(`activity_${act.id}`); setShowAllEvidence(false); }}
-                    onContextMenu={e => { e.preventDefault(); setActCtxMenu({ x: e.clientX, y: e.clientY, activity: act }); }}
-                    style={{
-                      padding: '10px 16px', borderBottom: '1px solid #f0f0f0',
-                      cursor: 'pointer', transition: 'background-color 0.12s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fafbfc'}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {act.name}
-                      </span>
-                      <span style={{
-                        padding: '1px 5px', fontSize: 10, fontWeight: 600, borderRadius: 3, flexShrink: 0,
-                        backgroundColor: act.source === 'ai' ? '#ede9fe' : '#ecfdf5',
-                        color: act.source === 'ai' ? '#7c3aed' : '#059669',
-                      }}>
-                        {act.source === 'ai' ? 'AI' : 'Manual'}
-                      </span>
-                      <span style={{
-                        padding: '1px 5px', fontSize: 10, fontWeight: 500, borderRadius: 3, flexShrink: 0,
-                        backgroundColor: act.status === 'adopted' ? '#dcfce7' : '#fef9c3',
-                        color: act.status === 'adopted' ? '#166534' : '#854d0e',
-                      }}>
-                        {act.status === 'adopted' ? 'Adopted' : 'Draft'}
-                      </span>
-                      <span style={{
-                        padding: '1px 5px', fontSize: 10, fontWeight: 600, borderRadius: 3, flexShrink: 0,
-                        backgroundColor: (act.activity_type || 'core') === 'core' ? NAVY : '#6b7280',
-                        color: 'white',
-                      }}>
-                        {(act.activity_type || 'core') === 'core' ? 'Core' : 'Supporting'}
-                      </span>
-                    </div>
-                    {act.uncertainty && (
-                      <p style={{
-                        fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.4,
-                        overflow: 'hidden', textOverflow: 'ellipsis',
-                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                      }}>
-                        {act.uncertainty}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Divider between activities and evidence */}
-              <div style={{ padding: '10px 16px 4px', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Evidence ({items.length})
-              </div>
-            </div>
-          )}
-
-          {/* Evidence list */}
-          {filteredEvidence.length > 0 ? (
-            filteredEvidence.map(ev => {
-              // Build context menu actions
-              const contextActions = [];
-              if (isActivityTab && activeActivity) {
-                const linkedIds = new Set((activityEvidence[activeActivity.id] || []).map(e => e.id));
-                const isLinked = linkedIds.has(ev.id);
-                if (isLinked) {
-                  contextActions.push({
-                    label: `Unlink from ${activeActivity.name}`,
-                    danger: true,
-                    action: () => handleUnlinkEvidence(ev.id, activeActivity.id),
-                  });
-                } else {
-                  contextActions.push({
-                    label: `Link to ${activeActivity.name}`,
-                    action: () => handleLinkEvidence(ev.id, activeActivity.id),
-                  });
-                }
-              } else if (!isActivityTab && activities.length > 0) {
-                // On overview: offer to link to any activity
-                activities.forEach(act => {
-                  contextActions.push({
-                    label: `Link to ${act.name}`,
-                    action: () => handleLinkEvidence(ev.id, act.id),
-                  });
-                });
-              }
-              return (
-                <EvidenceRow
-                  key={ev.id}
-                  ev={ev}
-                  evidenceSteps={evidenceSteps}
-                  evidenceActivityTypes={evidenceActivityTypes}
-                  selected={selectedEvidenceId === ev.id}
-                  onClick={() => setSelectedEvidenceId(ev.id)}
-                  contextActions={contextActions}
-                  token={token}
-                  onEvidenceChange={handleEvidenceChange}
-                />
-              );
-            })
-          ) : (
-            <div style={{ padding: 32, textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
-              {isActivityTab ? 'No evidence linked to this activity yet' : 'No evidence yet'}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Drag handle */}
-      <div
-        onMouseDown={handleDragStart}
-        style={{
-          width: 4, flexShrink: 0, cursor: 'col-resize',
-          backgroundColor: isDragging ? '#d1d5db' : 'transparent',
-          borderLeft: '1px solid #e5e5e5',
-          transition: isDragging ? 'none' : 'background-color 0.15s',
-        }}
-        onMouseEnter={e => { if (!isDragging) e.currentTarget.style.backgroundColor = '#e5e7eb'; }}
-        onMouseLeave={e => { if (!isDragging) e.currentTarget.style.backgroundColor = 'transparent'; }}
-      />
-
-      {/* ── Right panel: Narrative ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: 'white' }}>
-        {/* Tab bar */}
-        <div style={{
-          display: 'flex', alignItems: 'center', borderBottom: '1px solid #f0f0f0',
-          padding: '0 12px', flexShrink: 0, gap: 0,
-          overflowX: 'auto', scrollbarWidth: 'none',
-        }}>
-          {/* Overview tab */}
-          <button
-            onClick={() => { setActiveTab('project_overview'); setShowAllEvidence(false); }}
-            style={{
-              padding: '10px 12px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
-              fontWeight: activeTab === 'project_overview' ? 600 : 400,
-              color: activeTab === 'project_overview' ? '#111827' : '#9ca3af',
-              backgroundColor: 'transparent', border: 'none',
-              borderBottom: `2px solid ${activeTab === 'project_overview' ? '#111827' : 'transparent'}`,
-              cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
-            }}
-          >
-            Overview
-          </button>
-
-          {/* Activity selector dropdown */}
-          <button
-            ref={activitiesBtnRef}
-            onClick={() => toggleDropdown('activities')}
-            style={{
-              padding: '10px 14px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
-              fontWeight: isActivityTab ? 600 : 400,
-              color: isActivityTab ? '#111827' : '#9ca3af',
-              backgroundColor: 'transparent', border: 'none',
-              borderBottom: `2px solid ${isActivityTab ? '#111827' : 'transparent'}`,
-              cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}
-          >
-            {isActivityTab
-              ? `Activity ${activities.indexOf(activeActivity) + 1}`
-              : 'Activities'}
-            <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
-          </button>
-
-          {/* Financials + R&D Boundary */}
-          {SUFFIX_TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => { setActiveTab(tab.key); setShowAllEvidence(false); }}
-              style={{
-                padding: '10px 12px', fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0,
-                fontWeight: activeTab === tab.key ? 600 : 400,
-                color: activeTab === tab.key ? '#111827' : '#9ca3af',
-                backgroundColor: 'transparent', border: 'none',
-                borderBottom: `2px solid ${activeTab === tab.key ? '#111827' : 'transparent'}`,
-                cursor: 'pointer', fontFamily: 'inherit', marginBottom: -1,
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-
-          {/* More dropdown */}
-          <button
-            ref={moreBtnRef}
-            onClick={() => toggleDropdown('more')}
-            style={{
-              padding: '10px 14px', fontSize: 13, fontWeight: 400, color: '#9ca3af',
-              backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
-              fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4,
-              whiteSpace: 'nowrap', flexShrink: 0,
-            }}
-          >
-            More <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>
-          </button>
-
-          {/* Export PDF */}
-          <button
-            onClick={() => window.print()}
-            style={{
-              padding: '10px 14px', fontSize: 13, fontWeight: 500, color: '#9ca3af',
-              backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
-              fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
-              marginLeft: 'auto',
-            }}
-          >
-            Export PDF
-          </button>
-        </div>
-
-        {/* Dropdown menus — rendered outside tab bar to avoid overflow clipping */}
-        {openDropdown && (
-          <>
-            {/* Backdrop to close */}
-            <div onClick={() => setOpenDropdown(null)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
-
-            {/* Activities dropdown */}
-            {openDropdown === 'activities' && (
-              <div style={{
-                position: 'fixed', top: dropdownPos.top, left: dropdownPos.left, zIndex: 100,
-                backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
-                width: 280, maxWidth: 'calc(100vw - 40px)',
-                maxHeight: 360, overflowY: 'auto',
-              }}>
-                {activities.map((act, i) => (
-                  <button
-                    key={act.id}
-                    onClick={() => { setActiveTab(`activity_${act.id}`); setOpenDropdown(null); setShowAllEvidence(false); }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'left',
-                      padding: '10px 16px', fontSize: 13,
-                      color: activeTab === `activity_${act.id}` ? '#111827' : '#374151',
-                      fontWeight: activeTab === `activity_${act.id}` ? 600 : 400,
-                      backgroundColor: activeTab === `activity_${act.id}` ? '#f3f4f6' : 'white',
-                      border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                    onMouseLeave={e => { if (activeTab !== `activity_${act.id}`) e.currentTarget.style.backgroundColor = 'white'; }}
-                  >
-                    <div style={{ fontWeight: 600, marginBottom: 2 }}>Activity {i + 1}: {act.name}</div>
-                    {act.uncertainty && (
-                      <div style={{ fontSize: 11, color: '#9ca3af', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {act.uncertainty}
-                      </div>
-                    )}
-                  </button>
-                ))}
-                <div style={{ borderTop: '1px solid #f0f0f0' }}>
-                  <button
-                    onClick={() => { setShowCreateModal(true); setOpenDropdown(null); }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'left',
-                      padding: '10px 16px', fontSize: 13, color: NAVY, fontWeight: 600,
-                      backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f4ff'}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-                  >
-                    + New Activity
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* More dropdown */}
-            {openDropdown === 'more' && (
-              <div style={{
-                position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 100,
-                backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 200,
-              }}>
-                {MORE_TABS.map(tab => (
-                  <button
-                    key={tab.key}
-                    onClick={() => { setActiveTab(tab.key); setOpenDropdown(null); }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'left',
-                      padding: '10px 16px', fontSize: 13,
-                      color: activeTab === tab.key ? '#111827' : '#6b7280',
-                      fontWeight: activeTab === tab.key ? 600 : 400,
-                      backgroundColor: activeTab === tab.key ? '#f3f4f6' : 'white',
-                      border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                    onMouseLeave={e => { if (activeTab !== tab.key) e.currentTarget.style.backgroundColor = 'white'; }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Content area */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {isActivityTab ? (
-            <ActivityNarrativePanel
+        {/* ── Main content area ── */}
+        <div style={{ flex: 1, overflowY: 'auto', background: '#f8f9fa' }}>
+          {/* Activity view */}
+          {activeView.type === 'activity' && activeActivity && (
+            <ActivityView
               activity={activeActivity}
+              expandedStages={expandedStages}
+              onToggleStage={toggleStage}
+              sections={sections}
               projectId={projectId}
+              activityEvidence={activityEvidence}
+              onSaveStatus={setSaveStatus}
               token={token}
+              onActivitiesChange={handleActivitiesChange}
+              onGenerated={fetchSections}
+              onLinkEvidence={() => setShowEvidenceModal(true)}
+              onAddNote={() => setShowEvidenceModal(true)}
+              onUnlinkEvidence={handleUnlinkEvidence}
+            />
+          )}
+
+          {/* Project Overview */}
+          {activeView.type === 'section' && activeView.id === 'overview' && (
+            <SectionPanel
+              sectionKey="project_overview"
+              sectionName={SECTION_NAMES.project_overview || 'Project Overview & Knowledge Gap'}
+              projectId={projectId}
               sections={sections}
               saveStatus={saveStatus}
               onSaveStatus={setSaveStatus}
-              onGenerated={fetchSections}
             />
-          ) : activeTab === 'financials' ? (
+          )}
+
+          {/* Financials */}
+          {activeView.type === 'section' && activeView.id === 'financials' && (
             <FinancialsPage token={token} activities={activities} />
-          ) : activeTab === 'attestations' ? (
+          )}
+
+          {/* R&D Boundary */}
+          {activeView.type === 'section' && activeView.id === 'boundary' && (
+            <SectionPanel
+              sectionKey="rd_boundary"
+              sectionName={SECTION_NAMES.rd_boundary || 'R&D vs Non-R&D Boundary'}
+              projectId={projectId}
+              sections={sections}
+              saveStatus={saveStatus}
+              onSaveStatus={setSaveStatus}
+            />
+          )}
+
+          {/* Attestations */}
+          {activeView.type === 'section' && activeView.id === 'attestations' && (
             <AttestationsPanel
               projectId={projectId}
               sections={sections}
               token={token}
               onSaved={fetchSections}
             />
-          ) : (
-            (() => {
-              const allSectionKeys = [...PROJECT_TABS, ...SUFFIX_TABS, ...MORE_TABS];
-              const tab = allSectionKeys.find(t => t.key === activeTab);
-              if (!tab) return null;
-              return (
-                <SectionPanel
-                  sectionKey={tab.key}
-                  sectionName={SECTION_NAMES[tab.key] || tab.label}
-                  projectId={projectId}
-                  sections={sections}
-                  saveStatus={saveStatus}
-                  onSaveStatus={setSaveStatus}
-                />
-              );
-            })()
+          )}
+
+          {/* Fallback: no activity selected and no section */}
+          {activeView.type === 'activity' && !activeActivity && activities.length === 0 && (
+            <div style={{ padding: '60px 40px', textAlign: 'center', color: '#9ca3af' }}>
+              <div style={{ fontSize: 15, marginBottom: 8 }}>No activities yet</div>
+              <div style={{ fontSize: 13 }}>Click the + button to add your first R&D activity.</div>
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Create activity modal */}
-      {showCreateModal && (
-        <CreateActivityModal
-          token={token}
-          onCreated={handleActivityCreated}
-          onClose={() => setShowCreateModal(false)}
-        />
-      )}
-
-      {/* Activity right-click context menu */}
-      {actCtxMenu && (
-        <>
-          <div onClick={() => setActCtxMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
-          <div style={{
-            position: 'fixed', top: actCtxMenu.y, left: actCtxMenu.x, zIndex: 70,
-            backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'visible', minWidth: 180,
-          }}>
-            <button
-              onClick={() => { setActiveTab(`activity_${actCtxMenu.activity.id}`); setShowAllEvidence(false); setActCtxMenu(null); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13, color: '#374151', fontWeight: 400, backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-            >
-              Open narrative
-            </button>
-            <button
-              onClick={async () => {
-                const act = actCtxMenu.activity;
-                setActCtxMenu(null);
-                try {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  await fetch(`/api/projects/${token}/core-activities/${act.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-                    body: JSON.stringify({ status: act.status === 'adopted' ? 'draft' : 'adopted' }),
-                  });
-                  if (onActivitiesChange) {
-                    onActivitiesChange(activities.map(a => a.id === act.id ? { ...a, status: act.status === 'adopted' ? 'draft' : 'adopted' } : a));
-                  }
-                } catch (err) { console.error('Status change failed:', err); }
-              }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13, color: '#374151', fontWeight: 400, backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-            >
-              {actCtxMenu.activity.status === 'adopted' ? 'Revert to draft' : 'Adopt activity'}
-            </button>
-            {/* Activity type sub-menu */}
-            <div style={{ position: 'relative' }}>
+        {/* ── Add menu dropdown (anchored to + button) ── */}
+        {showAddMenu && (
+          <>
+            <div onClick={() => setShowAddMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+            <div style={{
+              position: 'fixed',
+              top: (addBtnRef.current?.getBoundingClientRect().bottom || 0) + 6,
+              left: addBtnRef.current?.getBoundingClientRect().left || 0,
+              zIndex: 70, background: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
+              minWidth: 170, padding: '4px 0',
+            }}>
               <button
-                onClick={() => setActCtxMenu(prev => ({ ...prev, showTypePicker: !prev.showTypePicker }))}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13, color: '#374151', fontWeight: 400, backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
+                onClick={() => { setShowCreateModal(true); setShowAddMenu(false); }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '7px 14px',
+                  fontSize: 13, color: '#374151', background: 'white', border: 'none',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.background = 'white'}
               >
-                {(actCtxMenu.activity.activity_type || 'core') === 'core' ? 'Core R&D' : 'Supporting R&D'} <span style={{ fontSize: 10, color: '#9ca3af' }}>▸</span>
+                New activity
               </button>
-              {actCtxMenu.showTypePicker && (
-                <div style={{
-                  position: 'absolute', left: '100%', top: 0, zIndex: 80,
-                  backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 150,
-                }}>
-                  {ACT_TYPES.map(t => (
-                    <button
-                      key={t.value}
-                      onClick={async () => {
-                        const act = actCtxMenu.activity;
-                        setActCtxMenu(null);
-                        try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          await fetch(`/api/projects/${token}/core-activities/${act.id}`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-                            body: JSON.stringify({ activity_type: t.value }),
-                          });
-                          if (onActivitiesChange) {
-                            onActivitiesChange(activities.map(a => a.id === act.id ? { ...a, activity_type: t.value } : a));
-                          }
-                        } catch (err) { console.error('Activity type change failed:', err); }
-                      }}
-                      style={{
-                        display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13,
-                        color: '#374151', fontWeight: t.value === (actCtxMenu.activity.activity_type || 'core') ? 600 : 400,
-                        backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-                    >
-                      {t.label}{t.value === (actCtxMenu.activity.activity_type || 'core') ? ' ✓' : ''}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div style={{ borderTop: '1px solid #f0f0f0', margin: '4px 0' }} />
+              <button
+                onClick={() => { setShowEvidenceModal(true); setShowAddMenu(false); }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '7px 14px',
+                  fontSize: 13, color: '#374151', background: 'white', border: 'none',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.background = 'white'}
+              >
+                Add evidence note
+              </button>
+              <button
+                onClick={() => { setShowUploadModal(true); setShowAddMenu(false); }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '7px 14px',
+                  fontSize: 13, color: '#374151', background: 'white', border: 'none',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.background = 'white'}
+              >
+                Upload file
+              </button>
+              <div style={{ borderTop: '1px solid #f0f0f0', margin: '4px 0' }} />
+              <button
+                onClick={() => { setShowJiraImport(true); setShowAddMenu(false); }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '7px 14px',
+                  fontSize: 13, color: '#374151', background: 'white', border: 'none',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                onMouseLeave={e => e.currentTarget.style.background = 'white'}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#2684FF">
+                    <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
+                  </svg>
+                  Import from Jira
+                </span>
+              </button>
             </div>
-            <div style={{ borderTop: '1px solid #f0f0f0' }} />
-            <button
-              onClick={async () => {
-                const act = actCtxMenu.activity;
-                setActCtxMenu(null);
-                if (!confirm(`Delete "${act.name}"? This cannot be undone.`)) return;
-                try {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  await fetch(`/api/projects/${token}/core-activities/${act.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-                    body: JSON.stringify({ status: 'archived' }),
-                  });
-                  if (onActivitiesChange) {
-                    onActivitiesChange(activities.filter(a => a.id !== act.id));
-                  }
-                  if (activeTab === `activity_${act.id}`) setActiveTab('project_overview');
-                } catch (err) { console.error('Archive failed:', err); }
-              }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px', fontSize: 13, color: '#dc2626', fontWeight: 400, backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-            >
-              Archive activity
-            </button>
-          </div>
-        </>
-      )}
+          </>
+        )}
 
-      {/* Add menu dropdown */}
-      {showAddMenu && (
-        <>
-          <div onClick={() => setShowAddMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 60 }} />
+        {/* ── Modals ── */}
+        {showCreateModal && (
+          <CreateActivityModal
+            token={token}
+            onCreated={handleActivityCreated}
+            onClose={() => setShowCreateModal(false)}
+          />
+        )}
+
+        {showEvidenceModal && (
+          <AddEvidenceModal
+            token={token}
+            activities={activities}
+            onCreated={handleEvidenceCreated}
+            onClose={() => setShowEvidenceModal(false)}
+          />
+        )}
+
+        {showUploadModal && (
+          <UploadFileModal
+            token={token}
+            onCreated={handleEvidenceCreated}
+            onClose={() => setShowUploadModal(false)}
+          />
+        )}
+
+        {/* Jira import success banner */}
+        {jiraSuccess && (
           <div style={{
-            position: 'fixed', top: showAddMenu.top, left: showAddMenu.left, zIndex: 70,
-            backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: 8,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', overflow: 'hidden', minWidth: 160,
+            position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 1000, background: '#dcfce7', border: '1px solid #86efac',
+            borderRadius: 8, padding: '10px 20px', fontSize: 13, color: '#166534',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
           }}>
-            <button
-              onClick={() => { setShowCreateModal(true); setShowAddMenu(false); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: '#374151', backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-            >
-              Activity
-            </button>
-            <button
-              onClick={() => { setShowEvidenceModal(true); setShowAddMenu(false); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: '#374151', backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-            >
-              Evidence
-            </button>
-            <button
-              onClick={() => { setShowUploadModal(true); setShowAddMenu(false); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: '#374151', backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-            >
-              Upload file
-            </button>
-            <div style={{ borderTop: '1px solid #f3f4f6' }} />
-            <button
-              onClick={() => { setShowJiraImport(true); setShowAddMenu(false); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontSize: 13, color: '#374151', backgroundColor: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
-              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
-              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'white'}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#2684FF">
-                  <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
-                </svg>
-                Import from Jira
-              </span>
-            </button>
+            {jiraSuccess}
           </div>
-        </>
-      )}
+        )}
 
-      {/* Add evidence modal */}
-      {showEvidenceModal && (
-        <AddEvidenceModal
-          token={token}
-          activities={activities}
-          onCreated={() => { window.location.reload(); }}
-          onClose={() => setShowEvidenceModal(false)}
-        />
-      )}
-
-      {/* Upload file modal */}
-      {showUploadModal && (
-        <UploadFileModal
-          token={token}
-          onCreated={() => { window.location.reload(); }}
-          onClose={() => setShowUploadModal(false)}
-        />
-      )}
-
-      {/* Jira import success banner */}
-      {jiraSuccess && (
-        <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: '#dcfce7', border: '1px solid #86efac', borderRadius: 8, padding: '10px 20px', fontSize: 13, color: '#166534', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-          {jiraSuccess}
-        </div>
-      )}
-
-      {/* Jira CSV Import Modal */}
-      {showJiraImport && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
-          <div style={{ background: 'white', borderRadius: 12, width: 640, maxHeight: '85vh', overflow: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb' }}>
-            {/* Modal header */}
-            <div style={{ padding: '18px 22px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="#2684FF">
-                  <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
-                </svg>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>Import R&D Activities from Jira</span>
-              </div>
-              <button onClick={resetJiraImport} style={{ background: 'none', border: 'none', fontSize: 20, color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>×</button>
-            </div>
-
-            <div style={{ padding: '18px 22px' }}>
-              {jiraError && (
-                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, marginBottom: 14, fontSize: 13, color: '#dc2626' }}>
-                  {jiraError}
+        {/* Jira CSV Import Modal */}
+        {showJiraImport && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
+            <div style={{ background: 'white', borderRadius: 12, width: 640, maxHeight: '85vh', overflow: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb' }}>
+              {/* Modal header */}
+              <div style={{ padding: '18px 22px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#2684FF">
+                    <path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.487V1.005A1.005 1.005 0 0 0 23.013 0z"/>
+                  </svg>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>Import R&D Activities from Jira</span>
                 </div>
-              )}
+                <button onClick={resetJiraImport} style={{ background: 'none', border: 'none', fontSize: 20, color: '#9ca3af', cursor: 'pointer', lineHeight: 1 }}>×</button>
+              </div>
 
-              {/* Step 1: File upload */}
-              {!jiraResults && (
-                <div>
-                  <p style={{ fontSize: 13, color: '#6b7280', marginTop: 0, marginBottom: 14, lineHeight: 1.5 }}>
-                    Export your Jira board as CSV (Filters → Export → CSV), then upload it here. AI will identify which epics are R&D and draft RDTI-ready activity descriptions.
-                  </p>
-                  <div style={{
-                    border: '2px dashed #d1d5db', borderRadius: 8, padding: 32,
-                    textAlign: 'center', background: '#fafafa', marginBottom: 16, cursor: 'pointer',
-                  }}
-                    onClick={() => document.getElementById('workspace-jira-csv-input').click()}
-                    onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#2684FF'; }}
-                    onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; }}
-                    onDrop={e => {
-                      e.preventDefault();
-                      e.currentTarget.style.borderColor = '#d1d5db';
-                      const f = e.dataTransfer.files[0];
-                      if (f && (f.name.endsWith('.csv') || f.type === 'text/csv')) setJiraFile(f);
-                    }}
-                  >
-                    <input
-                      id="workspace-jira-csv-input"
-                      type="file"
-                      accept=".csv"
-                      style={{ display: 'none' }}
-                      onChange={e => { if (e.target.files[0]) setJiraFile(e.target.files[0]); }}
-                    />
-                    {jiraFile ? (
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: '#111827', marginBottom: 4 }}>{jiraFile.name}</div>
-                        <div style={{ fontSize: 12, color: '#6b7280' }}>{(jiraFile.size / 1024).toFixed(1)} KB</div>
-                      </div>
-                    ) : (
-                      <div>
-                        <div style={{ fontSize: 14, color: '#374151', marginBottom: 4 }}>Drop a Jira CSV here or click to browse</div>
-                        <div style={{ fontSize: 12, color: '#9ca3af' }}>Supports standard Jira CSV exports</div>
-                      </div>
-                    )}
+              <div style={{ padding: '18px 22px' }}>
+                {jiraError && (
+                  <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, marginBottom: 14, fontSize: 13, color: '#dc2626' }}>
+                    {jiraError}
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                    <button onClick={resetJiraImport} style={{ padding: '7px 14px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleJiraAnalyse}
-                      disabled={!jiraFile || jiraAnalysing}
-                      style={{
-                        padding: '7px 18px', fontSize: 13, fontWeight: 600,
-                        background: (!jiraFile || jiraAnalysing) ? '#e5e7eb' : NAVY,
-                        color: (!jiraFile || jiraAnalysing) ? '#9ca3af' : 'white',
-                        border: 'none', borderRadius: 6,
-                        cursor: (!jiraFile || jiraAnalysing) ? 'default' : 'pointer',
-                        fontFamily: 'inherit',
+                )}
+
+                {/* Step 1: File upload */}
+                {!jiraResults && (
+                  <div>
+                    <p style={{ fontSize: 13, color: '#6b7280', marginTop: 0, marginBottom: 14, lineHeight: 1.5 }}>
+                      Export your Jira board as CSV (Filters → Export → CSV), then upload it here. AI will identify which epics are R&D and draft RDTI-ready activity descriptions.
+                    </p>
+                    <div style={{
+                      border: '2px dashed #d1d5db', borderRadius: 8, padding: 32,
+                      textAlign: 'center', background: '#fafafa', marginBottom: 16, cursor: 'pointer',
+                    }}
+                      onClick={() => document.getElementById('workspace-jira-csv-input').click()}
+                      onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#2684FF'; }}
+                      onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; }}
+                      onDrop={e => {
+                        e.preventDefault();
+                        e.currentTarget.style.borderColor = '#d1d5db';
+                        const f = e.dataTransfer.files[0];
+                        if (f && (f.name.endsWith('.csv') || f.type === 'text/csv')) setJiraFile(f);
                       }}
                     >
-                      {jiraAnalysing ? 'Analysing...' : 'Analyse CSV'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Triage results */}
-              {jiraResults && (
-                <div>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 14 }}>
-                    Analysed {jiraResults.totalIssues} issues across {jiraResults.epicCount} epics. Select the activities to import.
-                  </div>
-
-                  {/* R&D activities */}
-                  {jiraResults.results.filter(r => r.is_rd).length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#166534', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-                        R&D Activities ({jiraResults.results.filter(r => r.is_rd).length})
-                      </div>
-                      {jiraResults.results.map((r, i) => {
-                        if (!r.is_rd) return null;
-                        return (
-                          <div key={i} style={{
-                            border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, marginBottom: 8,
-                            background: jiraSelected[i] ? '#f0f9ff' : 'white', transition: 'background 0.15s',
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                              <input type="checkbox" checked={!!jiraSelected[i]} onChange={() => setJiraSelected(prev => ({ ...prev, [i]: !prev[i] }))} style={{ marginTop: 3, accentColor: NAVY }} />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 3 }}>{r.activity_name}</div>
-                                <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 6 }}>
-                                  From: "{r.epic_name}" · {r.classification === 'core' ? 'Core R&D' : 'Supporting'} · {(r.issues || []).length} issues
-                                </div>
-                                <div style={{ fontSize: 12, color: '#4b5563', marginBottom: 6, lineHeight: 1.5 }}>
-                                  <strong style={{ color: '#374151' }}>Uncertainty:</strong> {r.uncertainty}
-                                </div>
-                                <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>{r.reason}</div>
-                                {r.issues && r.issues.length > 0 && (
-                                  <details style={{ marginTop: 8 }}>
-                                    <summary style={{ fontSize: 11, color: '#9ca3af', cursor: 'pointer' }}>{r.issues.length} Jira issues mapped</summary>
-                                    <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                      {r.issues.map((issue, j) => (
-                                        <div key={j} style={{ fontSize: 11, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'center' }}>
-                                          <span style={{
-                                            padding: '1px 5px', borderRadius: 3, fontSize: 10, fontWeight: 600,
-                                            background: issue.step === 'Hypothesis' ? '#ede9fe' : issue.step === 'Experiment' ? '#dbeafe' : issue.step === 'Observation' ? '#d1fae5' : issue.step === 'Evaluation' ? '#fef3c7' : issue.step === 'Conclusion' ? '#fee2e2' : '#f3f4f6',
-                                            color: issue.step === 'Hypothesis' ? '#7c3aed' : issue.step === 'Experiment' ? '#2563eb' : issue.step === 'Observation' ? '#059669' : issue.step === 'Evaluation' ? '#d97706' : issue.step === 'Conclusion' ? '#dc2626' : '#6b7280',
-                                          }}>
-                                            {(issue.step || '?').slice(0, 3)}
-                                          </span>
-                                          <span style={{ fontFamily: 'ui-monospace,monospace', fontWeight: 600, color: '#374151' }}>{issue.key}</span>
-                                          <span>{issue.summary}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </details>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                      <input
+                        id="workspace-jira-csv-input"
+                        type="file"
+                        accept=".csv"
+                        style={{ display: 'none' }}
+                        onChange={e => { if (e.target.files[0]) setJiraFile(e.target.files[0]); }}
+                      />
+                      {jiraFile ? (
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 500, color: '#111827', marginBottom: 4 }}>{jiraFile.name}</div>
+                          <div style={{ fontSize: 12, color: '#6b7280' }}>{(jiraFile.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ fontSize: 14, color: '#374151', marginBottom: 4 }}>Drop a Jira CSV here or click to browse</div>
+                          <div style={{ fontSize: 12, color: '#9ca3af' }}>Supports standard Jira CSV exports</div>
+                        </div>
+                      )}
                     </div>
-                  )}
-
-                  {/* Not R&D */}
-                  {jiraResults.results.filter(r => !r.is_rd).length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-                        Not R&D ({jiraResults.results.filter(r => !r.is_rd).length})
-                      </div>
-                      {jiraResults.results.map((r, i) => {
-                        if (r.is_rd) return null;
-                        return (
-                          <div key={i} style={{
-                            border: '1px solid #f3f4f6', borderRadius: 8, padding: 12, marginBottom: 6,
-                            background: jiraSelected[i] ? '#f0f9ff' : '#fafafa',
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                              <input type="checkbox" checked={!!jiraSelected[i]} onChange={() => setJiraSelected(prev => ({ ...prev, [i]: !prev[i] }))} style={{ marginTop: 2, accentColor: NAVY }} title="Override — import as R&D anyway" />
-                              <div>
-                                <div style={{ fontSize: 13, color: '#6b7280' }}>"{r.epic_name}"</div>
-                                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{r.reason}</div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #f3f4f6' }}>
-                    <button onClick={() => { setJiraResults(null); setJiraFile(null); setJiraSelected({}); }} style={{ padding: '7px 14px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
-                      Back
-                    </button>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                       <button onClick={resetJiraImport} style={{ padding: '7px 14px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
                         Cancel
                       </button>
                       <button
-                        onClick={handleJiraImport}
-                        disabled={jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0}
+                        onClick={handleJiraAnalyse}
+                        disabled={!jiraFile || jiraAnalysing}
                         style={{
                           padding: '7px 18px', fontSize: 13, fontWeight: 600,
-                          background: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? '#e5e7eb' : NAVY,
-                          color: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? '#9ca3af' : 'white',
+                          background: (!jiraFile || jiraAnalysing) ? '#e5e7eb' : NAVY,
+                          color: (!jiraFile || jiraAnalysing) ? '#9ca3af' : 'white',
                           border: 'none', borderRadius: 6,
-                          cursor: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? 'default' : 'pointer',
+                          cursor: (!jiraFile || jiraAnalysing) ? 'default' : 'pointer',
                           fontFamily: 'inherit',
                         }}
                       >
-                        {jiraImporting ? 'Importing...' : `Import ${Object.values(jiraSelected).filter(Boolean).length} Activities`}
+                        {jiraAnalysing ? 'Analysing...' : 'Analyse CSV'}
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Step 2: Triage results */}
+                {jiraResults && (
+                  <div>
+                    <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 14 }}>
+                      Analysed {jiraResults.totalIssues} issues across {jiraResults.epicCount} epics. Select the activities to import.
+                    </div>
+
+                    {/* R&D activities */}
+                    {jiraResults.results.filter(r => r.is_rd).length > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#166534', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                          R&D Activities ({jiraResults.results.filter(r => r.is_rd).length})
+                        </div>
+                        {jiraResults.results.map((r, i) => {
+                          if (!r.is_rd) return null;
+                          return (
+                            <div key={i} style={{
+                              border: '1px solid #e5e7eb', borderRadius: 8, padding: 14, marginBottom: 8,
+                              background: jiraSelected[i] ? '#f0f9ff' : 'white', transition: 'background 0.15s',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                <input type="checkbox" checked={!!jiraSelected[i]} onChange={() => setJiraSelected(prev => ({ ...prev, [i]: !prev[i] }))} style={{ marginTop: 3, accentColor: NAVY }} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 3 }}>{r.activity_name}</div>
+                                  <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 6 }}>
+                                    From: &quot;{r.epic_name}&quot; · {r.classification === 'core' ? 'Core R&D' : 'Supporting'} · {(r.issues || []).length} issues
+                                  </div>
+                                  <div style={{ fontSize: 12, color: '#4b5563', marginBottom: 6, lineHeight: 1.5 }}>
+                                    <strong style={{ color: '#374151' }}>Uncertainty:</strong> {r.uncertainty}
+                                  </div>
+                                  <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>{r.reason}</div>
+                                  {r.issues && r.issues.length > 0 && (
+                                    <details style={{ marginTop: 8 }}>
+                                      <summary style={{ fontSize: 11, color: '#9ca3af', cursor: 'pointer' }}>{r.issues.length} Jira issues mapped</summary>
+                                      <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                        {r.issues.map((issue, j) => (
+                                          <div key={j} style={{ fontSize: 11, color: '#6b7280', display: 'flex', gap: 6, alignItems: 'center' }}>
+                                            <span style={{
+                                              padding: '1px 5px', borderRadius: 3, fontSize: 10, fontWeight: 600,
+                                              background: issue.step === 'Hypothesis' ? '#ede9fe' : issue.step === 'Experiment' ? '#dbeafe' : issue.step === 'Observation' ? '#d1fae5' : issue.step === 'Evaluation' ? '#fef3c7' : issue.step === 'Conclusion' ? '#fee2e2' : '#f3f4f6',
+                                              color: issue.step === 'Hypothesis' ? '#7c3aed' : issue.step === 'Experiment' ? '#2563eb' : issue.step === 'Observation' ? '#059669' : issue.step === 'Evaluation' ? '#d97706' : issue.step === 'Conclusion' ? '#dc2626' : '#6b7280',
+                                            }}>
+                                              {(issue.step || '?').slice(0, 3)}
+                                            </span>
+                                            <span style={{ fontFamily: 'ui-monospace,monospace', fontWeight: 600, color: '#374151' }}>{issue.key}</span>
+                                            <span>{issue.summary}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </details>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Not R&D */}
+                    {jiraResults.results.filter(r => !r.is_rd).length > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                          Not R&D ({jiraResults.results.filter(r => !r.is_rd).length})
+                        </div>
+                        {jiraResults.results.map((r, i) => {
+                          if (r.is_rd) return null;
+                          return (
+                            <div key={i} style={{
+                              border: '1px solid #f3f4f6', borderRadius: 8, padding: 12, marginBottom: 6,
+                              background: jiraSelected[i] ? '#f0f9ff' : '#fafafa',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                <input type="checkbox" checked={!!jiraSelected[i]} onChange={() => setJiraSelected(prev => ({ ...prev, [i]: !prev[i] }))} style={{ marginTop: 2, accentColor: NAVY }} title="Override — import as R&D anyway" />
+                                <div>
+                                  <div style={{ fontSize: 13, color: '#6b7280' }}>&quot;{r.epic_name}&quot;</div>
+                                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{r.reason}</div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #f3f4f6' }}>
+                      <button onClick={() => { setJiraResults(null); setJiraFile(null); setJiraSelected({}); }} style={{ padding: '7px 14px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        Back
+                      </button>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={resetJiraImport} style={{ padding: '7px 14px', fontSize: 13, color: '#6b7280', background: 'white', border: '1px solid #e5e7eb', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleJiraImport}
+                          disabled={jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0}
+                          style={{
+                            padding: '7px 18px', fontSize: 13, fontWeight: 600,
+                            background: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? '#e5e7eb' : NAVY,
+                            color: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? '#9ca3af' : 'white',
+                            border: 'none', borderRadius: 6,
+                            cursor: (jiraImporting || Object.values(jiraSelected).filter(Boolean).length === 0) ? 'default' : 'pointer',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          {jiraImporting ? 'Importing...' : `Import ${Object.values(jiraSelected).filter(Boolean).length} Activities`}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-    </div>
-    {/* ══ PRINT LAYOUT — hidden on screen, shown on print ══ */}
+      {/* ══ PRINT LAYOUT — hidden on screen, shown on print ══ */}
       <div className="workspace-print" style={{ display: 'none' }}>
         {/* Cover page */}
         <div className="print-cover" style={{
@@ -2289,7 +1579,7 @@ export default function WorkspaceView({
                 {act.uncertainty}
               </p>
             )}
-            {ACTIVITY_STEPS.map(({ key, label }) => {
+            {ACTIVITY_NARRATIVE_STEPS.map(({ key, label }) => {
               const content = sections[`activity_${act.id}_${key}`]?.content;
               if (!content || content.replace(/<[^>]*>/g, '').trim().length < 5) return null;
               return (

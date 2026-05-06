@@ -248,15 +248,10 @@ export default function ProjectSidebar({ token, projectName, stepperData = [] })
       <nav style={{ padding: '4px 0', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <NavItem label="Dashboard"       viewKey="dashboard"  icon={NAV_ICONS.dashboard} />
         <NavItem label="Workspace"       viewKey="workspace"  icon={NAV_ICONS.workspace} />
-        <NavItem label="Project Details"  viewKey="details"    icon={NAV_ICONS.details} />
-        <NavItem label="Activities"       viewKey="activities" icon={NAV_ICONS.activities} />
 
         <div style={{ margin: collapsed ? '6px 8px' : '6px 14px', borderTop: '1px solid #f0f0f0' }} />
 
         <NavItem label="Integrations"    viewKey="records"    icon={NAV_ICONS.records} />
-
-        <div style={{ margin: collapsed ? '6px 8px' : '6px 14px', borderTop: '1px solid #f0f0f0' }} />
-
         <NavItem label="Settings"        viewKey="settings"   icon={NAV_ICONS.settings} />
       </nav>
     </div>
