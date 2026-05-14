@@ -79,6 +79,34 @@ function InlineEditor({ sectionKey, projectId, initialContent, placeholder, onSa
     } catch { onSaveStatus?.('error'); }
   }, [projectId, sectionKey, onSaveStatus]);
 
+  const [rewriting, setRewriting] = useState(false);
+
+  const handleRewrite = async () => {
+    const { from, to } = editor.state.selection;
+    if (from === to) return;
+    const selectedText = editor.state.doc.textBetween(from, to, ' ');
+    if (!selectedText.trim()) return;
+
+    setRewriting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/ai/rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ text: selectedText, context: 'RDTI claim narrative' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.rewritten) {
+          editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, data.rewritten).run();
+        }
+      }
+    } catch (err) {
+      console.error('Rewrite failed:', err);
+    }
+    setRewriting(false);
+  };
+
   if (!editor) return null;
 
   const TB = ({ label, action, active, style: s = {} }) => (
@@ -102,12 +130,17 @@ function InlineEditor({ sectionKey, projectId, initialContent, placeholder, onSa
           <TB label="I" action={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} style={{ fontStyle: 'italic' }} />
           <TB label="H2" action={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} style={{ fontSize: 11 }} />
           <div style={{ width: 1, height: 20, backgroundColor: 'rgba(255,255,255,0.15)', margin: '0 4px' }} />
-          <button onMouseDown={e => e.preventDefault()} style={{
-            display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px',
-            backgroundColor: NAVY, color: 'white', border: 'none', borderRadius: 5,
-            fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'system-ui',
-          }}>
-            <span style={{ fontSize: 14 }}>&#10022;</span> Rewrite
+          <button
+            onMouseDown={e => { e.preventDefault(); handleRewrite(); }}
+            disabled={rewriting}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px',
+              backgroundColor: rewriting ? '#6b7280' : NAVY, color: 'white', border: 'none', borderRadius: 5,
+              fontSize: 12, fontWeight: 600, cursor: rewriting ? 'wait' : 'pointer', fontFamily: 'system-ui',
+              opacity: rewriting ? 0.7 : 1,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>&#10022;</span> {rewriting ? 'Rewriting…' : 'Rewrite'}
           </button>
         </div>
       )}

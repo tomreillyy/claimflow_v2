@@ -5,6 +5,7 @@ import { SECTION_NAMES, ACTIVITY_NARRATIVE_STEPS } from '@/lib/claimFlowMasterCo
 import { sanitizeHtml } from '@/lib/sanitizeHtml';
 import InlineEditor, { BlobLoader } from './workspace/InlineEditor';
 import { CreateActivityModal, UploadFileModal, AddEvidenceModal } from './workspace/WorkspaceModals';
+import EvidencePicker from './EvidencePicker';
 import FinancialsPage from './financials/FinancialsPage';
 import FinancialsPrintSection from './financials/FinancialsPrintSection';
 
@@ -939,6 +940,7 @@ export default function WorkspaceView({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState(null); // { activityId, step } or null
   const [showAddMenu, setShowAddMenu] = useState(false);
 
   // Jira CSV import state
@@ -1111,6 +1113,19 @@ export default function WorkspaceView({
     } catch (err) { console.error('Link failed:', err); }
   };
 
+  // Link multiple evidence items to a specific activity + step (used by EvidencePicker)
+  const handlePickerLink = async (evidenceIds, step, activityId) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`/api/projects/${token}/core-activities/${activityId}/evidence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ evidence_ids: evidenceIds, step }),
+      });
+      await fetchActivityEvidence(activityId, true);
+    } catch (err) { console.error('Link failed:', err); }
+  };
+
   const handleUnlinkEvidence = async (evidenceId, activityId) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1165,7 +1180,7 @@ export default function WorkspaceView({
               token={token}
               onActivitiesChange={handleActivitiesChange}
               onGenerated={fetchSections}
-              onLinkEvidence={() => setShowEvidenceModal(true)}
+              onLinkEvidence={(activityId, stageKey) => setPickerTarget({ activityId, step: stageKey })}
               onAddNote={() => setShowEvidenceModal(true)}
               onUnlinkEvidence={handleUnlinkEvidence}
             />
@@ -1315,6 +1330,26 @@ export default function WorkspaceView({
             onClose={() => setShowUploadModal(false)}
           />
         )}
+
+        {pickerTarget && (() => {
+          // Map lowercase stage key to capitalized step name for API
+          const stageToStep = Object.fromEntries(Object.entries(STEP_TO_STAGE).map(([k, v]) => [v, k]));
+          const apiStep = stageToStep[pickerTarget.step] || 'Hypothesis';
+          // Collect IDs already linked to this activity
+          const linkedIds = new Set((activityEvidence[pickerTarget.activityId] || []).map(e => e.id));
+          return (
+            <EvidencePicker
+              step={apiStep}
+              allEvidence={items}
+              linkedEvidenceIds={linkedIds}
+              onLink={(ids) => {
+                handlePickerLink(ids, apiStep, pickerTarget.activityId);
+                setPickerTarget(null);
+              }}
+              onClose={() => setPickerTarget(null)}
+            />
+          );
+        })()}
 
         {/* Jira import success banner */}
         {jiraSuccess && (
