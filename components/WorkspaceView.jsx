@@ -262,6 +262,20 @@ function StageSection({
             </button>
           </div>
 
+          {/* Stage AI tip — show when no narrative yet */}
+          {!hasNarrative && (
+            <div style={{
+              padding: '10px 12px', marginBottom: 12, borderRadius: 8,
+              background: '#f8f9fb', border: '1px solid #eef0f2',
+              fontSize: 12, lineHeight: 1.5, color: '#6b7280',
+            }}>
+              <span style={{ fontWeight: 600, color: '#374151' }}>✦ </span>
+              {evCount > 0
+                ? `${evCount} evidence item${evCount > 1 ? 's' : ''} linked — click Generate with AI on this activity to draft this section from your evidence.`
+                : 'No evidence linked yet. Link evidence above, then generate with AI or write manually.'}
+            </div>
+          )}
+
           {/* Narrative editor */}
           <div className="workspace-inline-editor">
             <InlineEditor
@@ -302,8 +316,55 @@ function StageSection({
   );
 }
 
+/* ── AI context tip — shows what the AI will use to generate ── */
+function AiContextTip({ sectionKey, activities, items, activityEvidence, hasContent }) {
+  if (hasContent) return null; // Don't show tip if section already has content
+
+  const coreActs = activities.filter(a => (a.activity_type || 'core') === 'core');
+  const supportingActs = activities.filter(a => a.activity_type === 'supporting');
+  const totalEvidence = (items || []).filter(e => !e.soft_deleted).length;
+
+  let lines = [];
+  let gaps = [];
+
+  if (sectionKey === 'project_overview') {
+    if (coreActs.length > 0) {
+      lines.push(`${coreActs.length} core activit${coreActs.length === 1 ? 'y' : 'ies'}: ${coreActs.map(a => a.name).join(', ')}`);
+    }
+    if (totalEvidence > 0) {
+      lines.push(`${totalEvidence} evidence items to draw from`);
+    }
+    if (coreActs.length === 0) gaps.push('No activities defined yet — add activities first');
+    if (totalEvidence < 3) gaps.push('Limited evidence — connect integrations or add notes for a stronger overview');
+  } else if (sectionKey === 'rd_boundary') {
+    if (coreActs.length > 0) {
+      lines.push(`Will document ${coreActs.length} core + ${supportingActs.length} supporting activit${supportingActs.length === 1 ? 'y' : 'ies'} as R&D`);
+    }
+    if (totalEvidence > 0) {
+      lines.push(`Can identify excluded work from ${totalEvidence} evidence items`);
+    }
+    gaps.push('Consider noting any BAU work that was explicitly excluded from the claim');
+  }
+
+  if (lines.length === 0 && gaps.length === 0) return null;
+
+  return (
+    <div style={{
+      padding: '12px 14px', marginBottom: 16, borderRadius: 8,
+      background: '#f8f9fb', border: '1px solid #eef0f2',
+      fontSize: 12, lineHeight: 1.5, color: '#6b7280',
+    }}>
+      <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 13 }}>✦</span> AI can generate this section
+      </div>
+      {lines.map((l, i) => <div key={i}>• {l}</div>)}
+      {gaps.map((g, i) => <div key={`g${i}`} style={{ color: '#d97706' }}>⚠ {g}</div>)}
+    </div>
+  );
+}
+
 /* ── Project-level section panel (Overview, R&D Boundary, etc.) ── */
-function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus, onSaveStatus, token, onGenerated }) {
+function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus, onSaveStatus, token, onGenerated, activities, items, activityEvidence }) {
   const data = sections[sectionKey] || {};
   const plainText = (data.content || '').replace(/<[^>]*>/g, '').trim();
   const charCount = plainText.length;
@@ -371,6 +432,7 @@ function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus
         {saveStatus === 'error' && <span style={{ color: '#ef4444' }}>Save failed</span>}
         {genError && <span style={{ color: '#ef4444' }}>{genError}</span>}
       </div>
+      <AiContextTip sectionKey={sectionKey} activities={activities || []} items={items || []} activityEvidence={activityEvidence || {}} hasContent={hasContent} />
       <div className="workspace-inline-editor">
         <InlineEditor
           key={sectionKey}
@@ -1241,6 +1303,9 @@ export default function WorkspaceView({
               onSaveStatus={setSaveStatus}
               token={token}
               onGenerated={fetchSections}
+              activities={activities}
+              items={items}
+              activityEvidence={activityEvidence}
             />
           )}
 
@@ -1260,6 +1325,9 @@ export default function WorkspaceView({
               onSaveStatus={setSaveStatus}
               token={token}
               onGenerated={fetchSections}
+              activities={activities}
+              items={items}
+              activityEvidence={activityEvidence}
             />
           )}
 
