@@ -303,16 +303,59 @@ function StageSection({
 }
 
 /* ── Project-level section panel (Overview, R&D Boundary, etc.) ── */
-function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus, onSaveStatus }) {
+function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus, onSaveStatus, token, onGenerated }) {
   const data = sections[sectionKey] || {};
   const plainText = (data.content || '').replace(/<[^>]*>/g, '').trim();
   const charCount = plainText.length;
+  const hasContent = charCount > 10;
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState(null);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setGenError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/projects/${token}/claim-pack/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ regenerate_sections: [sectionKey], force: true }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Generation failed');
+      onGenerated?.();
+    } catch (err) {
+      setGenError(err.message);
+      setTimeout(() => setGenError(null), 5000);
+    }
+    setGenerating(false);
+  };
 
   return (
-    <div style={{ padding: '28px 40px 60px' }}>
-      <h1 style={{ fontSize: 19, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>
-        {sectionName}
-      </h1>
+    <div style={{ padding: '28px 40px 60px', position: 'relative' }}>
+      {generating && <BlobLoader />}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 4 }}>
+        <h1 style={{ fontSize: 19, fontWeight: 700, color: '#111827', margin: 0 }}>
+          {sectionName}
+        </h1>
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          style={{
+            padding: '8px 16px', fontSize: 13, fontWeight: 600,
+            color: 'white', backgroundColor: generating ? '#9ca3af' : NAVY,
+            border: 'none', borderRadius: 8,
+            cursor: generating ? 'not-allowed' : 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
+            flexShrink: 0, whiteSpace: 'nowrap',
+          }}
+        >
+          <span style={{ fontSize: 14 }}>&#10022;</span> {hasContent ? 'Regenerate with AI' : 'Generate with AI'}
+        </button>
+      </div>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
         fontSize: 12, color: '#9ca3af', minHeight: 18,
@@ -326,6 +369,7 @@ function SectionPanel({ sectionKey, sectionName, projectId, sections, saveStatus
         {saveStatus === 'saving' && <span>Saving...</span>}
         {saveStatus === 'saved' && <span style={{ color: '#10b981' }}>Saved</span>}
         {saveStatus === 'error' && <span style={{ color: '#ef4444' }}>Save failed</span>}
+        {genError && <span style={{ color: '#ef4444' }}>{genError}</span>}
       </div>
       <div className="workspace-inline-editor">
         <InlineEditor
@@ -1195,6 +1239,8 @@ export default function WorkspaceView({
               sections={sections}
               saveStatus={saveStatus}
               onSaveStatus={setSaveStatus}
+              token={token}
+              onGenerated={fetchSections}
             />
           )}
 
@@ -1212,6 +1258,8 @@ export default function WorkspaceView({
               sections={sections}
               saveStatus={saveStatus}
               onSaveStatus={setSaveStatus}
+              token={token}
+              onGenerated={fetchSections}
             />
           )}
 
