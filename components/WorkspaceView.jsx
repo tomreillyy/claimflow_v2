@@ -267,12 +267,11 @@ function StageSection({
             <div style={{
               padding: '10px 12px', marginBottom: 12, borderRadius: 8,
               background: '#f8f9fb', border: '1px solid #eef0f2',
-              fontSize: 12, lineHeight: 1.5, color: '#6b7280',
+              fontSize: 13, lineHeight: 1.5, color: '#6b7280',
             }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>✦ </span>
               {evCount > 0
-                ? `${evCount} evidence item${evCount > 1 ? 's' : ''} linked — click Generate with AI on this activity to draft this section from your evidence.`
-                : 'No evidence linked yet. Link evidence above, then generate with AI or write manually.'}
+                ? <><span style={{ color: '#374151' }}>✦</span> {evCount} evidence item{evCount > 1 ? 's' : ''} linked. Hit <strong>Generate with AI</strong> above to draft this section, or write it yourself.</>
+                : <><span style={{ color: '#d97706' }}>⚠</span> No evidence linked. Link evidence or add a note above — AI needs something to draft from.</>}
             </div>
           )}
 
@@ -316,49 +315,43 @@ function StageSection({
   );
 }
 
-/* ── AI context tip — shows what the AI will use to generate ── */
+/* ── AI context tip — actionable guidance before generating ── */
 function AiContextTip({ sectionKey, activities, items, activityEvidence, hasContent }) {
-  if (hasContent) return null; // Don't show tip if section already has content
+  if (hasContent) return null;
 
   const coreActs = activities.filter(a => (a.activity_type || 'core') === 'core');
-  const supportingActs = activities.filter(a => a.activity_type === 'supporting');
   const totalEvidence = (items || []).filter(e => !e.soft_deleted).length;
 
-  let lines = [];
-  let gaps = [];
+  let message = null;
+  let gap = null;
 
   if (sectionKey === 'project_overview') {
-    if (coreActs.length > 0) {
-      lines.push(`${coreActs.length} core activit${coreActs.length === 1 ? 'y' : 'ies'}: ${coreActs.map(a => a.name).join(', ')}`);
+    if (coreActs.length > 0 && totalEvidence > 0) {
+      message = `Describe the company and the overarching technical problem. AI will draft from your ${coreActs.length} activit${coreActs.length === 1 ? 'y' : 'ies'} and ${totalEvidence} evidence items.`;
+    } else if (coreActs.length > 0) {
+      message = `Describe the company and the technical problem being investigated.`;
+      gap = 'Low evidence — connect GitHub/Jira or add notes for a stronger AI draft.';
+    } else {
+      gap = 'Add activities first so AI has context to generate from.';
     }
-    if (totalEvidence > 0) {
-      lines.push(`${totalEvidence} evidence items to draw from`);
-    }
-    if (coreActs.length === 0) gaps.push('No activities defined yet — add activities first');
-    if (totalEvidence < 3) gaps.push('Limited evidence — connect integrations or add notes for a stronger overview');
   } else if (sectionKey === 'rd_boundary') {
     if (coreActs.length > 0) {
-      lines.push(`Will document ${coreActs.length} core + ${supportingActs.length} supporting activit${supportingActs.length === 1 ? 'y' : 'ies'} as R&D`);
+      message = `Document what was claimed as R&D and what was excluded (BAU, deployment, routine work). AI will draft from your ${coreActs.length} activit${coreActs.length === 1 ? 'y' : 'ies'}.`;
+    } else {
+      gap = 'Add activities first — AI needs to know what R&D was done to define the boundary.';
     }
-    if (totalEvidence > 0) {
-      lines.push(`Can identify excluded work from ${totalEvidence} evidence items`);
-    }
-    gaps.push('Consider noting any BAU work that was explicitly excluded from the claim');
   }
 
-  if (lines.length === 0 && gaps.length === 0) return null;
+  if (!message && !gap) return null;
 
   return (
     <div style={{
       padding: '12px 14px', marginBottom: 16, borderRadius: 8,
       background: '#f8f9fb', border: '1px solid #eef0f2',
-      fontSize: 12, lineHeight: 1.5, color: '#6b7280',
+      fontSize: 13, lineHeight: 1.5, color: '#6b7280',
     }}>
-      <div style={{ fontWeight: 600, color: '#374151', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 13 }}>✦</span> AI can generate this section
-      </div>
-      {lines.map((l, i) => <div key={i}>• {l}</div>)}
-      {gaps.map((g, i) => <div key={`g${i}`} style={{ color: '#d97706' }}>⚠ {g}</div>)}
+      {message && <div><span style={{ color: '#374151' }}>✦</span> {message}</div>}
+      {gap && <div style={{ color: '#d97706', marginTop: message ? 4 : 0 }}>⚠ {gap}</div>}
     </div>
   );
 }
@@ -855,6 +848,37 @@ function ActivityView({
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState(null);
   const [actCtx, setActCtx] = useState(null);
+  const [editingName, setEditingName] = useState(false);
+  const [editingUncertainty, setEditingUncertainty] = useState(false);
+  const [nameVal, setNameVal] = useState(activity.name);
+  const [uncVal, setUncVal] = useState(activity.uncertainty || '');
+  const saveTimerRef = useRef(null);
+
+  // Sync with prop changes (e.g. switching activities)
+  useEffect(() => { setNameVal(activity.name); setUncVal(activity.uncertainty || ''); setEditingName(false); setEditingUncertainty(false); }, [activity.id]);
+
+  const saveField = async (field, value) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch(`/api/projects/${token}/core-activities/${activity.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ [field]: value }),
+      });
+      // Update parent state
+      if (typeof onActivitiesChange === 'function') {
+        onActivitiesChange(prev => {
+          const list = typeof prev === 'function' ? prev : prev;
+          return (Array.isArray(list) ? list : []).map(a => a.id === activity.id ? { ...a, [field]: value } : a);
+        });
+      }
+    } catch (err) { console.error('Save field failed:', err); }
+  };
+
+  const debouncedSave = (field, value) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => saveField(field, value), 1000);
+  };
 
   // Check if any stage has narrative content
   const hasContent = STAGES.some(({ key }) => {
@@ -934,9 +958,24 @@ function ActivityView({
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 19, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3 }}>
-                {activity.name}
-              </h1>
+              {editingName ? (
+                <input
+                  value={nameVal}
+                  onChange={e => { setNameVal(e.target.value); debouncedSave('name', e.target.value); }}
+                  onBlur={() => { setEditingName(false); if (nameVal.trim()) saveField('name', nameVal.trim()); }}
+                  onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+                  autoFocus
+                  style={{ fontSize: 19, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3, border: 'none', borderBottom: `2px solid ${NAVY}`, outline: 'none', fontFamily: 'inherit', padding: '0 0 2px', background: 'transparent', width: '100%' }}
+                />
+              ) : (
+                <h1
+                  onClick={() => setEditingName(true)}
+                  style={{ fontSize: 19, fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1.3, cursor: 'text' }}
+                  title="Click to edit"
+                >
+                  {activity.name}
+                </h1>
+              )}
               <span style={{
                 padding: '2px 7px', fontSize: 10, fontWeight: 600, borderRadius: 4,
                 background: (activity.activity_type || 'core') === 'core' ? NAVY : '#6b7280', color: 'white',
@@ -953,9 +992,22 @@ function ActivityView({
                 &#x22EF;
               </button>
             </div>
-            {activity.uncertainty && (
-              <p style={{ fontSize: 13, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
-                {activity.uncertainty}
+            {editingUncertainty ? (
+              <textarea
+                value={uncVal}
+                onChange={e => { setUncVal(e.target.value); debouncedSave('uncertainty', e.target.value); }}
+                onBlur={() => { setEditingUncertainty(false); if (uncVal.trim()) saveField('uncertainty', uncVal.trim()); }}
+                autoFocus
+                rows={3}
+                style={{ fontSize: 13, color: '#6b7280', margin: 0, lineHeight: 1.5, border: 'none', borderBottom: `2px solid ${NAVY}`, outline: 'none', fontFamily: 'inherit', padding: '0 0 2px', background: 'transparent', width: '100%', resize: 'vertical' }}
+              />
+            ) : (
+              <p
+                onClick={() => setEditingUncertainty(true)}
+                style={{ fontSize: 13, color: activity.uncertainty ? '#6b7280' : '#c4c8cf', margin: 0, lineHeight: 1.5, cursor: 'text' }}
+                title="Click to edit"
+              >
+                {activity.uncertainty || 'Click to add technical uncertainty...'}
               </p>
             )}
           </div>
