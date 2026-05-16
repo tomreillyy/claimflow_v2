@@ -734,8 +734,8 @@ function ActivityRail({ activities, activeView, onSelect, addBtnRef, onAddClick,
         {[
           { key: 'overview', label: 'Project Overview' },
           { key: 'financials', label: 'Financials' },
-          { key: 'boundary', label: 'R&D Boundary' },
           { key: 'attestations', label: 'Attestations' },
+          { key: 'boundary', label: 'R&D Boundary' },
         ].map(item => {
           const sel = activeView.type === 'section' && activeView.id === item.key;
           return (

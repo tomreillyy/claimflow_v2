@@ -229,8 +229,9 @@ async function main() {
     },
   ];
 
+  const insertedActivities = [];
   for (const act of coreActivities) {
-    const { error: actErr } = await supabase
+    const { data: inserted, error: actErr } = await supabase
       .from('core_activities')
       .insert({
         project_id: project.id,
@@ -239,10 +240,171 @@ async function main() {
         status: 'draft',
         source: 'ai',
         activity_type: 'core',
-      });
+      })
+      .select('id, name')
+      .single();
     if (actErr) console.error('Activity insert error:', actErr);
-    else console.log(`Created activity: ${act.name}`);
+    else { console.log(`Created activity: ${inserted.name}`); insertedActivities.push(inserted); }
   }
+
+  // ── FINANCIALS: TEAM ──
+  const teamMembers = [
+    { name: 'Alex Rivera', email: 'alex@docuflow.io', salary: 185000, super: 20350, payrollTax: 8880, workersComp: 1850, leave: 7400 },
+    { name: 'Sarah Kim', email: 'sarah@docuflow.io', salary: 155000, super: 17050, payrollTax: 7440, workersComp: 1550, leave: 6200 },
+    { name: 'James Chen', email: 'james@docuflow.io', salary: 140000, super: 15400, payrollTax: 6720, workersComp: 1400, leave: 5600 },
+    { name: 'Priya Patel', email: 'priya@docuflow.io', salary: 130000, super: 14300, payrollTax: 6240, workersComp: 1300, leave: 5200 },
+    { name: 'Tom Bradley', email: 'tom@docuflow.io', salary: 120000, super: 13200, payrollTax: 5760, workersComp: 1200, leave: 4800 },
+  ];
+
+  // Hours per person per activity (out of 1720 FY standard)
+  const splitMap = [
+    // Alex: CTO — 40% extraction, 20% OCR, 10% line items
+    { personIdx: 0, actIdx: 0, hours: 688 },
+    { personIdx: 0, actIdx: 1, hours: 344 },
+    { personIdx: 0, actIdx: 2, hours: 172 },
+    // Sarah: ML engineer — 60% extraction, 30% OCR
+    { personIdx: 1, actIdx: 0, hours: 1032 },
+    { personIdx: 1, actIdx: 1, hours: 516 },
+    // James: Backend — 50% extraction, 20% line items
+    { personIdx: 2, actIdx: 0, hours: 860 },
+    { personIdx: 2, actIdx: 2, hours: 344 },
+    // Priya: Data scientist — 30% OCR, 50% line items
+    { personIdx: 3, actIdx: 1, hours: 516 },
+    { personIdx: 3, actIdx: 2, hours: 860 },
+    // Tom: Junior dev — 40% extraction
+    { personIdx: 4, actIdx: 0, hours: 688 },
+  ];
+
+  for (let i = 0; i < teamMembers.length; i++) {
+    const m = teamMembers[i];
+    const { data: member, error: memErr } = await supabase
+      .from('fin_team')
+      .insert({
+        project_id: project.id,
+        person_name: m.name,
+        person_email: m.email,
+        base_salary: m.salary,
+        super_amount: m.super,
+        payroll_tax_amount: m.payrollTax,
+        workers_comp_amount: m.workersComp,
+        leave_accrual_amount: m.leave,
+        display_order: i + 1,
+      })
+      .select('id')
+      .single();
+    if (memErr) { console.error(`Team member ${m.name} error:`, memErr); continue; }
+    console.log(`Created team member: ${m.name}`);
+
+    // Insert splits for this person
+    for (const split of splitMap.filter(s => s.personIdx === i)) {
+      if (insertedActivities[split.actIdx]) {
+        const { error: splitErr } = await supabase
+          .from('fin_activity_splits')
+          .insert({
+            team_member_id: member.id,
+            activity_id: insertedActivities[split.actIdx].id,
+            hours: split.hours,
+          });
+        if (splitErr) console.error(`Split error for ${m.name}:`, splitErr);
+      }
+    }
+  }
+
+  // ── FINANCIALS: CONTRACTORS ──
+  const contractors = [
+    { desc: 'DataAnnotate Pty Ltd — Document labelling (200 invoices)', date: '2025-10-15', amount: 18000, rd: 18000, actIdx: 0 },
+    { desc: 'CloudVision Consulting — OCR pipeline review', date: '2025-12-01', amount: 12000, rd: 12000, actIdx: 1 },
+    { desc: 'ML Advisory Services — LayoutLM training optimisation', date: '2026-02-20', amount: 25000, rd: 25000, actIdx: 0 },
+  ];
+
+  for (const c of contractors) {
+    const { error: cErr } = await supabase
+      .from('fin_contractors')
+      .insert({
+        project_id: project.id,
+        description: c.desc,
+        activity_id: insertedActivities[c.actIdx]?.id || null,
+        invoice_date: c.date,
+        invoice_amount: c.amount,
+        rd_portion: c.rd,
+      });
+    if (cErr) console.error('Contractor error:', cErr);
+    else console.log(`Created contractor: ${c.desc.split('—')[0].trim()}`);
+  }
+
+  // ── FINANCIALS: MATERIALS ──
+  const materials = [
+    { desc: 'AWS Textract API usage (benchmark testing)', date: '2025-09-01', cost: 2400, rd: 2400, actIdx: 1 },
+    { desc: 'Google Document AI evaluation licence', date: '2025-09-15', cost: 1800, rd: 1800, actIdx: 1 },
+    { desc: 'Sample document procurement (500 real invoices)', date: '2025-08-01', cost: 3500, rd: 3500, actIdx: 0 },
+  ];
+
+  for (const m of materials) {
+    const { error: mErr } = await supabase
+      .from('fin_materials')
+      .insert({
+        project_id: project.id,
+        description: m.desc,
+        activity_id: insertedActivities[m.actIdx]?.id || null,
+        invoice_date: m.date,
+        cost: m.cost,
+        rd_portion: m.rd,
+      });
+    if (mErr) console.error('Material error:', mErr);
+    else console.log(`Created material: ${m.desc.slice(0, 40)}`);
+  }
+
+  // ── FINANCIALS: OVERHEADS ──
+  const overheads = [
+    { desc: 'AWS compute (GPU instances for model training)', basis: 'direct_measure', annual: 36000, rdPct: 85 },
+    { desc: 'Office rent — engineering team floor', basis: 'floor_area', annual: 72000, rdPct: 45 },
+    { desc: 'Software licences (GitHub, Jira, Confluence)', basis: 'labour_ratio', annual: 14400, rdPct: 60 },
+  ];
+
+  for (const o of overheads) {
+    const { error: oErr } = await supabase
+      .from('fin_overheads')
+      .insert({
+        project_id: project.id,
+        description: o.desc,
+        apportionment_basis: o.basis,
+        annual_cost: o.annual,
+        rd_percent: o.rdPct,
+      });
+    if (oErr) console.error('Overhead error:', oErr);
+    else console.log(`Created overhead: ${o.desc.slice(0, 40)}`);
+  }
+
+  // ── FINANCIALS: DEPRECIATION ──
+  const depreciation = [
+    { desc: 'ML training server (NVIDIA A100)', purchaseDate: '2025-07-01', cost: 45000, life: 5, method: 'diminishing_value', rdPct: 80 },
+    { desc: 'Developer workstations (5x)', purchaseDate: '2025-07-01', cost: 25000, life: 4, method: 'prime_cost', rdPct: 60 },
+  ];
+
+  for (const d of depreciation) {
+    const { error: dErr } = await supabase
+      .from('fin_depreciation')
+      .insert({
+        project_id: project.id,
+        description: d.desc,
+        purchase_date: d.purchaseDate,
+        purchase_cost: d.cost,
+        effective_life_years: d.life,
+        method: d.method,
+        rd_use_percent: d.rdPct,
+      });
+    if (dErr) console.error('Depreciation error:', dErr);
+    else console.log(`Created depreciation: ${d.desc}`);
+  }
+
+  // ── FINANCIALS: ADJUSTMENTS (3 fixed rows) ──
+  for (const adjType of ['feedstock', 'recoupment', 'balancing']) {
+    const { error: adjErr } = await supabase
+      .from('fin_adjustments')
+      .insert({ project_id: project.id, adjustment_type: adjType, applies: false, amount: 0 });
+    if (adjErr && !adjErr.message?.includes('duplicate')) console.error('Adjustment error:', adjErr);
+  }
+  console.log('Created adjustment rows');
 
   console.log('\n✓ Done!');
   console.log(`Project token: ${token}`);
