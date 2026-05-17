@@ -175,7 +175,7 @@ export default function LandingPage() {
               Bitbucket
             </div>
             <div className={styles['integration-pill']}>
-              <img src="/landing/xero-logo.png" alt="Xero" width="56" height="56" style={{ margin: '-18px 0' }} />
+              <div style={{ width: 20, height: 20, borderRadius: '50%', overflow: 'hidden', background: '#13B5EA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="/landing/xero-logo.png" alt="Xero" style={{ width: 44, height: 'auto' }} /></div>
               Xero
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function LandingPage() {
                   <span className={styles['integration-card-name']}>Jira</span>
                 </div>
                 <div className={styles['integration-card']}>
-                  <img src="/landing/xero-logo.png" alt="Xero" width="100" height="100" style={{ margin: '-32px 0' }} />
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: '#13B5EA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="/landing/xero-logo.png" alt="Xero" style={{ width: 80, height: 'auto' }} /></div>
                   <span className={styles['integration-card-name']}>Xero</span>
                 </div>
               </div>
