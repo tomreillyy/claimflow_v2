@@ -63,7 +63,7 @@ function InlineEditor({ sectionKey, projectId, initialContent, placeholder, onSa
   }, [initialContent, sectionKey]);
 
   const handleSave = useCallback(async (content) => {
-    if (!content || content === '<p></p>') return;
+    const isEmpty = !content || content === '<p></p>';
     onSaveStatus?.('saving');
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -71,7 +71,7 @@ function InlineEditor({ sectionKey, projectId, initialContent, placeholder, onSa
       const res = await fetch(`/api/claim-pack-sections/${projectId}/${sectionKey}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content: isEmpty ? null : content }),
       });
       if (!res.ok) throw new Error('Save failed');
       onSaveStatus?.('saved');

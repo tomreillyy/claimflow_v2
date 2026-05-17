@@ -7,13 +7,13 @@ export async function PATCH(req, { params }) {
     const body = await req.json();
     const { name, uncertainty, hypothesis_text, conclusion_text, status, activity_type } = body;
 
-    if (!name && !uncertainty && hypothesis_text === undefined && conclusion_text === undefined && !status && !activity_type) {
+    if (name === undefined && uncertainty === undefined && hypothesis_text === undefined && conclusion_text === undefined && !status && !activity_type) {
       return NextResponse.json({ error: 'At least one field required' }, { status: 400 });
     }
 
     const updates = { updated_at: new Date().toISOString() };
-    if (name) updates.name = name;
-    if (uncertainty) updates.uncertainty = uncertainty;
+    if (name !== undefined) updates.name = name;
+    if (uncertainty !== undefined) updates.uncertainty = uncertainty;
     if (hypothesis_text !== undefined) updates.hypothesis_text = hypothesis_text;
     if (conclusion_text !== undefined) updates.conclusion_text = conclusion_text;
     if (status && ['draft', 'archived'].includes(status)) updates.status = status;

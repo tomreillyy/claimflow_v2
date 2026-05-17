@@ -996,7 +996,7 @@ function ActivityView({
               <textarea
                 value={uncVal}
                 onChange={e => { setUncVal(e.target.value); debouncedSave('uncertainty', e.target.value); }}
-                onBlur={() => { setEditingUncertainty(false); if (uncVal.trim()) saveField('uncertainty', uncVal.trim()); }}
+                onBlur={() => { setEditingUncertainty(false); saveField('uncertainty', uncVal.trim()); }}
                 autoFocus
                 rows={3}
                 style={{ fontSize: 13, color: '#6b7280', margin: 0, lineHeight: 1.5, border: 'none', borderBottom: `2px solid ${NAVY}`, outline: 'none', fontFamily: 'inherit', padding: '0 0 2px', background: 'transparent', width: '100%', resize: 'vertical' }}
