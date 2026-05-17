@@ -35,7 +35,7 @@ export async function POST(req) {
   xeroAuthUrl.searchParams.set('response_type', 'code');
   xeroAuthUrl.searchParams.set('client_id', clientId);
   xeroAuthUrl.searchParams.set('redirect_uri', redirectUri);
-  xeroAuthUrl.searchParams.set('scope', 'openid profile email offline_access payroll.employees.read payroll.payruns.read payroll.settings.read accounting.transactions.read accounting.contacts.read');
+  xeroAuthUrl.searchParams.set('scope', 'openid profile email offline_access payroll.employees payroll.payruns payroll.settings accounting.transactions accounting.contacts');
   xeroAuthUrl.searchParams.set('state', state);
 
   return NextResponse.json({ url: xeroAuthUrl.toString() });
