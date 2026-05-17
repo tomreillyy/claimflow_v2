@@ -147,7 +147,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className={styles['hero-visual']}>
-            <img src="/landing/hero.png" alt="ClaimFlow dashboard" className={styles['hero-img']} />
+            <img src="/landing/costs-dashboard.png" alt="ClaimFlow costs dashboard with team R&D allocation and tax offset" className={styles['hero-img']} />
           </div>
         </div>
       </section>
@@ -173,6 +173,10 @@ export default function LandingPage() {
             <div className={styles['integration-pill']}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15H9v-2h2v2zm0-4H9V7h2v6zm4 4h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
               Bitbucket
+            </div>
+            <div className={styles['integration-pill']}>
+              <img src="/landing/xero-logo.png" alt="Xero" width="56" height="56" style={{ margin: '-18px 0' }} />
+              Xero
             </div>
           </div>
         </div>
@@ -225,9 +229,9 @@ export default function LandingPage() {
               <div className={styles['step-number']}>1</div>
               <div className={styles['step-title']}>Connect your client&apos;s tools</div>
               <p className={styles['step-desc']}>
-                Link your client&apos;s GitHub, Jira, or other engineering tools to
+                Link your client&apos;s GitHub, Jira, Xero, or other tools to
                 ClaimFlow. Setup takes minutes. From that point on, their technical
-                work is captured automatically as it happens.
+                work and costs are captured automatically as it happens.
               </p>
             </div>
             <div className={`${styles['step-visual']} ${styles['step-visual-integrations']}`}>
@@ -240,9 +244,9 @@ export default function LandingPage() {
                   <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><defs><linearGradient id="jira-blue-1" x1="99.68%" y1="15.81%" x2="39.6%" y2="97.34%"><stop offset="0%" stopColor="#0052CC"/><stop offset="92%" stopColor="#2684FF"/></linearGradient><linearGradient id="jira-blue-2" x1="0.39%" y1="84.61%" x2="60.47%" y2="2.41%"><stop offset="0%" stopColor="#0052CC"/><stop offset="92%" stopColor="#2684FF"/></linearGradient></defs><path d="M22.16 11.1L13.07 2.01 12 .94 4.93 8.01 1.84 11.1a.6.6 0 000 .85l5.64 5.64L12 22.11l7.07-7.07.12-.12 2.97-2.97a.6.6 0 000-.85zM12 15.17L8.83 12 12 8.83 15.17 12 12 15.17z" fill="#2684FF"/><path d="M12 8.83a4.48 4.48 0 01-.01-6.33L4.92 9.57l3.53 3.53L12 8.83z" fill="url(#jira-blue-1)"/><path d="M15.18 11.99L12 15.17a4.48 4.48 0 01.01 6.33l7.07-7.07-4.1-4.44z" fill="url(#jira-blue-2)"/></svg>
                   <span className={styles['integration-card-name']}>Jira</span>
                 </div>
-                <div className={`${styles['integration-card']} ${styles['integration-card-more']}`}>
-                  <span className={styles['integration-card-plus']}>+</span>
-                  <span className={styles['integration-card-name']}>More</span>
+                <div className={styles['integration-card']}>
+                  <img src="/landing/xero-logo.png" alt="Xero" width="100" height="100" style={{ margin: '-32px 0' }} />
+                  <span className={styles['integration-card-name']}>Xero</span>
                 </div>
               </div>
             </div>
@@ -252,16 +256,15 @@ export default function LandingPage() {
           <div className={`${styles['how-step']} ${styles['how-step-reversed']} ${revealClass('step2')}`} data-reveal-id="step2" ref={setRevealRef('step2')}>
             <div className={styles['step-copy']}>
               <div className={styles['step-number']}>2</div>
-              <div className={styles['step-title']}>Evidence is structured automatically</div>
+              <div className={styles['step-title']}>Let AI structure the evidence against RDTI criteria</div>
               <p className={styles['step-desc']}>
-                ClaimFlow structures raw technical work against RDTI criteria,
-                mapping it to the right activities and categories. You get a clear,
-                chronological evidence trail ready for review &mdash; without chasing
-                a single email.
+                ClaimFlow reads the raw evidence and helps map it to activities,
+                hypotheses, knowledge gaps, experiments, outcomes and supporting
+                evidence. Your team can accept, edit, relink or add context where needed.
               </p>
             </div>
             <div className={`${styles['step-visual']} ${styles['step-visual-img']}`}>
-              <img src="/landing/evidence-dashboard.png" alt="ClaimFlow evidence dashboard showing classified R&D activities" className={styles['step-screenshot']} />
+              <img src="/landing/ai-structuring.png" alt="ClaimFlow AI linking evidence to prior knowledge and R&D activities" className={styles['step-screenshot']} />
             </div>
           </div>
 
@@ -269,15 +272,15 @@ export default function LandingPage() {
           <div className={`${styles['how-step']} ${revealClass('step3')}`} data-reveal-id="step3" ref={setRevealRef('step3')}>
             <div className={styles['step-copy']}>
               <div className={styles['step-number']}>3</div>
-              <div className={styles['step-title']}>Review, refine and export</div>
+              <div className={styles['step-title']}>Review the claim like an advisor, not an admin</div>
               <p className={styles['step-desc']}>
-                ClaimFlow assembles the structured evidence into a draft your team
-                can work through. Identify gaps, refine narratives inline, and make
-                adjustments before exporting a clean, defensible claim pack.
+                Work through each activity, see what evidence supports each section,
+                spot weak areas, refine the narrative and export a cleaner claim pack
+                for review.
               </p>
             </div>
             <div className={`${styles['step-visual']} ${styles['step-visual-img']}`}>
-              <img src="/landing/claim-pack.png" alt="ClaimFlow claim pack export" className={styles['step-screenshot']} />
+              <img src="/landing/claim-review.png" alt="ClaimFlow hypothesis editor with inline rewrite and evidence linking" className={styles['step-screenshot']} />
             </div>
           </div>
         </div>
@@ -354,16 +357,16 @@ export default function LandingPage() {
           </div>
           <div className={styles['metrics-grid']}>
             <div className={styles['metric-card']}>
+              <div className={styles['metric-value']}>2&times;</div>
+              <div className={styles['metric-label']}>Client capacity per advisor. Handle more claims without growing your team.</div>
+            </div>
+            <div className={styles['metric-card']}>
+              <div className={styles['metric-value']}>70%</div>
+              <div className={styles['metric-label']}>Less time on documentation. Evidence is captured and structured automatically.</div>
+            </div>
+            <div className={styles['metric-card']}>
               <div className={styles['metric-value']}>0</div>
-              <div className={styles['metric-label']}>Follow-up emails. Evidence is captured automatically from your clients&apos; tools as they work.</div>
-            </div>
-            <div className={styles['metric-card']}>
-              <div className={styles['metric-value']}>Real-time</div>
-              <div className={styles['metric-label']}>Documentation recorded as work happens. No end-of-year reconstruction.</div>
-            </div>
-            <div className={styles['metric-card']}>
-              <div className={styles['metric-value']}>1-click</div>
-              <div className={styles['metric-label']}>Export a structured, audit-ready claim pack for any client.</div>
+              <div className={styles['metric-label']}>Follow-up emails chasing clients. Contemporaneous evidence flows in as they work.</div>
             </div>
           </div>
         </div>
