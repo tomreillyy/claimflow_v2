@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { LogOut, Menu, X, HelpCircle, Settings, Compass } from 'lucide-react';
+import { LogOut, Menu, X, HelpCircle, Settings, Compass, Link2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { usePathname } from 'next/navigation';
@@ -245,6 +245,7 @@ export function AppHeader() {
                 }}>
                   {[
                     { label: 'Settings', icon: <Settings size={16} color="#6b7280" />, action: () => router.push('/settings/company') },
+                    { label: 'Integrations', icon: <Link2 size={16} color="#6b7280" />, action: () => router.push('/settings/integrations') },
                     { label: 'Find Advisor', icon: <Compass size={16} color="#6b7280" />, action: () => router.push('/marketplace') },
                   ].map(({ label, icon, action }) => (
                     <button
@@ -380,6 +381,7 @@ export function AppHeader() {
             {/* Mobile Settings + Find Advisor */}
             {[
               { label: 'Settings', icon: <Settings size={18} color="#6b7280" />, href: '/settings/company' },
+              { label: 'Integrations', icon: <Link2 size={18} color="#6b7280" />, href: '/settings/integrations' },
               { label: 'Find Advisor', icon: <Compass size={18} color="#6b7280" />, href: '/marketplace' },
             ].map(({ label, icon, href }) => (
               <Link
