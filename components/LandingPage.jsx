@@ -119,7 +119,7 @@ export default function LandingPage() {
       {/* ═══════════════ NAV ═══════════════ */}
       <nav className={`${styles['site-nav']} ${scrolled ? styles['site-nav-scrolled'] : ''}`}>
         <Link href="/" className={styles['nav-logo']}>
-          <img src="/landing/logo-white.png" alt="ClaimFlow" />
+          <img src="/landing/logo-dark.png" alt="ClaimFlow" />
         </Link>
         <div className={styles['nav-center']}>
           <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Home</a>
@@ -136,18 +136,86 @@ export default function LandingPage() {
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section className={styles.hero}>
+        {/* Decorative background elements */}
+        <div className={`${styles['hero-blob']} ${styles['hero-blob-tr']}`} />
+        <div className={`${styles['hero-blob']} ${styles['hero-blob-bl']}`} />
+
+        {/* Dot grids */}
+        <div className={`${styles['hero-dots']} ${styles['hero-dots-tr']}`}>
+          {Array.from({ length: 30 }).map((_, i) => <div key={i} className={styles['hero-dot']} />)}
+        </div>
+        <div className={`${styles['hero-dots']} ${styles['hero-dots-bl']}`}>
+          {Array.from({ length: 20 }).map((_, i) => <div key={i} className={styles['hero-dot']} />)}
+        </div>
+
+        {/* Arc lines */}
+        <svg className={styles['hero-arcs']} width="180" height="180" viewBox="0 0 180 180" fill="none">
+          <path d="M20 160 A140 140 0 0 1 160 20" stroke="#b3c7ec" strokeWidth="1.2" fill="none" />
+          <path d="M40 160 A120 120 0 0 1 160 40" stroke="#b3c7ec" strokeWidth="1.2" fill="none" />
+          <path d="M60 160 A100 100 0 0 1 160 60" stroke="#b3c7ec" strokeWidth="1.2" fill="none" />
+        </svg>
+
+        {/* Wavy bottom edge */}
+        <div className={styles['hero-wave']}>
+          <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+            <path d="M0,80 C360,120 720,40 1080,80 C1260,100 1380,60 1440,70 L1440,120 L0,120 Z" fill="rgba(195,210,245,0.25)" />
+            <path d="M0,95 C300,60 600,110 900,85 C1100,70 1300,100 1440,90 L1440,120 L0,120 Z" fill="rgba(195,210,245,0.18)" />
+          </svg>
+        </div>
+
         <div className={styles['hero-inner']}>
           <div className={styles['hero-copy']}>
-            <h1>Do more R&D claims without hiring more staff</h1>
+            <h1><span style={{ whiteSpace: 'nowrap' }}>More R&D claims.</span><br />No extra headcount.</h1>
             <p className={styles['hero-sub']}>
               ClaimFlow connects to your clients&apos; dev tools, captures and structures their work against RDTI criteria, and generates a review-ready first draft. Your team stays in control, reviewing and refining instead of starting from scratch.
             </p>
             <div className={styles['hero-ctas']}>
               <a href={BOOK_DEMO_URL} className={styles['btn-primary']}>Book Demo</a>
+              <a href="#how" onClick={(e) => scrollToSection(e, 'how')} className={styles['hero-link']}>
+                See how it works <span aria-hidden="true">&rarr;</span>
+              </a>
             </div>
           </div>
           <div className={styles['hero-visual']}>
-            <img src="/landing/costs-dashboard.png" alt="ClaimFlow costs dashboard with team R&D allocation and tax offset" className={styles['hero-img']} />
+            <div className={styles['hero-window']}>
+              <div className={styles['hero-window-bar']}>
+                <div className={`${styles['hero-window-dot']} ${styles['hero-window-dot-red']}`} />
+                <div className={`${styles['hero-window-dot']} ${styles['hero-window-dot-yellow']}`} />
+                <div className={`${styles['hero-window-dot']} ${styles['hero-window-dot-green']}`} />
+              </div>
+              <img src="/landing/costs-dashboard.png" alt="ClaimFlow costs dashboard with team R&D allocation and tax offset" className={styles['hero-img']} />
+            </div>
+          </div>
+        </div>
+
+        {/* Trust badges */}
+        <div className={styles['hero-trust']}>
+          <div className={styles['trust-badge']}>
+            <div className={styles['trust-icon']}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+            </div>
+            <div>
+              <div className={styles['trust-text-title']}>Secure &amp; private</div>
+              <div className={styles['trust-text-sub']}>Your data stays yours</div>
+            </div>
+          </div>
+          <div className={styles['trust-badge']}>
+            <div className={styles['trust-icon']}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+            </div>
+            <div>
+              <div className={styles['trust-text-title']}>RDTI aligned</div>
+              <div className={styles['trust-text-sub']}>Built for compliance</div>
+            </div>
+          </div>
+          <div className={styles['trust-badge']}>
+            <div className={styles['trust-icon']}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <div className={styles['trust-text-title']}>Team in control</div>
+              <div className={styles['trust-text-sub']}>Review, refine, approve</div>
+            </div>
           </div>
         </div>
       </section>
