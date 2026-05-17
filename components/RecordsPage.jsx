@@ -26,6 +26,17 @@ const INTEGRATIONS = [
       </svg>
     ),
   },
+  {
+    key: 'xero',
+    name: 'Xero',
+    description: 'Import employee payroll and contractor invoices for R&D cost calculations.',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="12" fill="#13B5EA"/>
+        <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="700" fontFamily="sans-serif">X</text>
+      </svg>
+    ),
+  },
 ];
 
 function IntegrationCard({ integration, connection, onConnect, onDisconnect, onSync, syncing }) {
@@ -118,18 +129,50 @@ export default function RecordsPage({ token, projectId, activities }) {
   const fetchConnections = useCallback(async () => {
     try {
       const headers = await getHeaders();
-      const res = await fetch(`/api/projects/${token}/records/connections`, { headers });
-      const data = await res.json();
-      if (res.ok) setConnections(data.connections || []);
+      const [recordsRes, xeroRes] = await Promise.all([
+        fetch(`/api/projects/${token}/records/connections`, { headers }),
+        fetch(`/api/projects/${token}/xero/status`, { headers }),
+      ]);
+      const recordsData = await recordsRes.json();
+      if (recordsRes.ok) {
+        const conns = recordsData.connections || [];
+        // Append Xero status as a connection
+        if (xeroRes.ok) {
+          const xeroData = await xeroRes.json();
+          conns.push({
+            source: 'xero',
+            connected: xeroData.connected,
+            last_synced_at: xeroData.lastSyncedAt,
+            tenant_name: xeroData.tenantName,
+          });
+        }
+        setConnections(conns);
+      }
     } catch { /* non-critical */ }
     setLoading(false);
   }, [token, getHeaders]);
 
   useEffect(() => { fetchConnections(); }, [fetchConnections]);
 
-  const handleConnect = (source) => {
-    if (source === 'jira') window.open('/api/jira/auth/start', '_blank');
-    else if (source === 'github') window.open('/api/github/auth/start', '_blank');
+  const handleConnect = async (source) => {
+    if (source === 'xero') {
+      try {
+        const headers = await getHeaders();
+        const res = await fetch('/api/xero/auth/start', {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project_token: token }),
+        });
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+      } catch (err) {
+        setError('Failed to start Xero connection');
+      }
+    } else if (source === 'jira') {
+      window.open('/api/jira/auth/start', '_blank');
+    } else if (source === 'github') {
+      window.open('/api/github/auth/start', '_blank');
+    }
   };
 
   const handleDisconnect = async (source) => {
@@ -228,7 +271,7 @@ export default function RecordsPage({ token, projectId, activities }) {
 
       {connectedCount === 0 && !loading && (
         <div style={{ marginTop: 20, padding: '14px 16px', borderRadius: 8, background: '#f8f9fb', border: '1px solid #eef0f2', fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
-          No integrations connected yet. Connect GitHub or Jira above to start gathering R&D evidence automatically.
+          No integrations connected yet. Connect GitHub, Jira, or Xero above to start gathering R&D evidence and cost data automatically.
         </div>
       )}
     </div>
