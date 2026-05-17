@@ -5,6 +5,6 @@ export default function robots() {
       allow: '/',
       disallow: ['/api/', '/p/'], // Don't index API routes or private project pages
     },
-    sitemap: 'https://aird.com.au/sitemap.xml',
+    sitemap: 'https://getclaimflow.com/sitemap.xml',
   };
 }

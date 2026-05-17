@@ -252,7 +252,7 @@ export function ScrollTimeline() {
                           color: 'rgba(255,255,255,0.5)',
                           fontFamily: 'monospace'
                         }}>
-                          app.aird.com.au
+                          app.getclaimflow.com
                         </span>
                       </div>
                       {/* Screenshot */}

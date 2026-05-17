@@ -308,7 +308,7 @@ export default function FinancialsProvider({ token, activities, children }) {
   };
 
   return (
-    <FinancialsContext.Provider value={{ state, dispatch, derived, api }}>
+    <FinancialsContext.Provider value={{ state, dispatch, derived, api, projectToken: token }}>
       {children}
     </FinancialsContext.Provider>
   );

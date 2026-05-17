@@ -295,12 +295,12 @@ export default function BlogPostPage({ params }) {
               name: 'ClaimFlow',
               logo: {
                 '@type': 'ImageObject',
-                url: 'https://aird.com.au/logo.png'
+                url: 'https://getclaimflow.com/logo.png'
               }
             },
             mainEntityOfPage: {
               '@type': 'WebPage',
-              '@id': `https://aird.com.au/blog/${post.slug}`
+              '@id': `https://getclaimflow.com/blog/${post.slug}`
             },
             keywords: post.keywords.join(', ')
           })
@@ -332,7 +332,7 @@ export function generateMetadata({ params }) {
       type: 'article',
       publishedTime: post.date,
       authors: [post.author],
-      url: `https://aird.com.au/blog/${post.slug}`
+      url: `https://getclaimflow.com/blog/${post.slug}`
     },
     twitter: {
       card: 'summary_large_image',
@@ -340,7 +340,7 @@ export function generateMetadata({ params }) {
       description: post.description
     },
     alternates: {
-      canonical: `https://aird.com.au/blog/${post.slug}`
+      canonical: `https://getclaimflow.com/blog/${post.slug}`
     }
   };
 }

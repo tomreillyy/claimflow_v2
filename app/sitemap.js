@@ -2,7 +2,7 @@ import { getAllPosts } from '@/lib/blogPosts';
 
 export default function sitemap() {
   const posts = getAllPosts();
-  const baseUrl = 'https://aird.com.au';
+  const baseUrl = 'https://getclaimflow.com';
 
   // Blog post URLs
   const blogUrls = posts.map((post) => ({

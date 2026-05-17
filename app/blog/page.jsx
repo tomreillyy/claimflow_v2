@@ -195,7 +195,7 @@ export const metadata = {
     title: 'Blog | ClaimFlow',
     description: 'Insights on R&D documentation, innovation capture, and building better products.',
     type: 'website',
-    url: 'https://aird.com.au/blog'
+    url: 'https://getclaimflow.com/blog'
   },
   twitter: {
     card: 'summary_large_image',
@@ -203,6 +203,6 @@ export const metadata = {
     description: 'Insights on R&D documentation, innovation capture, and building better products.'
   },
   alternates: {
-    canonical: 'https://aird.com.au/blog'
+    canonical: 'https://getclaimflow.com/blog'
   }
 };

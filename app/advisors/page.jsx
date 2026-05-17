@@ -554,7 +554,7 @@ export default function AdvisorsPage() {
           </p>
 
           <a
-            href="mailto:partners@aird.com.au"
+            href="mailto:partners@getclaimflow.com"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -586,8 +586,8 @@ export default function AdvisorsPage() {
             color: 'var(--muted)'
           }}>
             Or email us directly at{' '}
-            <a href="mailto:partners@aird.com.au" style={{ color: 'var(--brand)', textDecoration: 'none' }}>
-              partners@aird.com.au
+            <a href="mailto:partners@getclaimflow.com" style={{ color: 'var(--brand)', textDecoration: 'none' }}>
+              partners@getclaimflow.com
             </a>
           </p>
         </div>

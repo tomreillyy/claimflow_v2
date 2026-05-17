@@ -1,12 +1,15 @@
 'use client';
+import { useState } from 'react';
 import { useFinancials } from './FinancialsProvider';
 import EditableCell from './EditableCell';
 import RDTITooltip from './RDTITooltip';
+import { XeroImportModal } from './XeroImportModal';
 
 const NAVY = '#1e3a5f';
 
 export default function ContractorsSection() {
-  const { state, derived, api } = useFinancials();
+  const { state, derived, api, projectToken } = useFinancials();
+  const [showXeroModal, setShowXeroModal] = useState(false);
   if (state.loading) return null;
 
   const section = 'contractors';
@@ -31,12 +34,20 @@ export default function ContractorsSection() {
         <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
           Contractors <span style={{ fontSize: 13, fontWeight: 400, color: '#9ca3af' }}>({items.length})</span>
         </h2>
-        <button onClick={handleAdd} style={{
-          padding: '6px 14px', fontSize: 13, fontWeight: 600, color: 'white',
-          backgroundColor: NAVY, border: 'none', borderRadius: 6, cursor: 'pointer',
-        }}>
-          + Add Invoice
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setShowXeroModal(true)} style={{
+            padding: '6px 14px', fontSize: 13, fontWeight: 600, color: NAVY,
+            backgroundColor: 'white', border: `1px solid ${NAVY}`, borderRadius: 6, cursor: 'pointer',
+          }}>
+            Import from Xero
+          </button>
+          <button onClick={handleAdd} style={{
+            padding: '6px 14px', fontSize: 13, fontWeight: 600, color: 'white',
+            backgroundColor: NAVY, border: 'none', borderRadius: 6, cursor: 'pointer',
+          }}>
+            + Add Invoice
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
         Third-party contractor invoices for R&D services.
@@ -114,6 +125,14 @@ export default function ContractorsSection() {
             <div></div>
           </div>
         </div>
+      )}
+      {showXeroModal && (
+        <XeroImportModal
+          mode="contractors"
+          projectToken={projectToken}
+          onClose={() => setShowXeroModal(false)}
+          onImportComplete={() => api.refetch()}
+        />
       )}
     </section>
   );

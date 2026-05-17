@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL('https://aird.com.au'),
+  metadataBase: new URL('https://getclaimflow.com'),
   title: {
     default: "ClaimFlow - R&D Evidence Tracking",
     template: "%s | ClaimFlow"
@@ -26,7 +26,7 @@ export const metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_AU',
-    url: 'https://aird.com.au',
+    url: 'https://getclaimflow.com',
     siteName: 'ClaimFlow',
     title: 'ClaimFlow - R&D Evidence Tracking',
     description: 'Track your R&D work and build evidence as you go. Capture innovation as it unfolds — no archaeology required.',

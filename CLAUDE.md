@@ -15,7 +15,7 @@ No test framework is configured. No Prettier — formatting is ESLint-only.
 
 ## Architecture
 
-**Stack:** Next.js 16 (App Router) + React 19, Supabase (PostgreSQL + Auth + Storage), SendGrid, Stripe, OpenAI, Puppeteer (PDF generation). Deployed at aird.com.au.
+**Stack:** Next.js 16 (App Router) + React 19, Supabase (PostgreSQL + Auth + Storage), SendGrid, Stripe, OpenAI, Puppeteer (PDF generation). Deployed at getclaimflow.com.
 
 **Domain:** ClaimFlow is an Australian R&D Tax Incentive (RDTI) evidence-tracking and claim-pack generation tool. Users collect evidence of R&D activities, link it to core/supporting activities, and generate compliance-ready claim packs. There are three user roles: project owners, consultants (RDTI advisors managing multiple clients), and team members.
 

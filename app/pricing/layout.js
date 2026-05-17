@@ -6,7 +6,7 @@ export const metadata = {
     title: 'Pricing | ClaimFlow',
     description: 'Simple, transparent pricing for ClaimFlow. Choose the plan that fits your team.',
     type: 'website',
-    url: 'https://aird.com.au/pricing'
+    url: 'https://getclaimflow.com/pricing'
   }
 };
 

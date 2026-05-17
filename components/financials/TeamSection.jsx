@@ -4,13 +4,15 @@ import { useFinancials } from './FinancialsProvider';
 import EditableCell from './EditableCell';
 import RDTITooltip from './RDTITooltip';
 import ActivitySplitDrawer from './ActivitySplitDrawer';
+import { XeroImportModal } from './XeroImportModal';
 
 const NAVY = '#1e3a5f';
 
 export default function TeamSection() {
-  const { state, derived, api } = useFinancials();
+  const { state, derived, api, projectToken } = useFinancials();
   const [expandedId, setExpandedId] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [showXeroModal, setShowXeroModal] = useState(false);
 
   if (state.loading) return <div style={{ padding: 20, color: '#9ca3af' }}>Loading team...</div>;
 
@@ -47,23 +49,40 @@ export default function TeamSection() {
           {' '}
           <span style={{ fontSize: 13, fontWeight: 400, color: '#9ca3af' }}>({state.team.length})</span>
         </h2>
-        <button
-          onClick={handleAdd}
-          disabled={adding}
-          style={{
-            padding: '6px 14px',
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'white',
-            backgroundColor: NAVY,
-            border: 'none',
-            borderRadius: 6,
-            cursor: adding ? 'not-allowed' : 'pointer',
-            opacity: adding ? 0.6 : 1,
-          }}
-        >
-          + Add Person
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setShowXeroModal(true)}
+            style={{
+              padding: '6px 14px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: NAVY,
+              backgroundColor: 'white',
+              border: `1px solid ${NAVY}`,
+              borderRadius: 6,
+              cursor: 'pointer',
+            }}
+          >
+            Import from Xero
+          </button>
+          <button
+            onClick={handleAdd}
+            disabled={adding}
+            style={{
+              padding: '6px 14px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'white',
+              backgroundColor: NAVY,
+              border: 'none',
+              borderRadius: 6,
+              cursor: adding ? 'not-allowed' : 'pointer',
+              opacity: adding ? 0.6 : 1,
+            }}
+          >
+            + Add Person
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
         Base salary, on-costs, and <RDTITooltip term="fy_hours">R&D hours</RDTITooltip> per activity. Click a row to expand the activity split drawer.
@@ -234,6 +253,14 @@ export default function TeamSection() {
             <div></div>
           </div>
         </div>
+      )}
+      {showXeroModal && (
+        <XeroImportModal
+          mode="team"
+          projectToken={projectToken}
+          onClose={() => setShowXeroModal(false)}
+          onImportComplete={() => api.refetch()}
+        />
       )}
     </section>
   );
