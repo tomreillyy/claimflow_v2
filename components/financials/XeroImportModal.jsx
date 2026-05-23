@@ -46,17 +46,30 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
   }
 
   useEffect(() => {
-    if (session?.access_token) checkStatus();
+    if (session?.access_token) {
+      checkStatus();
+    } else {
+      // If no session after a short delay, stop loading
+      const timeout = setTimeout(() => setLoading(false), 2000);
+      return () => clearTimeout(timeout);
+    }
   }, [session]);
 
   async function checkStatus() {
     try {
       const res = await fetch(`/api/projects/${projectToken}/xero/status`, { headers: getHeaders() });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setStatus(data);
+      } else {
+        // API returned error but we can still show the connect UI
+        setStatus({ connected: false });
+        if (data.error && !data.error.includes('Not authenticated')) {
+          setError(data.error);
+        }
       }
     } catch (err) {
+      setStatus({ connected: false });
       setError('Failed to check Xero connection');
     } finally {
       setLoading(false);
