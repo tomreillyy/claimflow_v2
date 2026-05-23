@@ -41,15 +41,17 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
   const [claimEndDate, setClaimEndDate] = useState(fyEnd);
   const [state, setState] = useState('NSW');
 
-  const headers = { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' };
+  function getHeaders() {
+    return { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' };
+  }
 
   useEffect(() => {
-    checkStatus();
-  }, []);
+    if (session?.access_token) checkStatus();
+  }, [session]);
 
   async function checkStatus() {
     try {
-      const res = await fetch(`/api/projects/${projectToken}/xero/status`, { headers });
+      const res = await fetch(`/api/projects/${projectToken}/xero/status`, { headers: getHeaders() });
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
@@ -65,7 +67,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
     try {
       const res = await fetch('/api/xero/auth/start', {
         method: 'POST',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({ project_token: projectToken })
       });
       const data = await res.json();
@@ -83,7 +85,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
     try {
       const res = await fetch(`/api/projects/${projectToken}/xero/sync`, {
         method: 'POST',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({ claimStartDate, claimEndDate, state })
       });
       if (!res.ok) {
@@ -125,7 +127,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
 
       const res = await fetch(`/api/projects/${projectToken}/xero/sync`, {
         method: 'PUT',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({
           employees: employeesToImport,
           bills: billsToImport,
