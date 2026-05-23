@@ -62,6 +62,21 @@ export default function IntegrationsPage() {
     }
   }
 
+  async function handleDisconnectXero() {
+    if (!confirm('Disconnect Xero? Imported data will be kept.')) return;
+    try {
+      const res = await fetch('/api/xero/disconnect', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      if (res.ok) {
+        setXeroStatus({ connected: false });
+      }
+    } catch (err) {
+      console.error('Failed to disconnect Xero:', err);
+    }
+  }
+
   if (!user) {
     return null;
   }
@@ -115,6 +130,16 @@ export default function IntegrationsPage() {
                 }}>
                   <Check size={14} /> Connected
                 </span>
+                <button
+                  onClick={handleDisconnectXero}
+                  style={{
+                    background: 'none', color: '#6b7280', border: '1px solid #d1d5db',
+                    borderRadius: 6, padding: '4px 10px', fontSize: 13,
+                    cursor: 'pointer', fontFamily: 'inherit'
+                  }}
+                >
+                  Disconnect
+                </button>
               </div>
             ) : (
               <button

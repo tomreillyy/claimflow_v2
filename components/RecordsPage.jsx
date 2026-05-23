@@ -176,8 +176,17 @@ export default function RecordsPage({ token, projectId, activities }) {
   };
 
   const handleDisconnect = async (source) => {
-    if (!confirm(`Disconnect ${source}? Existing evidence will be kept.`)) return;
-    // TODO: implement disconnect endpoint
+    if (!confirm(`Disconnect ${source}? Existing evidence and imported data will be kept.`)) return;
+    try {
+      const headers = await getHeaders();
+      if (source === 'xero') {
+        const res = await fetch('/api/xero/disconnect', { method: 'POST', headers });
+        if (!res.ok) throw new Error('Failed to disconnect Xero');
+      }
+      await fetchConnections();
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const handleSync = async (source) => {
