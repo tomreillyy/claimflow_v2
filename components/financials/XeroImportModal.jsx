@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/supabaseClient';
 import { Spinner } from '@/components/Spinner';
 import { Check, AlertTriangle, X, Download, Link2 } from 'lucide-react';
 
@@ -15,7 +15,6 @@ import { Check, AlertTriangle, X, Download, Link2 } from 'lucide-react';
  * @param {function} props.onImportComplete - Called after successful import to refresh data
  */
 export function XeroImportModal({ mode = 'team', projectToken, onClose, onImportComplete }) {
-  const { session } = useAuth();
   const [status, setStatus] = useState(null); // null = loading, object = status data
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,23 +40,21 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
   const [claimEndDate, setClaimEndDate] = useState(fyEnd);
   const [state, setState] = useState('NSW');
 
-  function getHeaders() {
-    return { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' };
+  async function getHeaders() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token
+      ? { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+      : { 'Content-Type': 'application/json' };
   }
 
   useEffect(() => {
-    if (session?.access_token) {
-      checkStatus();
-    } else {
-      // If no session after a short delay, stop loading
-      const timeout = setTimeout(() => setLoading(false), 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [session]);
+    checkStatus();
+  }, []);
 
   async function checkStatus() {
     try {
-      const res = await fetch(`/api/projects/${projectToken}/xero/status`, { headers: getHeaders() });
+      const headers = await getHeaders();
+      const res = await fetch(`/api/projects/${projectToken}/xero/status`, { headers });
       const data = await res.json();
       if (res.ok) {
         setStatus(data);
@@ -78,9 +75,10 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
 
   async function handleConnect() {
     try {
+      const headers = await getHeaders();
       const res = await fetch('/api/xero/auth/start', {
         method: 'POST',
-        headers: getHeaders(),
+        headers,
         body: JSON.stringify({ project_token: projectToken })
       });
       const data = await res.json();
@@ -96,9 +94,10 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
     setSyncing(true);
     setError(null);
     try {
+      const headers = await getHeaders();
       const res = await fetch(`/api/projects/${projectToken}/xero/sync`, {
         method: 'POST',
-        headers: getHeaders(),
+        headers,
         body: JSON.stringify({ claimStartDate, claimEndDate, state })
       });
       if (!res.ok) {
@@ -138,9 +137,10 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
         selectedBills.has(bill.invoiceId)
       );
 
+      const headers = await getHeaders();
       const res = await fetch(`/api/projects/${projectToken}/xero/sync`, {
         method: 'PUT',
-        headers: getHeaders(),
+        headers,
         body: JSON.stringify({
           employees: employeesToImport,
           bills: billsToImport,
