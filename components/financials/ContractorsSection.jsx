@@ -22,6 +22,11 @@ export default function ContractorsSection() {
     await api.addItem(section, { description: '', invoice_amount: 0 });
   };
 
+  const handleClearAll = async () => {
+    if (!confirm(`Delete all ${items.length} contractor invoices? This cannot be undone.`)) return;
+    await api.clearSection('contractors');
+  };
+
   const fmt = (val) => {
     const n = parseFloat(val);
     if (isNaN(n)) return '$0';
@@ -35,6 +40,14 @@ export default function ContractorsSection() {
           Contractors <span style={{ fontSize: 13, fontWeight: 400, color: '#9ca3af' }}>({items.length})</span>
         </h2>
         <div style={{ display: 'flex', gap: 8 }}>
+          {items.length > 0 && (
+            <button onClick={handleClearAll} style={{
+              padding: '6px 14px', fontSize: 13, fontWeight: 500, color: '#dc2626',
+              backgroundColor: 'white', border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer',
+            }}>
+              Clear All
+            </button>
+          )}
           <button onClick={() => setShowXeroModal(true)} style={{
             padding: '6px 14px', fontSize: 13, fontWeight: 600, color: NAVY,
             backgroundColor: 'white', border: `1px solid ${NAVY}`, borderRadius: 6, cursor: 'pointer',

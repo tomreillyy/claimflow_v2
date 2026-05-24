@@ -304,6 +304,18 @@ export default function FinancialsProvider({ token, activities, children }) {
       );
     },
 
+    clearSection: async (section) => {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`/api/projects/${tokenRef.current}/financials/clear`, {
+        method: 'POST',
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sections: [section] }),
+      });
+      if (res.ok) {
+        await fetchAll();
+      }
+    },
+
     refetch: fetchAll,
   };
 

@@ -23,6 +23,11 @@ export default function TeamSection() {
     setAdding(false);
   };
 
+  const handleClearAll = async () => {
+    if (!confirm(`Delete all ${state.team.length} team members? This cannot be undone.`)) return;
+    await api.clearSection('team');
+  };
+
   const toggleExpand = (id) => {
     setExpandedId(prev => prev === id ? null : id);
   };
@@ -50,6 +55,23 @@ export default function TeamSection() {
           <span style={{ fontSize: 13, fontWeight: 400, color: '#9ca3af' }}>({state.team.length})</span>
         </h2>
         <div style={{ display: 'flex', gap: 8 }}>
+          {state.team.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              style={{
+                padding: '6px 14px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#dc2626',
+                backgroundColor: 'white',
+                border: '1px solid #fecaca',
+                borderRadius: 6,
+                cursor: 'pointer',
+              }}
+            >
+              Clear All
+            </button>
+          )}
           <button
             onClick={() => setShowXeroModal(true)}
             style={{

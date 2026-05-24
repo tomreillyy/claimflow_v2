@@ -22,6 +22,11 @@ export default function DepreciationSection() {
     await api.addItem(section, { description: '', purchase_cost: 0, effective_life_years: 5, method: 'prime_cost', rd_use_percent: 0 });
   };
 
+  const handleClearAll = async () => {
+    if (!confirm(`Delete all ${items.length} assets? This cannot be undone.`)) return;
+    await api.clearSection('depreciation');
+  };
+
   const fmt = (val) => {
     const n = parseFloat(val);
     if (isNaN(n)) return '$0';
@@ -35,12 +40,22 @@ export default function DepreciationSection() {
           <RDTITooltip term="decline_in_value">Decline in Value</RDTITooltip>
           {' '}<span style={{ fontSize: 13, fontWeight: 400, color: '#9ca3af' }}>({items.length})</span>
         </h2>
-        <button onClick={handleAdd} style={{
-          padding: '6px 14px', fontSize: 13, fontWeight: 600, color: 'white',
-          backgroundColor: NAVY, border: 'none', borderRadius: 6, cursor: 'pointer',
-        }}>
-          + Add Asset
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {items.length > 0 && (
+            <button onClick={handleClearAll} style={{
+              padding: '6px 14px', fontSize: 13, fontWeight: 500, color: '#dc2626',
+              backgroundColor: 'white', border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer',
+            }}>
+              Clear All
+            </button>
+          )}
+          <button onClick={handleAdd} style={{
+            padding: '6px 14px', fontSize: 13, fontWeight: 600, color: 'white',
+            backgroundColor: NAVY, border: 'none', borderRadius: 6, cursor: 'pointer',
+          }}>
+            + Add Asset
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
         Depreciation on R&D assets (s.355-305). Prime cost = cost / life. Diminishing value = cost x (200% / life).

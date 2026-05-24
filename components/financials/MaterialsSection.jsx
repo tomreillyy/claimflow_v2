@@ -17,6 +17,11 @@ export default function MaterialsSection() {
     await api.addItem(section, { description: '', cost: 0 });
   };
 
+  const handleClearAll = async () => {
+    if (!confirm(`Delete all ${items.length} materials? This cannot be undone.`)) return;
+    await api.clearSection('materials');
+  };
+
   const fmt = (val) => {
     const n = parseFloat(val);
     if (isNaN(n)) return '$0';
@@ -29,12 +34,22 @@ export default function MaterialsSection() {
         <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1a1a1a', margin: 0 }}>
           Materials & Consumables <span style={{ fontSize: 13, fontWeight: 400, color: '#9ca3af' }}>({items.length})</span>
         </h2>
-        <button onClick={handleAdd} style={{
-          padding: '6px 14px', fontSize: 13, fontWeight: 600, color: 'white',
-          backgroundColor: NAVY, border: 'none', borderRadius: 6, cursor: 'pointer',
-        }}>
-          + Add Item
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {items.length > 0 && (
+            <button onClick={handleClearAll} style={{
+              padding: '6px 14px', fontSize: 13, fontWeight: 500, color: '#dc2626',
+              backgroundColor: 'white', border: '1px solid #fecaca', borderRadius: 6, cursor: 'pointer',
+            }}>
+              Clear All
+            </button>
+          )}
+          <button onClick={handleAdd} style={{
+            padding: '6px 14px', fontSize: 13, fontWeight: 600, color: 'white',
+            backgroundColor: NAVY, border: 'none', borderRadius: 6, cursor: 'pointer',
+          }}>
+            + Add Item
+          </button>
+        </div>
       </div>
       <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
         Cloud compute, GPUs, API credits, lab supplies, and other consumables.
