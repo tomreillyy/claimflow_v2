@@ -96,13 +96,23 @@ export async function POST(req, { params }) {
 
     return NextResponse.json({
       tenantName,
+      organisation: preview.organisation,
+      revenue: preview.revenue,
       employees: employeesWithStatus,
-      bills: billsWithStatus
+      bills: billsWithStatus,
+      warnings: preview.warnings || []
     });
 
   } catch (err) {
     console.error('[Xero Sync] Preview error:', err);
-    return NextResponse.json({ error: err.message || 'Failed to fetch Xero data' }, { status: 500 });
+
+    // Return user-friendly message
+    let message = 'Failed to fetch data from Xero. Please try again.';
+    if (err.message?.includes('expired')) message = 'Your Xero session has expired. Please disconnect and reconnect Xero.';
+    else if (err.message?.includes('denied')) message = 'Xero access denied. Please reconnect with the required permissions.';
+    else if (err.message?.includes('429')) message = 'Too many requests to Xero. Please wait a moment and try again.';
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

@@ -194,6 +194,18 @@ export function XeroImportModal({ projectToken, onClose, onImportComplete }) {
           </div>
         )}
 
+        {/* Warnings from partial fetch failures */}
+        {preview?.warnings?.length > 0 && (
+          <div style={{ marginBottom: 16, padding: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+            {preview.warnings.map((w, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 13, color: '#92400e', marginBottom: i < preview.warnings.length - 1 ? 6 : 0 }}>
+                <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                {w}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Loading */}
         {loading && (
           <div style={{ textAlign: 'center', padding: 40 }}>
@@ -465,8 +477,9 @@ export function XeroImportModal({ projectToken, onClose, onImportComplete }) {
 
         {/* Error */}
         {error && (
-          <div style={{ marginTop: 16, padding: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
-            {error}
+          <div style={{ marginTop: 16, padding: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+            <span>{error}</span>
+            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 16, flexShrink: 0 }}>×</button>
           </div>
         )}
       </div>
