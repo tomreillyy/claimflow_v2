@@ -2,30 +2,27 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Spinner } from '@/components/Spinner';
-import { Check, AlertTriangle, X, Download, Link2 } from 'lucide-react';
+import { Check, AlertTriangle, X, Download, Link2, ChevronRight, ChevronLeft } from 'lucide-react';
 
 /**
- * Modal for importing Xero data into the financials workspace.
- * Handles: not connected → connect flow, preview → conflict resolution → confirm import.
- *
- * @param {object} props
- * @param {'team'|'contractors'} props.mode - Which tab to show
- * @param {string} props.projectToken
- * @param {function} props.onClose
- * @param {function} props.onImportComplete - Called after successful import to refresh data
+ * Stepped modal for importing Xero data into the financials workspace.
+ * Step 1: Select employees to import as team members
+ * Step 2: Select bills to import as contractors
+ * Then confirm imports both in one go.
  */
-export function XeroImportModal({ mode = 'team', projectToken, onClose, onImportComplete }) {
-  const [status, setStatus] = useState(null); // null = loading, object = status data
+export function XeroImportModal({ projectToken, onClose, onImportComplete }) {
+  const [status, setStatus] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState(null);
+  const [step, setStep] = useState('team'); // 'team' | 'bills'
 
   // Selection state
   const [selectedEmployees, setSelectedEmployees] = useState(new Set());
   const [selectedBills, setSelectedBills] = useState(new Set());
-  const [overwriteChoices, setOverwriteChoices] = useState({}); // { employeeId: true/false }
+  const [overwriteChoices, setOverwriteChoices] = useState({});
 
   // Claim period defaults (current FY: Jul 1 - Jun 30)
   const now = new Date();
@@ -47,9 +44,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
       : { 'Content-Type': 'application/json' };
   }
 
-  useEffect(() => {
-    checkStatus();
-  }, []);
+  useEffect(() => { checkStatus(); }, []);
 
   async function checkStatus() {
     try {
@@ -59,13 +54,10 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
       if (res.ok) {
         setStatus(data);
       } else {
-        // API returned error but we can still show the connect UI
         setStatus({ connected: false });
-        if (data.error && !data.error.includes('Not authenticated')) {
-          setError(data.error);
-        }
+        if (data.error && !data.error.includes('Not authenticated')) setError(data.error);
       }
-    } catch (err) {
+    } catch {
       setStatus({ connected: false });
       setError('Failed to check Xero connection');
     } finally {
@@ -77,15 +69,12 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
     try {
       const headers = await getHeaders();
       const res = await fetch('/api/xero/auth/start', {
-        method: 'POST',
-        headers,
+        method: 'POST', headers,
         body: JSON.stringify({ project_token: projectToken })
       });
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
+      if (data.url) window.location.href = data.url;
+    } catch {
       setError('Failed to start Xero connection');
     }
   }
@@ -96,8 +85,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
     try {
       const headers = await getHeaders();
       const res = await fetch(`/api/projects/${projectToken}/xero/sync`, {
-        method: 'POST',
-        headers,
+        method: 'POST', headers,
         body: JSON.stringify({ claimStartDate, claimEndDate, state })
       });
       if (!res.ok) {
@@ -106,19 +94,17 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
       }
       const data = await res.json();
       setPreview(data);
+      setStep('team');
 
-      // Auto-select all new items
+      // Auto-select all new employees
       const newEmps = new Set();
       data.employees?.forEach(emp => {
         if (emp.status === 'new') newEmps.add(emp.employeeId);
       });
       setSelectedEmployees(newEmps);
 
-      const newBills = new Set();
-      data.bills?.forEach(bill => {
-        if (bill.status === 'new') newBills.add(bill.invoiceId);
-      });
-      setSelectedBills(newBills);
+      // Don't auto-select bills — user picks which are R&D relevant
+      setSelectedBills(new Set());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -139,8 +125,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
 
       const headers = await getHeaders();
       const res = await fetch(`/api/projects/${projectToken}/xero/sync`, {
-        method: 'PUT',
-        headers,
+        method: 'PUT', headers,
         body: JSON.stringify({
           employees: employeesToImport,
           bills: billsToImport,
@@ -166,8 +151,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
   function toggleEmployee(employeeId) {
     setSelectedEmployees(prev => {
       const next = new Set(prev);
-      if (next.has(employeeId)) next.delete(employeeId);
-      else next.add(employeeId);
+      next.has(employeeId) ? next.delete(employeeId) : next.add(employeeId);
       return next;
     });
   }
@@ -175,10 +159,18 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
   function toggleBill(invoiceId) {
     setSelectedBills(prev => {
       const next = new Set(prev);
-      if (next.has(invoiceId)) next.delete(invoiceId);
-      else next.add(invoiceId);
+      next.has(invoiceId) ? next.delete(invoiceId) : next.add(invoiceId);
       return next;
     });
+  }
+
+  function toggleAllBills() {
+    const newBills = (preview?.bills || []).filter(b => b.status === 'new');
+    if (selectedBills.size === newBills.length) {
+      setSelectedBills(new Set());
+    } else {
+      setSelectedBills(new Set(newBills.map(b => b.invoiceId)));
+    }
   }
 
   function toggleOverwrite(employeeId) {
@@ -187,7 +179,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
 
   const fmt = (n) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(n);
 
-  // --- Render ---
+  const newBillsCount = (preview?.bills || []).filter(b => b.status === 'new').length;
 
   return (
     <div style={{
@@ -213,6 +205,34 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
             <X size={20} />
           </button>
         </div>
+
+        {/* Step indicator (only when preview is loaded) */}
+        {preview && (
+          <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
+            <button
+              onClick={() => setStep('team')}
+              style={{
+                flex: 1, padding: '8px 0', fontSize: 13, fontWeight: 600,
+                border: 'none', borderBottom: step === 'team' ? '2px solid #021048' : '2px solid transparent',
+                background: 'none', cursor: 'pointer',
+                color: step === 'team' ? '#021048' : '#9ca3af'
+              }}
+            >
+              1. Team Members ({preview.employees?.length || 0})
+            </button>
+            <button
+              onClick={() => setStep('bills')}
+              style={{
+                flex: 1, padding: '8px 0', fontSize: 13, fontWeight: 600,
+                border: 'none', borderBottom: step === 'bills' ? '2px solid #021048' : '2px solid transparent',
+                background: 'none', cursor: 'pointer',
+                color: step === 'bills' ? '#021048' : '#9ca3af'
+              }}
+            >
+              2. Contractor Bills ({newBillsCount})
+            </button>
+          </div>
+        )}
 
         {/* Loading state */}
         {loading && (
@@ -244,7 +264,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
           </div>
         )}
 
-        {/* Connected — show sync options or preview */}
+        {/* Connected — fetch options */}
         {!loading && status?.connected && !preview && (
           <div>
             <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
@@ -252,7 +272,6 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
               {status.lastSyncedAt && ` \u2022 Last synced ${new Date(status.lastSyncedAt).toLocaleDateString()}`}
             </p>
 
-            {/* Claim period selector */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>
@@ -292,14 +311,14 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
           </div>
         )}
 
-        {/* Preview — Employees */}
-        {preview && mode === 'team' && (
+        {/* Step 1: Team Members */}
+        {preview && step === 'team' && (
           <div>
             <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
-              Found <strong>{preview.employees.length}</strong> employees in Xero. Select which to import.
+              Found <strong>{preview.employees.length}</strong> employees in Xero. Select which to import as team members.
             </p>
 
-            <div style={{ maxHeight: 400, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+            <div style={{ maxHeight: 350, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#f9fafb', position: 'sticky', top: 0 }}>
@@ -328,14 +347,10 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
                       <td style={{ ...tdStyle, textAlign: 'right' }}>{fmt(emp.superAmount)}</td>
                       <td style={tdStyle}>
                         {emp.status === 'new' && (
-                          <span style={{ background: '#ecfdf5', color: '#059669', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>
-                            New
-                          </span>
+                          <span style={{ background: '#ecfdf5', color: '#059669', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>New</span>
                         )}
                         {emp.status === 'conflict' && (
-                          <span style={{ background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>
-                            Conflict
-                          </span>
+                          <span style={{ background: '#fef3c7', color: '#d97706', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>Conflict</span>
                         )}
                       </td>
                     </tr>
@@ -344,7 +359,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
               </table>
             </div>
 
-            {/* Conflict resolution section */}
+            {/* Conflict resolution */}
             {preview.employees.some(e => e.status === 'conflict') && (
               <div style={{ marginTop: 16, padding: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -352,7 +367,7 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
                   <span style={{ fontSize: 13, fontWeight: 500, color: '#92400e' }}>Conflicts detected</span>
                 </div>
                 <p style={{ fontSize: 12, color: '#78350f', marginBottom: 8 }}>
-                  These employees already exist in your team. Choose whether to overwrite with Xero values:
+                  These employees already exist. Choose whether to overwrite with Xero values:
                 </p>
                 {preview.employees.filter(e => e.status === 'conflict').map(emp => (
                   <div key={emp.employeeId} style={{
@@ -371,15 +386,10 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
                         checked={!!overwriteChoices[emp.employeeId]}
                         onChange={() => {
                           toggleOverwrite(emp.employeeId);
-                          // Also select/deselect the employee
                           if (!overwriteChoices[emp.employeeId]) {
                             setSelectedEmployees(prev => new Set([...prev, emp.employeeId]));
                           } else {
-                            setSelectedEmployees(prev => {
-                              const next = new Set(prev);
-                              next.delete(emp.employeeId);
-                              return next;
-                            });
+                            setSelectedEmployees(prev => { const next = new Set(prev); next.delete(emp.employeeId); return next; });
                           }
                         }}
                       />
@@ -390,37 +400,51 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
               </div>
             )}
 
-            {/* Import button */}
-            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            {/* Next button */}
+            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'space-between' }}>
               <button onClick={onClose} style={{
                 background: '#fff', color: '#374151', border: '1px solid #d1d5db',
                 borderRadius: 8, padding: '10px 16px', fontSize: 14, cursor: 'pointer'
               }}>Cancel</button>
               <button
-                onClick={handleConfirmImport}
-                disabled={importing || selectedEmployees.size === 0}
+                onClick={() => setStep('bills')}
                 style={{
                   background: '#021048', color: '#fff', border: 'none', borderRadius: 8,
                   padding: '10px 20px', fontSize: 14, fontWeight: 500, cursor: 'pointer',
-                  opacity: (importing || selectedEmployees.size === 0) ? 0.5 : 1
+                  display: 'flex', alignItems: 'center', gap: 6
                 }}
               >
-                {importing ? 'Importing...' : `Import ${selectedEmployees.size} employee${selectedEmployees.size !== 1 ? 's' : ''}`}
+                Next: Contractor Bills <ChevronRight size={16} />
               </button>
             </div>
           </div>
         )}
 
-        {/* Preview — Bills */}
-        {preview && mode === 'contractors' && (
+        {/* Step 2: Bills */}
+        {preview && step === 'bills' && (
           <div>
-            <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
-              Found <strong>{preview.bills.filter(b => b.status === 'new').length}</strong> new bills in Xero.
+            <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>
+              Found <strong>{newBillsCount}</strong> bills in Xero. Select only R&D-related contractor invoices.
               {preview.bills.filter(b => b.status === 'already_imported').length > 0 &&
                 ` (${preview.bills.filter(b => b.status === 'already_imported').length} already imported)`}
             </p>
+            <p style={{ fontSize: 12, color: '#9ca3af', marginBottom: 12 }}>
+              Skip non-R&D expenses like rent, cleaning, utilities, parking, etc.
+            </p>
 
-            <div style={{ maxHeight: 400, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
+            {/* Select all / none toggle */}
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', color: '#6b7280' }}>
+                <input
+                  type="checkbox"
+                  checked={newBillsCount > 0 && selectedBills.size === newBillsCount}
+                  onChange={toggleAllBills}
+                />
+                Select all ({newBillsCount})
+              </label>
+            </div>
+
+            <div style={{ maxHeight: 350, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#f9fafb', position: 'sticky', top: 0 }}>
@@ -434,7 +458,10 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
                 </thead>
                 <tbody>
                   {preview.bills.map(bill => (
-                    <tr key={bill.invoiceId} style={{ borderTop: '1px solid #f3f4f6' }}>
+                    <tr key={bill.invoiceId} style={{
+                      borderTop: '1px solid #f3f4f6',
+                      opacity: bill.status === 'already_imported' ? 0.5 : 1
+                    }}>
                       <td style={tdStyle}>
                         <input
                           type="checkbox"
@@ -449,14 +476,10 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
                       <td style={{ ...tdStyle, textAlign: 'right' }}>{fmt(bill.total)}</td>
                       <td style={tdStyle}>
                         {bill.status === 'new' && (
-                          <span style={{ background: '#ecfdf5', color: '#059669', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>
-                            New
-                          </span>
+                          <span style={{ background: '#ecfdf5', color: '#059669', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>New</span>
                         )}
                         {bill.status === 'already_imported' && (
-                          <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>
-                            Already imported
-                          </span>
+                          <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 500 }}>Imported</span>
                         )}
                       </td>
                     </tr>
@@ -465,21 +488,34 @@ export function XeroImportModal({ mode = 'team', projectToken, onClose, onImport
               </table>
             </div>
 
-            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={onClose} style={{
-                background: '#fff', color: '#374151', border: '1px solid #d1d5db',
-                borderRadius: 8, padding: '10px 16px', fontSize: 14, cursor: 'pointer'
-              }}>Cancel</button>
+            {/* Summary + import button */}
+            <div style={{ marginTop: 16, padding: 12, background: '#f9fafb', borderRadius: 8, fontSize: 13, color: '#374151' }}>
+              <strong>Import summary:</strong>{' '}
+              {selectedEmployees.size} employee{selectedEmployees.size !== 1 ? 's' : ''},{' '}
+              {selectedBills.size} bill{selectedBills.size !== 1 ? 's' : ''}
+            </div>
+
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between' }}>
+              <button
+                onClick={() => setStep('team')}
+                style={{
+                  background: '#fff', color: '#374151', border: '1px solid #d1d5db',
+                  borderRadius: 8, padding: '10px 16px', fontSize: 14, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6
+                }}
+              >
+                <ChevronLeft size={16} /> Back
+              </button>
               <button
                 onClick={handleConfirmImport}
-                disabled={importing || selectedBills.size === 0}
+                disabled={importing || (selectedEmployees.size === 0 && selectedBills.size === 0)}
                 style={{
                   background: '#021048', color: '#fff', border: 'none', borderRadius: 8,
                   padding: '10px 20px', fontSize: 14, fontWeight: 500, cursor: 'pointer',
-                  opacity: (importing || selectedBills.size === 0) ? 0.5 : 1
+                  opacity: (importing || (selectedEmployees.size === 0 && selectedBills.size === 0)) ? 0.5 : 1
                 }}
               >
-                {importing ? 'Importing...' : `Import ${selectedBills.size} bill${selectedBills.size !== 1 ? 's' : ''}`}
+                {importing ? 'Importing...' : 'Confirm Import'}
               </button>
             </div>
           </div>

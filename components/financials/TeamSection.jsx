@@ -278,7 +278,6 @@ export default function TeamSection() {
       )}
       {showXeroModal && (
         <XeroImportModal
-          mode="team"
           projectToken={projectToken}
           onClose={() => setShowXeroModal(false)}
           onImportComplete={() => api.refetch()}

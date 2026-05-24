@@ -141,7 +141,6 @@ export default function ContractorsSection() {
       )}
       {showXeroModal && (
         <XeroImportModal
-          mode="contractors"
           projectToken={projectToken}
           onClose={() => setShowXeroModal(false)}
           onImportComplete={() => api.refetch()}
