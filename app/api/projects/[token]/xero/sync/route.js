@@ -118,11 +118,53 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ error: authError }, { status: !user ? 401 : 403 });
     }
 
-    const { employees = [], bills = [], overwriteConflicts = {} } = await req.json();
+    const { employees = [], bills = [], overwriteConflicts = {}, companyData } = await req.json();
 
     let teamInserted = 0;
     let teamUpdated = 0;
     let billsInserted = 0;
+
+    // Save company details if provided
+    if (companyData) {
+      // Find or create company for this project's owner
+      const { data: projectData } = await supabaseAdmin
+        .from('projects')
+        .select('owner_id, company_id')
+        .eq('id', project.id)
+        .single();
+
+      if (projectData) {
+        const updates = {};
+        if (companyData.companyName) updates.company_name = companyData.companyName;
+        if (companyData.abn) updates.abn = companyData.abn.replace(/\s/g, '');
+        if (companyData.turnover != null) {
+          updates.aggregated_turnover = companyData.turnover;
+          updates.aggregated_turnover_band = companyData.turnover < 20000000 ? 'under_20m' : 'over_20m';
+        }
+
+        if (Object.keys(updates).length > 0) {
+          if (projectData.company_id) {
+            await supabaseAdmin
+              .from('companies')
+              .update(updates)
+              .eq('id', projectData.company_id);
+          } else {
+            // Create company and link to project
+            const { data: newCo } = await supabaseAdmin
+              .from('companies')
+              .insert({ ...updates, owner_id: projectData.owner_id })
+              .select('id')
+              .single();
+            if (newCo) {
+              await supabaseAdmin
+                .from('projects')
+                .update({ company_id: newCo.id })
+                .eq('id', project.id);
+            }
+          }
+        }
+      }
+    }
 
     // Get max display_order for new inserts
     const { data: maxOrder } = await supabaseAdmin
